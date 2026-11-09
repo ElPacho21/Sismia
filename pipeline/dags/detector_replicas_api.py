@@ -1,0 +1,595 @@
+"""Detector de réplicas sísmicas a partir del servicio FDSN del USGS.
+
+Baja los eventos del rango de fechas pedido a la capa bronze (CSV crudo,
+comprimido y particionado por parámetros de consulta) y después refina a
+silver. Se dispara a mano porque los parámetros de la ventana los elige quien
+lo corre.
+
+De ahí en adelante corre el método de Zaliapin & Ben-Zion: estima Mc, tiende el
+bosque de padres por vecino más cercano, ajusta el umbral eta contra un
+catálogo barajado, sortea las réplicas por thinning y arma los clusters. La
+última tarea publica el csv y lo valida.
+
+Una fila del entregable es **una secuencia sísmica**: un sismo principal con
+todas sus réplicas. La clave es `cluster_id` y la columna objetivo,
+`n_aftershocks`. Se publica además el catálogo evento por evento, donde una fila
+es un terremoto y el objetivo es `is_aftershock`.
+"""
+
+from __future__ import annotations
+
+import logging
+from datetime import timedelta
+from pathlib import Path
+
+import pendulum
+from airflow.sdk import Param, dag, task
+
+# Se importan los módulos enteros porque varias tareas del DAG se llaman igual
+# que la función que las hace, y de otro modo una taparía a la otra.
+from sismos import aftershocks, clusters, delivery, features, method_suffix, neighbors
+from sismos.bronze import bronze_load, bronze_path, bronze_write
+from sismos import horizons
+from sismos.features import PRIOR_RADIUS_KM, delivery_suffix
+from sismos.parameters import estimate
+from sismos.regions import BORDER_BUFFER_KM
+from sismos.silver import refine, silver_path, silver_read, silver_write
+from sismos.threshold import fit_threshold, threshold_path, threshold_read, threshold_write
+from sismos.usgs_earthquake import fetch
+
+log = logging.getLogger(__name__)
+
+
+@dag(
+    dag_id="detector_replicas_api",
+    schedule=None,
+    start_date=pendulum.datetime(2026, 8, 1, tz="America/Argentina/Buenos_Aires"),
+    catchup=False,
+    tags=["data-science", "capstone-project"],
+    doc_md=__doc__,
+    params={
+        "starttime": Param(
+            "2016-01-01",
+            type="string",
+            format="date",
+            title="Start date",
+            description=("Date from which to fetch earthquake records."),
+        ),
+        "endtime": Param(
+            "2026-01-01",
+            type="string",
+            format="date",
+            title="End date",
+            description=("Date up to which to fetch earthquake records."),
+        ),
+        "minmagnitude": Param(
+            3.5,
+            type="number",
+            title="Minimum magnitude",
+            description="Minimum magnitude of the queried earthquakes.",
+        ),
+        # Rectángulo por defecto: Argentina continental. El método supone un
+        # catálogo homogéneo, y el mundo entero no lo es — mezcla regiones con
+        # completitudes muy distintas y hace que los árboles de réplicas
+        # encadenen zonas sin relación. Dejar los cuatro en null vuelve a
+        # consultar el planeta completo.
+        "minlatitude": Param(
+            -55,
+            type=["number", "null"],
+            title="Minimum latitude",
+            description="Southern edge of the queried rectangle.",
+            minimum=-90,
+            maximum=90,
+        ),
+        "maxlatitude": Param(
+            -21,
+            type=["number", "null"],
+            title="Maximum latitude",
+            description="Northern edge of the queried rectangle.",
+            minimum=-90,
+            maximum=90,
+        ),
+        "minlongitude": Param(
+            -74,
+            type=["number", "null"],
+            title="Minimum longitude",
+            description="Western edge of the queried rectangle.",
+            minimum=-180,
+            maximum=180,
+        ),
+        "maxlongitude": Param(
+            -53,
+            type=["number", "null"],
+            title="Maximum longitude",
+            description="Eastern edge of the queried rectangle.",
+            minimum=-180,
+            maximum=180,
+        ),
+        "limit": Param(
+            20000,
+            type="integer",
+            title="Cap on earthquakes to download",
+            description=(
+                "A safety cap, not a filter: if the range matches more "
+                "earthquakes than this, the run fails instead of downloading a "
+                "truncated catalog. 0 means no cap — the whole window is "
+                "downloaded, split into several requests if it exceeds the "
+                "20000 the service allows per query."
+            ),
+            minimum=0,
+            maximum=20000,
+        ),
+        "mainshock": Param(
+            "largest",
+            type="string",
+            enum=["largest", "root"],
+            title="Mainshock definition",
+            description=(
+                "Which of the cluster's events is the mainshock. 'largest' is "
+                "the one with the highest magnitude, which is what Zaliapin & "
+                "Ben-Zion use; 'root' is the one that triggered the sequence. "
+                "They differ when there were foreshocks."
+            ),
+        ),
+        "seed": Param(
+            1,
+            type="integer",
+            title="Seed",
+            description=(
+                "Thinning is probabilistic: it shuffles the catalog and draws "
+                "which links go back to the background. Without fixing the seed "
+                "the results are not reproducible, so it is recorded in the "
+                "name of the files it produces."
+            ),
+            minimum=0,
+        ),
+        "n_randomizations": Param(
+            5,
+            type="integer",
+            title="Null-catalog shuffles",
+            description=(
+                "How many times the catalog is shuffled to estimate the "
+                "distribution of eta under pure chance. More shuffles give a "
+                "less noisy null, but each one is a full run of the nearest "
+                "neighbor."
+            ),
+            minimum=1,
+            maximum=50,
+        ),
+        # El tope de distancia padre-hijo. Sin él, un sismo grande "reclama" hijos
+        # a miles de km y el árbol encadena regiones que no tienen relación.
+        "r_max_km": Param(
+            None,
+            type=["number", "null"],
+            title="Parent-child distance cap (km)",
+            description=(
+                "A pair of events farther apart than this cannot be "
+                "parent-child. Null means no cap (the original behavior). In "
+                "'gk' mode it is an absolute ceiling on top of the "
+                "magnitude-dependent radius."
+            ),
+            minimum=1,
+        ),
+        "r_max_mode": Param(
+            "fixed",
+            type="string",
+            enum=["fixed", "gk"],
+            title="Distance cap mode",
+            description=(
+                "'fixed' uses r_max_km for every parent. 'gk' uses "
+                "r_max_k * 10^(0.1238*M + 0.983) km, where M is the parent's "
+                "magnitude (Gardner-Knopoff), and it is active even if "
+                "r_max_km is null."
+            ),
+        ),
+        "r_max_k": Param(
+            3.0,
+            type="number",
+            title="Gardner-Knopoff multiplier",
+            description="Only used when the cap mode is 'gk'.",
+            minimum=0.1,
+        ),
+        # Las features de sismicidad previa miran una vecindad del epicentro del
+        # sismo principal; el radio cambia los valores, así que va al nombre.
+        "prior_radius_km": Param(
+            PRIOR_RADIUS_KM,
+            type="number",
+            title="Prior-seismicity radius (km)",
+            description=(
+                "Radius around the mainshock epicenter within which earlier "
+                "events are counted for the n_prior_* features."
+            ),
+            minimum=1,
+        ),
+        "border_buffer_km": Param(
+            BORDER_BUFFER_KM,
+            type="number",
+            title="Border buffer (km)",
+            description=(
+                "A mainshock closer than this to the edge of the queried "
+                "rectangle is flagged near_border: it may have lost "
+                "aftershocks that fell outside."
+            ),
+            minimum=0,
+        ),
+        "horizon_days": Param(
+            horizons.HORIZON_DAYS,
+            type="number",
+            title="Prediction window T (days)",
+            description=(
+                "Length of the window the per-horizon targets look at: "
+                "y_aft counts the aftershocks between t hours and T days."
+            ),
+            minimum=1,
+        ),
+        "force": Param(
+            False,
+            type="boolean",
+            title="Force the run",
+            description=(
+                "Ignores every cache: downloads even if the source has not "
+                "changed, and re-requests the csv already in bronze."
+            ),
+        ),
+    },
+)
+def detector_replicas_api():
+    def query(params) -> dict:
+        return {
+            k: params[k]
+            for k in (
+                "starttime",
+                "endtime",
+                "minmagnitude",
+                "minlatitude",
+                "maxlatitude",
+                "minlongitude",
+                "maxlongitude",
+            )
+        }
+
+    def radius(params) -> dict:
+        """Los argumentos del tope de distancia, tal como los toma neighbors."""
+        return {
+            "r_max_km": params["r_max_km"],
+            "r_max_mode": params["r_max_mode"],
+            "r_max_k": params["r_max_k"],
+        }
+
+    def method(params) -> str:
+        """Sufijo de nombre de los archivos que dependen del tope."""
+        return method_suffix(**radius(params))
+
+    def delivery_method(params) -> str:
+        """Sufijo del entregable: el del tope más el de las features nuevas."""
+        return delivery_suffix(
+            **radius(params),
+            prior_radius_km=params["prior_radius_km"],
+            border_buffer_km=params["border_buffer_km"],
+        )
+
+    # Es la única tarea que habla con la red, y el USGS devuelve 5xx de vez en
+    # cuando. Los reintentos del cliente cubren un parpadeo de segundos; estos
+    # cubren una caída de un par de minutos, que es lo que tumbaba la corrida
+    # entera de las regiones por culpa de una sola de ellas.
+    @task(retries=2, retry_delay=timedelta(minutes=1))
+    def land_bronze(**context) -> str:
+        params = context["params"]
+
+        destination = bronze_path(**query(params))
+
+        if destination.exists() and not params["force"]:
+            log.info("Reused a csv already persisted.")
+            return str(destination)
+
+        csv = fetch(limit=params["limit"], **query(params))
+        bronze_write(destination, csv)
+        log.info("Downloaded the csv from the API to %s.", destination)
+        return str(destination)
+
+    @task
+    def refine_silver(bronze_file: str, **context) -> str:
+        params = context["params"]
+
+        destination = silver_path(**query(params))
+
+        if destination.exists() and not params["force"]:
+            log.info("Reused a silver parquet already persisted.")
+            return str(destination)
+
+        events = refine(bronze_load(Path(bronze_file)))
+        silver_write(destination, events)
+        log.info("Refined %d events to %s.", len(events), destination)
+        return str(destination)
+
+    @task
+    def estimate_mc(silver_file: str) -> dict:
+        """Mc del catálogo, más los b y d estándar."""
+        return estimate(silver_read(Path(silver_file)))
+
+    @task
+    def nearest_neighbor(silver_file: str, parameters: dict, **context) -> str:
+        params = context["params"]
+
+        destination = neighbors.neighbors_path(method=method(params), **query(params))
+        source = Path(silver_file)
+
+        if (
+            destination.exists()
+            and not params["force"]
+            and destination.stat().st_mtime >= source.stat().st_mtime
+        ):
+            log.info("Reused a parent forest already persisted.")
+            return str(destination)
+
+        paired = neighbors.nearest_neighbor(
+            silver_read(source),
+            b=parameters["b"],
+            d=parameters["d"],
+            mc=parameters["mc"],
+            **radius(params),
+        )
+        neighbors.neighbors_write(destination, paired)
+        return str(destination)
+
+    @task
+    def fit_eta_threshold(neighbors_file: str, **context) -> str:
+        params = context["params"]
+
+        destination = threshold_path(method=method(params), **query(params))
+        source = Path(neighbors_file)
+
+        if (
+            destination.exists()
+            and not params["force"]
+            and destination.stat().st_mtime >= source.stat().st_mtime
+        ):
+            log.info("Reused a threshold already fitted.")
+            return str(destination)
+
+        threshold = fit_threshold(neighbors.neighbors_read(source))
+        threshold_write(destination, threshold)
+        return str(destination)
+
+    @task
+    def randomize_catalog(silver_file: str, parameters: dict, **context) -> str:
+        params = context["params"]
+
+        destination = aftershocks.null_path(
+            seed=params["seed"],
+            n_repetitions=params["n_randomizations"],
+            method=method(params),
+            **query(params),
+        )
+        source = Path(silver_file)
+
+        # La semilla y las repeticiones ya están en el nombre del archivo, así
+        # que alcanza con comparar contra silver, que es el único insumo.
+        if (
+            destination.exists()
+            and not params["force"]
+            and destination.stat().st_mtime >= source.stat().st_mtime
+        ):
+            log.info("Reused a null catalog already persisted.")
+            return str(destination)
+
+        null = aftershocks.randomize_catalog(
+            silver_read(source),
+            b=parameters["b"],
+            d=parameters["d"],
+            mc=parameters["mc"],
+            n_repetitions=params["n_randomizations"],
+            seed=params["seed"],
+            **radius(params),
+        )
+        aftershocks.null_write(destination, null)
+        return str(destination)
+
+    @task
+    def thinning(neighbors_file: str, null_file: str, threshold_file: str, **context) -> str:
+        params = context["params"]
+
+        destination = aftershocks.aftershocks_path(
+            seed=params["seed"], method=method(params), **query(params)
+        )
+        sources = [Path(neighbors_file), Path(null_file), Path(threshold_file)]
+
+        if (
+            destination.exists()
+            and not params["force"]
+            and all(destination.stat().st_mtime >= f.stat().st_mtime for f in sources)
+        ):
+            log.info("Reused an aftershock classification already persisted.")
+            return str(destination)
+
+        threshold = threshold_read(Path(threshold_file))
+        paired = neighbors.neighbors_read(Path(neighbors_file))
+
+        # El nulo no entra en la clasificación: sirve para saber si la
+        # bimodalidad que se está usando para clasificar es real.
+        contrast = aftershocks.contrast_with_null(
+            paired,
+            aftershocks.null_read(Path(null_file)),
+            log10_eta0=threshold["log10_eta0"],
+        )
+
+        # El sorteo usa una semilla derivada de la del DAG: barajar el catálogo
+        # y sortear los enlaces son cosas distintas y no comparten el flujo.
+        classified, diagnostics = aftershocks.thin(
+            paired,
+            mixture=threshold["mixture"],
+            log10_eta0=threshold["log10_eta0"],
+            seed=params["seed"] + 1,
+        )
+        aftershocks.aftershocks_write(destination, classified)
+        log.info("Thinning: %s | contrast with the null: %s", diagnostics, contrast)
+        return str(destination)
+
+    @task
+    def build_clusters(aftershocks_file: str, **context) -> dict[str, str]:
+        params = context["params"]
+
+        keys = {
+            "seed": params["seed"],
+            "mainshock": params["mainshock"],
+            "method": method(params),
+            **query(params),
+        }
+        destination_events = clusters.events_path(**keys)
+        destination_summary = clusters.summary_path(**keys)
+        source = Path(aftershocks_file)
+
+        output = {"events": str(destination_events), "summary": str(destination_summary)}
+
+        if (
+            destination_events.exists()
+            and destination_summary.exists()
+            and not params["force"]
+            and min(destination_events.stat().st_mtime, destination_summary.stat().st_mtime)
+            >= source.stat().st_mtime
+        ):
+            log.info("Reused the clusters already built.")
+            return output
+
+        events, summary = clusters.build_clusters(
+            aftershocks.aftershocks_read(source),
+            mainshock_definition=params["mainshock"],
+        )
+        clusters.clusters_write(destination_events, events)
+        clusters.clusters_write(destination_summary, summary)
+
+        # No entra en el resultado: es el control que dice si los conteos son
+        # creíbles, contrastados contra una ley que no salió de estos datos.
+        log.info("Productivity: %s", clusters.productivity(summary))
+        return output
+
+    @task
+    def build_features(
+        clusters_files: dict[str, str],
+        silver_file: str,
+        parameters: dict,
+        threshold_file: str,
+        **context,
+    ) -> dict[str, str]:
+        """Suma al resumen las columnas causales, sin tocar las que ya tenía."""
+        params = context["params"]
+
+        destination = features.features_path(
+            seed=params["seed"],
+            mainshock=params["mainshock"],
+            method=delivery_method(params),
+            **query(params),
+        )
+        sources = [Path(clusters_files["summary"]), Path(silver_file), Path(threshold_file)]
+        output = {"events": clusters_files["events"], "summary": str(destination)}
+
+        if (
+            destination.exists()
+            and not params["force"]
+            and all(destination.stat().st_mtime >= f.stat().st_mtime for f in sources)
+        ):
+            log.info("Reused the features already built.")
+            return output
+
+        edges = [
+            params[k]
+            for k in ("minlatitude", "maxlatitude", "minlongitude", "maxlongitude")
+        ]
+        # Sin rectángulo completo (planeta entero) no hay borde que medir.
+        bbox = tuple(edges) if all(e is not None for e in edges) else None
+
+        enriched = features.build_features(
+            clusters.clusters_read(sources[0]),
+            silver_read(sources[1]),
+            mc=parameters["mc"],
+            log10_eta0=threshold_read(sources[2])["log10_eta0"],
+            starttime=params["starttime"],
+            prior_radius_km=params["prior_radius_km"],
+            bbox=bbox,
+            border_buffer_km=params["border_buffer_km"],
+        )
+        clusters.clusters_write(destination, enriched)
+        return output
+
+    @task
+    def publish_csv(clusters_files: dict[str, str], **context) -> dict[str, str]:
+        """El entregable: los dos csv, y el chequeo de calidad sobre ellos.
+
+        Es la única tarea que escribe csv. Las anteriores usan parquet porque se
+        leen entre sí y ya vienen tipadas; ésta escribe el formato que se abre a
+        mano para mirarlo y defenderlo.
+
+        Y valida antes de dar la corrida por buena: si la clave repite, si
+        quedaron menos filas de las que hacen falta o si alguna columna quedó
+        entera en nulo, la tarea falla. Un dataset roto que se publica en verde
+        es peor que una corrida en rojo, porque el error aparece recién cuando
+        alguien ya construyó algo encima.
+        """
+        params = context["params"]
+        keys = {
+            "seed": params["seed"],
+            "mainshock": params["mainshock"],
+            "method": delivery_method(params),
+            **query(params),
+        }
+
+        destinations = {
+            "dataset": str(delivery.dataset_path(**keys)),
+            "events": str(delivery.events_path(**keys)),
+        }
+
+        report = delivery.publish(
+            clusters.clusters_read(Path(clusters_files["events"])),
+            clusters.clusters_read(Path(clusters_files["summary"])),
+            destinations,
+        )
+
+        log.info("Dataset published to %s | quality: %s", destinations["dataset"], report)
+        return destinations
+
+    @task
+    def publish_horizons(clusters_files: dict[str, str], **context) -> str:
+        """Los objetivos por horizonte, en un csv largo aparte (ver `sismos.horizons`)."""
+        params = context["params"]
+        destination = horizons.horizons_path(
+            seed=params["seed"],
+            mainshock=params["mainshock"],
+            method=delivery_method(params),
+            horizon_days=params["horizon_days"],
+            **query(params),
+        )
+
+        summary = clusters.clusters_read(Path(clusters_files["summary"]))
+        table = horizons.build_horizons(
+            summary,
+            clusters.clusters_read(Path(clusters_files["events"])),
+            endtime=params["endtime"],
+            horizon_days=params["horizon_days"],
+        )
+        horizons.check_invariants(table, summary, params["horizon_days"])
+
+        delivery.write_csv(destination, table)
+        log.info("Horizons published to %s (%d rows).", destination, len(table))
+        return str(destination)
+
+    silver_file = refine_silver(land_bronze())
+    parameters = estimate_mc(silver_file)
+    neighbors_file = nearest_neighbor(silver_file, parameters)
+    threshold_file = fit_eta_threshold(neighbors_file)
+
+    clusters_files = build_clusters(
+        thinning(
+            neighbors_file,
+            randomize_catalog(silver_file, parameters),
+            threshold_file,
+        )
+    )
+
+    enriched_files = build_features(clusters_files, silver_file, parameters, threshold_file)
+    publish_csv(enriched_files)
+    publish_horizons(enriched_files)
+
+
+# Sin esta llamada el DAG no queda registrado: el decorador @dag sólo devuelve
+# una factory, es invocarla lo que lo publica en el DagBag.
+detector_replicas_api()

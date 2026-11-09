@@ -1,0 +1,47 @@
+[
+ {
+  "region": "andes",
+  "mc": 4.5,
+  "descargados_usgs": 17498,
+  "silver_limpios": 17498,
+  "sobre_mc": 6751,
+  "eventos_publicados": 6751,
+  "secuencias": 4423
+ },
+ {
+  "region": "japan",
+  "mc": 4.6,
+  "descargados_usgs": 21199,
+  "silver_limpios": 21199,
+  "sobre_mc": 8375,
+  "eventos_publicados": 8375,
+  "secuencias": 4246
+ },
+ {
+  "region": "philippines",
+  "mc": 4.7,
+  "descargados_usgs": 11861,
+  "silver_limpios": 11861,
+  "sobre_mc": 3609,
+  "eventos_publicados": 3609,
+  "secuencias": 2169
+ },
+ {
+  "region": "sumatra_java",
+  "mc": 4.6,
+  "descargados_usgs": 18416,
+  "silver_limpios": 18416,
+  "sobre_mc": 8200,
+  "eventos_publicados": 8200,
+  "secuencias": 3947
+ },
+ {
+  "region": "mexico_ca",
+  "mc": 4.2,
+  "descargados_usgs": 18129,
+  "silver_limpios": 18129,
+  "sobre_mc": 10578,
+  "eventos_publicados": 10578,
+  "secuencias": 6507
+ }
+]

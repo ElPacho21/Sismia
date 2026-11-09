@@ -1,0 +1,112 @@
+{
+  "_fuente": "Salidas impresas del notebook 'Entrega 3-Definitivo.ipynb' (celdas 30, 68, 73, 75, 80, 81, 86). Redondeados como en el notebook.",
+  "tolerancia": 0.0006,
+  "piso": {
+    "f1_validacion": 0.235,
+    "desvio_validacion": 0.001,
+    "f1_test": 0.236,
+    "accuracy_test": 0.891
+  },
+  "final": {
+    "alpha": 0.001,
+    "empuje": 0.4,
+    "f1_validacion": 0.44,
+    "desvio_validacion": 0.024,
+    "f1_test": 0.5,
+    "accuracy_test": 0.751
+  },
+  "avisos_test": {
+    "con_replicas": 466,
+    "avisados_pct": 59.7,
+    "falsas_alarmas": 792,
+    "avisos_correctos": 278
+  },
+  "reporte_test": {
+    "ninguna (0)": {
+      "precision": 0.941,
+      "recall": 0.791,
+      "support": 3793
+    },
+    "pocas (1–2)": {
+      "precision": 0.161,
+      "recall": 0.434,
+      "support": 343
+    },
+    "moderadas (3–10)": {
+      "precision": 0.274,
+      "recall": 0.362,
+      "support": 94
+    },
+    "muchas (11+)": {
+      "precision": 0.778,
+      "recall": 0.483,
+      "support": 29
+    }
+  },
+  "acierto_por_tramo_test": {
+    "4–5": 85.2,
+    "5–6": 40.4,
+    "6–7": 36.4,
+    "7 o más": 72.7
+  },
+  "coeficientes": {
+    "mag_sobre_mc_por_punto": 2.025,
+    "profundidad_por_km": -0.01,
+    "multiplicador_por_punto": 7.573
+  },
+  "particion": {
+    "entrenamiento": 17033,
+    "test": 4259
+  },
+  "comparacion_validacion": {
+    "_fuente": "Celdas 30, 33, 34, 40, 48, 57 del notebook (f1 macro medio y desvío en validación temporal, 5 folds); la última fila es la celda 68.",
+    "piso (siempre ninguna)": [
+      0.235,
+      0.001
+    ],
+    "regresión logística": [
+      0.378,
+      0.037
+    ],
+    "regresión logística (balanced)": [
+      0.326,
+      0.022
+    ],
+    "Poisson (mag + prof)": [
+      0.442,
+      0.02
+    ],
+    "Poisson (mag_sobre_mc + prof)": [
+      0.444,
+      0.021
+    ],
+    "regresión logística (mag_sobre_mc)": [
+      0.399,
+      0.028
+    ],
+    "regresión logística balanced (mag_sobre_mc)": [
+      0.355,
+      0.025
+    ],
+    "random forest": [
+      0.371,
+      0.055
+    ],
+    "random forest (balanced)": [
+      0.325,
+      0.029
+    ],
+    "gradient boosting (balanced)": [
+      0.32,
+      0.015
+    ],
+    "Binomial Negativa (mag_sobre_mc + prof)": [
+      0.235,
+      0.001
+    ],
+    "Poisson elegido (alpha=0,001, empuje=0,4)": [
+      0.44,
+      0.024
+    ]
+  }
+}
