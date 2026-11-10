@@ -189,7 +189,7 @@ def grafico_explora(datos, regiones, nombres_region):
                              alt.Tooltip("p_muchas:Q", title="P(muchas)", format=".0%"),
                              alt.Tooltip("particion:N", title="Partición")])
             .add_params(zona))
-    panorama = alt.layer(cajas, nombres, mapa).properties(width=760, height=380)
+    panorama = alt.layer(cajas, nombres, mapa).properties(width=680, height=380)
 
     # qué dijo el modelo para lo que realmente fue cada clase (se mueve con todos los controles y con la zona dibujada)
     resultado = (alt.Chart(datos)
@@ -202,9 +202,11 @@ def grafico_explora(datos, regiones, nombres_region):
                          order=alt.Order("pred_i:Q", sort="ascending"),
                          tooltip=[alt.Tooltip("real:N", title="Real"), alt.Tooltip("pred:N", title="Dijo el modelo"),
                                   alt.Tooltip("count():Q", title="Secuencias")])
-                 .properties(width=760, height=170))
+                 .properties(width=680, height=170))
 
-    return alt.vconcat(panorama, resultado, spacing=22).add_params(p_region, p_mag, p_ver, p_color)
+    # la escala de color de las barras es independiente (la leyenda ya está en el mapa); es la misma escala de clases
+    return alt.vconcat(panorama, resultado, spacing=22).resolve_scale(color="independent").add_params(
+        p_region, p_mag, p_ver, p_color)
 
 
 # =================================================================== textos que dependen de números

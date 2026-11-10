@@ -32,3 +32,10 @@ Sólo cambios **reales**, con el motivo. Si un gráfico no cambió, no figura.
   muestra tramos con al menos 10 secuencias. La v2 cita el punto del tramo +2,5 a +3,0 (128), que se ve directo.
 - **Datos del mapa.** La v1 mandaba 8 MB de filas (con una columna `acierta`, un `id` y coordenadas con 3 decimales
   que no se usan). La v2 saca esas columnas y redondea, y la partición se calcula dentro del gráfico.
+
+## Explorá — ancho y leyendas
+- **v1 → v2, ancho.** La v1 tenía el mapa y las barras de 760 px de ancho; con la leyenda no entraban en la columna de la
+  página y aparecía una barra de desplazamiento horizontal dentro del gráfico. La v2 los pasa a 680 px.
+- **v1 → v2, leyenda de color.** Las barras compartían la escala de color con el mapa, y Vega avisaba por consola de una
+  leyenda en conflicto («Conflicting legend property disable»). La v2 declara la escala de color de las barras como
+  independiente (con el mismo dominio y los mismos colores); la leyenda sigue estando una sola vez, en el mapa.

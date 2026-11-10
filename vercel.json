@@ -1,0 +1,10 @@
+{
+  "framework": null,
+  "installCommand": "cd app && npm install",
+  "buildCommand": "cd app && npm run build",
+  "outputDirectory": "app/dist",
+  "rewrites": [{ "source": "/api/(.*)", "destination": "/api/index" }],
+  "functions": {
+    "api/index.py": { "includeFiles": "{modelo_core.py,app/public/data/model.json}" }
+  }
+}

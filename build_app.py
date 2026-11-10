@@ -20,7 +20,8 @@ import pandas as pd
 import yaml
 from sklearn.base import clone
 from sklearn.inspection import permutation_importance
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, f1_score, make_scorer
+from scipy.stats import pearsonr, spearmanr
+from sklearn.metrics import accuracy_score, recall_score, classification_report, confusion_matrix, f1_score, make_scorer
 from sklearn.model_selection import TimeSeriesSplit
 
 import modelo_core
@@ -127,7 +128,58 @@ def comparar_modelos(df, corte):
     return tabla
 
 
-def verificar_contra_notebook(medidas, comparacion):
+def ajuste_hiperparametros(df, corte):
+    """Las dos tablas de ajuste de la Entrega 3: alpha (empuje 0) y el trade-off del empuje (alpha elegido)."""
+    X, y = df[["mainshock_mag", "mainshock_depth", "region_mc", "region", "n_prior_30d"]], df["n_aftershocks"]
+    X_tr, y_tr = X.iloc[:corte], y.iloc[:corte]
+    folds = list(TimeSeriesSplit(n_splits=5).split(X_tr))
+
+    def validar(alpha, empuje):
+        f1s, recalls = [], {c: [] for c in CLASES}
+        for e, v in folds:
+            pred = modelo_final(alpha, empuje).fit(X_tr.iloc[e], y_tr.iloc[e]).predict(X_tr.iloc[v])
+            real = a_intervalo(y_tr.iloc[v])
+            f1s.append(f1m(real, pred))
+            for c in CLASES:
+                recalls[c].append(recall_score(real, pred, labels=[c], average="macro", zero_division=0))
+        return [float(np.mean(f1s)), float(np.std(f1s))] + [float(np.mean(recalls[c])) for c in CLASES]
+
+    alphas = {str(a): validar(a, 0.0)[:2] for a in (0.001, 0.01, 0.1, 1, 10)}
+    trade_off = {str(e): validar(ALPHA, e) for e in (0, 0.2, 0.3, 0.4, 0.5)}
+    folds_info = [{"entrena_hasta": str(df["mainshock_time"].iloc[e[-1]].date()),
+                   "valida_desde": str(df["mainshock_time"].iloc[v[0]].date()),
+                   "valida_hasta": str(df["mainshock_time"].iloc[v[-1]].date()),
+                   "filas_entrenamiento": int(len(e)), "filas_validacion": int(len(v))} for e, v in folds]
+    return {"alpha": alphas, "trade_off_empuje": trade_off, "folds": folds_info}
+
+
+def hipotesis(df):
+    """Números de «Lo que encontramos»: H1 (se sostuvo) y H4 (no se sostuvo), con el dataset actual."""
+    y = df["n_aftershocks"]
+    tramos = pd.cut(df["mainshock_mag"], TRAMOS[0], labels=TRAMOS[1], right=False)
+    media = y.mean()
+    eta2 = float(sum(len(g) * (g.mean() - media) ** 2 for _, g in y.groupby(tramos, observed=True))
+                 / ((y - media) ** 2).sum())
+    por_tramo = y.groupby(tramos, observed=True).agg(["size", "mean"])
+    t = graficos.tabla_h1(df)
+    grandes = df[df["mainshock_mag"] >= 6]
+    someros = grandes[grandes["mainshock_depth"] < 70]
+    return {
+        "h1": {"pearson": float(pearsonr(df["mainshock_mag"], y)[0]), "spearman": float(spearmanr(df["mainshock_mag"], y)[0]),
+               "eta2": eta2,
+               "tramos": [{"tramo": k, "secuencias": int(r["size"]), "media": float(r["mean"])} for k, r in por_tramo.iterrows()],
+               "multiplicador_empirico": graficos.pendiente_h1(t), "tramos_grafico": int(len(t))},
+        "h4": {"n": int(len(grandes)), "pearson": float(pearsonr(grandes["mainshock_mag"], grandes["n_aftershocks"])[0]),
+               "spearman": float(spearmanr(grandes["mainshock_mag"], grandes["n_aftershocks"])[0]),
+               "coef_variacion": float(grandes["n_aftershocks"].std() / grandes["n_aftershocks"].mean()),
+               "minimo": int(grandes["n_aftershocks"].min()), "maximo": int(grandes["n_aftershocks"].max()),
+               "someros_n": int(len(someros)),
+               "someros_pearson": float(pearsonr(someros["mainshock_mag"], someros["n_aftershocks"])[0]),
+               "someros_spearman": float(spearmanr(someros["mainshock_mag"], someros["n_aftershocks"])[0])},
+    }
+
+
+def verificar_contra_notebook(medidas, comparacion, ajuste):
     """Compara contra los números del notebook; si algo se corre más que la tolerancia, el build falla."""
     ref = json.loads((RAIZ / "tests" / "reference_metrics.json").read_text(encoding="utf8"))
     tol = ref["tolerancia"]
@@ -163,6 +215,12 @@ def verificar_contra_notebook(medidas, comparacion):
             print(f"AVISO: {nombre}: notebook {valores}, este entorno {[round(x, 3) for x in comparacion[nombre]]}")
         comparar(f"comparación {nombre} (f1)", media, comparacion[nombre][0], flojo)
         comparar(f"comparación {nombre} (desvío)", desvio, comparacion[nombre][1], flojo)
+    for a, (f1, sd) in ((k, v) for k, v in ref["ajuste_alpha"].items() if not k.startswith("_")):
+        comparar(f"ajuste alpha={a} f1", f1, ajuste["alpha"][a][0])
+        comparar(f"ajuste alpha={a} desvío", sd, ajuste["alpha"][a][1])
+    for e, valores in ((k, v) for k, v in ref["trade_off_empuje"].items() if not k.startswith("_")):
+        for i, nombre in enumerate(["f1", "desvío", "recall ninguna", "recall pocas", "recall moderadas", "recall muchas"]):
+            comparar(f"trade-off empuje={e} {nombre}", valores[i], ajuste["trade_off_empuje"][e][i])
     if fallas:
         sys.exit("EL BUILD NO REPRODUCE EL NOTEBOOK DE LA ENTREGA 3:\n  - " + "\n  - ".join(fallas))
     print("OK: el modelo reproduce los números del notebook (tolerancia", tol, ")")
@@ -293,7 +351,8 @@ def main():
     df, corte = cargar()
     modelo, X, medidas, real, pred = entrenar_y_medir(df, corte)
     medida_aca = comparar_modelos(df, corte)
-    verificar_contra_notebook(medidas, medida_aca)
+    ajuste = ajuste_hiperparametros(df, corte)
+    verificar_contra_notebook(medidas, medida_aca, ajuste)
     # la app muestra la tabla del notebook; lo medido en este entorno queda aparte
     ref = json.loads((RAIZ / "tests" / "reference_metrics.json").read_text(encoding="utf8"))["comparacion_validacion"]
     comparacion = {k: v for k, v in ref.items() if not k.startswith("_")}
@@ -310,7 +369,8 @@ def main():
         sys.exit("LA FÓRMULA NO COINCIDE CON EL MODELO DEL NOTEBOOK")
 
     guardar("model.json", fm)
-    guardar("metricas.json", {**medidas, "comparacion_validacion": comparacion, "comparacion_medida_en_build": medida_aca})
+    guardar("metricas.json", {**medidas, "comparacion_validacion": comparacion, "comparacion_medida_en_build": medida_aca, "ajuste": ajuste})
+    guardar("hipotesis.json", hipotesis(df))
     guardar("paleta.json", {"clases": CLASES, "color_clase": COLOR_CLASE, "color_particion": COLOR_PARTICION})
     guardar("pasos_filtrado.json", json.loads((DATOS / "filter_steps.json").read_text(encoding="utf8")))
     exportar_secuencias(df, modelo, X)

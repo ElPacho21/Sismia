@@ -14,11 +14,11 @@ casos_avisos = json.loads((RAIZ / "tests" / "casos_avisos.json").read_text(encod
 
 
 def predecir(magnitud, profundidad, region):
-    return cliente.post("/predict", json={"magnitud": magnitud, "profundidad": profundidad, "region": region})
+    return cliente.post("/api/predict", json={"magnitud": magnitud, "profundidad": profundidad, "region": region})
 
 
 def test_health():
-    r = cliente.get("/health")
+    r = cliente.get("/api/health")
     assert r.status_code == 200 and r.json()["estado"] == "ok"
 
 
@@ -75,11 +75,11 @@ def test_avisos_de_casos_que_el_modelo_no_vio(c):
     {},
 ])
 def test_se_rechaza_lo_que_no_tiene_sentido(cuerpo):
-    r = cliente.post("/predict", json=cuerpo)
+    r = cliente.post("/api/predict", json=cuerpo)
     assert r.status_code == 422
 
 
 def test_cors_permite_llamar_desde_la_pagina():
-    r = cliente.options("/predict", headers={"Origin": "https://sisimia.vercel.app",
+    r = cliente.options("/api/predict", headers={"Origin": "https://sisimia.vercel.app",
                                               "Access-Control-Request-Method": "POST"})
     assert r.headers["access-control-allow-origin"] in ("*", "https://sisimia.vercel.app")

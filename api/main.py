@@ -2,8 +2,8 @@
 
     uvicorn api.main:app --reload
 
-  GET  /health   despierta la función (arranque en frío) y dice qué modelo hay cargado
-  POST /predict  {magnitud, profundidad, region} -> clase, probabilidades, avisos
+  GET  /api/health   despierta la función (arranque en frío) y dice qué modelo hay cargado
+  POST /api/predict  {magnitud, profundidad, region} -> clase, probabilidades, avisos
 
 La fórmula está en modelo_core.py (la misma que implementa el JS del navegador).
 Política para casos raros: se PERMITE calcular y se AVISA; sólo se rechaza lo que no
@@ -15,7 +15,7 @@ import sys
 from math import isfinite
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import APIRouter, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, field_validator
 
@@ -52,12 +52,15 @@ class Caso(BaseModel):
         return v
 
 
-@app.get("/health")
+router = APIRouter(prefix="/api")      # en Vercel el sitio y la API comparten dominio: todo lo de la API cuelga de /api
+
+
+@router.get("/health")
 def health():
     return {"estado": "ok", "modelo": MODELO["version"]}
 
 
-@app.post("/predict")
+@router.post("/predict")
 def predict(caso: Caso):
     if caso.region not in MODELO["mc_por_region"]:
         raise HTTPException(422, f"Región desconocida: {caso.region!r}. Opciones: {sorted(MODELO['mc_por_region'])}.")
@@ -74,3 +77,6 @@ def predict(caso: Caso):
         "version_modelo": MODELO["version"],
         "origen": "servidor",
     }
+
+
+app.include_router(router)

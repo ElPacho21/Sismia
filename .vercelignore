@@ -1,0 +1,19 @@
+# patrones anclados a la raíz (sin "/" delante, "data" también excluiría app/public/data)
+/.venv
+/data
+/notebooks
+/pipeline
+/docs
+/tests
+/*.ipynb
+/*.csv
+/build_app.py
+/graficos.py
+/palette.py
+/referencia_sklearn.py
+/requirements-build.txt
+/app/node_modules
+/app/dist
+/app/tests
+/.env.local
+/.vercel
