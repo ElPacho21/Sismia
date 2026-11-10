@@ -347,6 +347,27 @@ def exportar_graficos(df, medidas, comparacion):
     guardar("textos.json", graficos.textos(df, medidas, comparacion))
 
 
+def exportar_globo(df, modelo, X):
+    """Datos del globo, en columnas y en el mismo orden que explora_filas.json (el detalle se lee de ahí)."""
+    cl = {c: i for i, c in enumerate(CLASES)}
+    regiones = [r["nombre"] for r in json.loads((SALIDA / "regiones.json").read_text(encoding="utf8"))]
+    eventos = json.loads((SALIDA / "eventos_secuencias.json").read_text(encoding="utf8"))
+    animable = df["cluster_id"].isin(eventos.keys())
+    top = df[animable].sort_values("n_events", ascending=False).head(15)
+    guardar("globo.json", {
+        "regiones": regiones,
+        "lat": df["mainshock_lat"].round(3).tolist(), "lon": df["mainshock_lon"].round(3).tolist(),
+        "mag": df["mainshock_mag"].round(2).tolist(),
+        "real": [cl[c] for c in a_intervalo(df["n_aftershocks"])], "pred": [cl[c] for c in modelo.predict(X)],
+        "test": (df["particion"] == "test").astype(int).tolist(),
+        "region": df["region"].map({r: i for i, r in enumerate(regiones)}).tolist(),
+        "id": [c if a else "" for c, a in zip(df["cluster_id"], animable)],   # sólo las secuencias animables
+        "destacadas": [{"indice": int(i), "id": r.cluster_id, "lugar": r.mainshock_place, "mag": float(r.mainshock_mag),
+                        "fecha": r.mainshock_time.strftime("%Y-%m-%d"), "eventos": int(r.n_events)}
+                       for i, r in top.iterrows()],
+    })
+
+
 def main():
     df, corte = cargar()
     modelo, X, medidas, real, pred = entrenar_y_medir(df, corte)
@@ -377,6 +398,7 @@ def main():
     exportar_graficos(df, medidas, comparacion)
     exportar_regiones(df, real, pred, corte)
     n_arch, n_ev, n_seq = exportar_eventos()
+    exportar_globo(df, modelo, X)
     guardar("golden.json", golden, RAIZ / "tests")
     print(f"Listo. {len(df)} secuencias; {n_ev} eventos en {n_seq} secuencias animables ({n_arch} archivos de región).")
 

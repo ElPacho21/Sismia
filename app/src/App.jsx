@@ -7,7 +7,8 @@ import ComoDatos from "./componentes/ComoDatos.jsx";
 import ComoHallazgo from "./componentes/ComoHallazgo.jsx";
 import ComoModelo from "./componentes/ComoModelo.jsx";
 import Explora from "./componentes/Explora.jsx";
-import ProbaModelo from "./componentes/ProbaModelo.jsx";
+import GloboPuerta from "./componentes/GloboPuerta.jsx";
+import ProbaModelo, { EJEMPLOS, usePrediccion } from "./componentes/ProbaModelo.jsx";
 
 const NAV = [
   ["proyecto", "El proyecto"],
@@ -15,20 +16,32 @@ const NAV = [
   ["encontramos", "Lo que encontramos"],
   ["modelo", "El modelo"],
   ["explora", "Explorá"],
+  ["globo", "Globo"],
   ["proba", "Probá el modelo"],
 ];
 
 export default function App() {
   const [d, setD] = useState(null);
   const [error, setError] = useState(null);
+  // lo que comparten Explorá y el globo (filtros) y «Probá el modelo» y el globo (el caso cargado)
+  const [filtros, setFiltros] = useState(null);
+  const [entrada, setEntrada] = useState(EJEMPLOS[0]);
 
   useEffect(() => {
     despertarApi(); // la función del servidor arranca en frío: se la despierta ya
-    cargarDatos().then(setD).catch((e) => setError(e.message));
+    cargarDatos()
+      .then((datos) => {
+        const o = datos.textos.opciones;
+        setFiltros({ region: o.region_inicial, magMin: o.mag_min_inicial, ver: o.ver[0], colorPor: o.color[0] });
+        setD(datos);
+      })
+      .catch((e) => setError(e.message));
   }, []);
 
+  const prediccion = usePrediccion(d?.modelo ?? null, entrada);
+
   if (error) return <p className="error centro">No se pudo cargar la aplicación: {error}</p>;
-  if (!d) return <p className="cargando centro">Cargando…</p>;
+  if (!d || !filtros) return <p className="cargando centro">Cargando…</p>;
 
   const { textos, metricas, hipotesis, pasos, regiones, modelo, paleta } = d;
   const total = metricas.particion.entrenamiento + metricas.particion.test;
@@ -120,8 +133,9 @@ export default function App() {
           </Tallo>
         </div>
 
-        <Explora />
-        <ProbaModelo modelo={modelo} paleta={paleta} />
+        <Explora filtros={filtros} setFiltros={setFiltros} />
+        <GloboPuerta d={d} filtros={filtros} setFiltros={setFiltros} entrada={entrada} setEntrada={setEntrada} prediccion={prediccion} />
+        <ProbaModelo modelo={modelo} paleta={paleta} entrada={entrada} setEntrada={setEntrada} prediccion={prediccion} />
       </main>
 
       <footer className="pie">

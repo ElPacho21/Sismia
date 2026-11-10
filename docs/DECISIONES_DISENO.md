@@ -39,3 +39,18 @@ Sólo cambios **reales**, con el motivo. Si un gráfico no cambió, no figura.
 - **v1 → v2, leyenda de color.** Las barras compartían la escala de color con el mapa, y Vega avisaba por consola de una
   leyenda en conflicto («Conflicting legend property disable»). La v2 declara la escala de color de las barras como
   independiente (con el mismo dominio y los mismos colores); la leyenda sigue estando una sola vez, en el mapa.
+
+## Globo 3D — `app/src/globo/escena.js`
+- **v1 → v2, el color de la esfera.** La v1 salía gris azulada en vez de casi negra: los materiales propios de three
+  (esfera, líneas) convertían los colores de lineal a sRGB, y mis shaders no, así que no coincidían. La v2 fija
+  `outputColorSpace = LinearSRGBColorSpace`: ningún color se convierte y todos salen como en la paleta.
+- **v1 → v2, el diseño de la página.** La v1 ponía el globo en una columna angosta con el panel a la derecha, y las
+  regiones quedaban recortadas en los bordes. La v2 pone el globo a todo el ancho y el panel debajo, en tres columnas
+  (filtros, animación, prueba del modelo).
+- **v1 → v2, la vista inicial.** La v1 arrancaba mirando el Pacífico, casi vacío (las regiones quedaban en los
+  bordes). La v2 arranca sobre Asia-Pacífico, donde se ven tres de las cinco regiones.
+- **v1 → v2, el tamaño de los eventos en la animación.** En la v1 los eventos de una secuencia usaban el mismo tamaño
+  que los puntos del mapa; con la cámara cerca (se acerca a la secuencia), los 2.545 eventos de la secuencia de Japón se
+  fundían en una mancha verde. La v2 achica el núcleo (×0,3) y el anillo (×0,45) en el modo secuencia.
+- **Animación: tiempo logarítmico.** Decisión del grupo: el reloj corre en `log10(1 + horas)` para que las primeras horas
+  ocupen tanto como los últimos meses (el estallido y la cola larga se ven los dos). El reloj muestra el tiempo real.

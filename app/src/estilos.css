@@ -464,3 +464,242 @@ summary:focus-visible {
   color: var(--suave);
   border-top: 1px solid var(--linea);
 }
+
+/* ---------- globo ---------- */
+.globo-intro {
+  max-width: 46em;
+}
+.globo-reserva {
+  min-height: 560px;
+}
+.globo-cargando,
+.globo-cargando-fuera {
+  color: #9fb0cc;
+  text-align: center;
+  padding: 4rem 1rem;
+}
+.globo-cargando-fuera {
+  color: var(--suave);
+}
+.globo-aviso {
+  background: var(--aviso-fondo);
+  border-left: 4px solid var(--aviso);
+  padding: 1rem 1.2rem;
+  border-radius: 6px;
+}
+.globo-grilla {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.2rem;
+}
+.globo-caja {
+  position: relative;
+  height: 620px;
+  background: #04070d;
+  border-radius: 12px;
+  overflow: hidden;
+  touch-action: none;
+}
+.globo-caja canvas {
+  width: 100%;
+  height: 100%;
+}
+.globo-caja canvas:focus-visible {
+  outline: 3px solid #5fb7c6;
+  outline-offset: -3px;
+}
+.globo-etiqueta {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  font-size: 0.72rem;
+  color: #c3d0e6;
+  background: rgba(4, 7, 13, 0.62);
+  padding: 2px 7px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.globo-etiqueta.elegida {
+  color: #fff;
+  outline: 1px solid #fff;
+}
+.globo-detalle {
+  position: absolute;
+  z-index: 3;
+  max-width: 300px;
+  pointer-events: none;
+  background: rgba(10, 16, 28, 0.94);
+  color: #e6edf8;
+  border: 1px solid #2b3b57;
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+.globo-detalle span,
+.globo-detalle em {
+  display: block;
+}
+.globo-detalle strong {
+  display: block;
+  margin-bottom: 0.2rem;
+}
+.globo-detalle em {
+  margin-top: 0.3rem;
+  color: #8fc8d2;
+}
+.globo-detalle .ojo {
+  color: #f1b36b;
+}
+.globo-detalle i {
+  display: inline-block;
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 50%;
+  margin-right: 0.3rem;
+}
+.globo-leyenda {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  margin: 0;
+  padding: 0.5rem 0.7rem;
+  list-style: none;
+  background: rgba(4, 7, 13, 0.7);
+  border-radius: 8px;
+  color: #c3d0e6;
+  font-size: 0.75rem;
+}
+.globo-leyenda i {
+  display: inline-block;
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  margin-right: 0.4rem;
+}
+.globo-leyenda .chico {
+  margin-top: 0.3rem;
+  color: #8393ad;
+}
+.globo-reloj {
+  position: absolute;
+  left: 50%;
+  top: 14px;
+  transform: translateX(-50%);
+  text-align: center;
+  background: rgba(4, 7, 13, 0.75);
+  border-radius: 8px;
+  padding: 0.4rem 1rem;
+  color: #fff;
+}
+.globo-reloj strong {
+  display: block;
+  font-size: 1.5rem;
+  font-variant-numeric: tabular-nums;
+}
+.globo-reloj span {
+  font-size: 0.75rem;
+  color: #aebbd2;
+}
+.globo-teclas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+  margin-top: 0.6rem;
+  font-size: 0.82rem;
+  color: var(--suave);
+}
+.globo-teclas button {
+  min-width: 2.2rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #c9c6bb;
+  background: var(--papel);
+  border-radius: 6px;
+  font: inherit;
+  cursor: pointer;
+}
+.globo-teclas button:hover {
+  background: var(--acento-fondo);
+}
+.globo-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+.globo-panel > section {
+  background: var(--papel);
+  border: 1px solid var(--linea);
+  border-radius: 10px;
+  padding: 1rem;
+  padding-top: 0;
+}
+.globo-panel h3 {
+  margin: 0.9rem 0 0.6rem;
+  font-size: 1rem;
+}
+.globo-panel label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 0.6rem;
+}
+.globo-panel select,
+.globo-panel input[type="number"] {
+  display: block;
+  width: 100%;
+  margin-top: 0.25rem;
+  padding: 0.35rem 0.5rem;
+  font: inherit;
+  border: 1px solid #c9c6bb;
+  border-radius: 6px;
+  background: var(--papel);
+}
+.globo-panel input[type="range"] {
+  width: 100%;
+  accent-color: var(--acento);
+}
+.globo-panel .formulario,
+.globo-panel .resultado {
+  border: none;
+  padding: 0;
+}
+.globo-panel .resultado.compacta .clase {
+  font-size: 1.15rem;
+}
+.globo-panel .barras li {
+  grid-template-columns: 7.5em 1fr 3.6em;
+  font-size: 0.8rem;
+}
+.globo-reproductor {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+.globo-reproductor button {
+  border: 1px solid #c9c6bb;
+  background: var(--papel);
+  border-radius: 6px;
+  padding: 0.3rem 0.6rem;
+  font: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.globo-reproductor button:hover {
+  background: var(--acento-fondo);
+}
+.aviso-chico {
+  background: var(--aviso-fondo);
+  border-left: 4px solid var(--aviso);
+  padding: 0.5rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

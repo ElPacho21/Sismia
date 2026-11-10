@@ -132,7 +132,7 @@ def filas_explora(secuencias):
     s = secuencias["columnas"]
     cl = secuencias["clases"]
     d = pd.DataFrame({"id": s["id"], "lugar": s["lugar"], "region": s["region"], "fecha": s["fecha"],
-                      "lat": np.round(s["lat"], 2), "lon": np.round(s["lon"], 2), "mag": s["mag"], "prof": s["prof"],
+                      "lat": s["lat"], "lon": s["lon"], "mag": s["mag"], "prof": s["prof"],
                       "replicas": s["replicas"], "mu": np.round(s["mu"], 3), "test": s["test"]})
     d["real_i"], d["pred_i"] = s["real"], s["pred"]
     d["real"], d["pred"] = d["real_i"].map(lambda i: cl[i]), d["pred_i"].map(lambda i: cl[i])
@@ -239,6 +239,8 @@ def textos(df, medidas, comparacion):
         "titulo_modelo": (f"El modelo {'más que duplica' if veces >= 2 else 'supera'} al piso: f1 de {es(f_test, 2)} "
                           f"contra {es(f_piso, 2)} en sismos que no vio"),
         "multiplicador_h1": mult,
+        # opciones de los controles de Explorá: una sola fuente para el gráfico y para el globo
+        "opciones": {"region_inicial": "todas", "mag_min_inicial": 4.0, "ver": OPC_VER, "color": OPC_COLOR},
     }
 
 
