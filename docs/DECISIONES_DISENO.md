@@ -54,3 +54,13 @@ Sólo cambios **reales**, con el motivo. Si un gráfico no cambió, no figura.
   fundían en una mancha verde. La v2 achica el núcleo (×0,3) y el anillo (×0,45) en el modo secuencia.
 - **Animación: tiempo logarítmico.** Decisión del grupo: el reloj corre en `log10(1 + horas)` para que las primeras horas
   ocupen tanto como los últimos meses (el estallido y la cola larga se ven los dos). El reloj muestra el tiempo real.
+
+## Globo 3D — zoom sobre una secuencia
+- **v2 → v3, el encuadre.** Al elegir una secuencia la cámara se acercaba como mucho a 1,5 radios y, con los eventos
+  superpuestos (la de Japón tiene 2.545 en pocos cientos de km), se veían apretados. La v3 se acerca hasta casi la
+  superficie (distancia mínima 1,03) encuadrando el 80 % de los eventos, y hay dos botones: «Acercar al núcleo» y «Ver
+  toda la secuencia» (incluye los más lejanos).
+- **Por qué hizo falta tocar el tamaño.** Los puntos tienen un tamaño en unidades del mundo, así que acercar la cámara los
+  agrandaba y seguían tapándose. Ahora el tamaño se multiplica por un factor que baja con la distancia a la superficie
+  (`uK`): al acercarse, los puntos se achican en el mundo y el zoom los *separa*. La velocidad de giro baja igual, para
+  que arrastrar no «salte» cuando se está cerca.

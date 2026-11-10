@@ -15,7 +15,8 @@ THREE.ColorManagement.enabled = false;
 
 const RADIO_PUNTOS = 1.006;
 const FOV = 40;
-const DIST_MIN = 1.35;
+const DIST_MIN = 1.03; // casi pegado a la superficie, para separar los eventos de una secuencia
+const DIST_REF = 3.1; // distancia a la que los tamaños de los puntos están pensados
 const DIST_MAX = 6;
 
 export function webglDisponible() {
@@ -30,13 +31,13 @@ export function webglDisponible() {
 // ---------------------------------------------------------------- shaders
 const VERT_PUNTOS = `
   attribute float aTam; attribute vec3 aColor; attribute float aVis;
-  uniform float uEscala; uniform float uDim;
+  uniform float uEscala; uniform float uDim; uniform float uK;
   varying vec3 vC; varying float vA;
   void main() {
     vC = aColor; vA = aVis * uDim;
     vec4 mv = modelViewMatrix * vec4(position, 1.0);
     gl_Position = projectionMatrix * mv;
-    gl_PointSize = aVis < 0.01 ? 0.0 : max(2.0 * aTam * uEscala / (-mv.z), 2.2);
+    gl_PointSize = aVis < 0.01 ? 0.0 : max(2.0 * aTam * uK * uEscala / (-mv.z), 2.2);
   }`;
 const FRAG_PUNTOS = `
   varying vec3 vC; varying float vA;
@@ -50,14 +51,14 @@ const FRAG_PUNTOS = `
 // uModo 1: anillos ambiente que laten solos en los sismos grandes.
 const VERT_EVENTOS = `
   attribute float aMag; attribute float aS; attribute float aFase; attribute vec3 aColor; attribute float aVis;
-  uniform float uEscala; uniform float uS; uniform float uTime; uniform float uModo;
+  uniform float uEscala; uniform float uS; uniform float uTime; uniform float uModo; uniform float uK;
   varying vec3 vC; varying float vNucleo; varying float vAnillo; varying float vA;
   void main() {
     // en la secuencia la cámara está cerca: núcleos y anillos más chicos para que los eventos no se fundan en una mancha
-    float kNucleo = uModo < 0.5 ? 0.3 : 1.0;
-    float kAnillo = uModo < 0.5 ? 0.45 : 1.0;
-    float rNucleo = kNucleo * (0.0045 + 0.0035 * max(aMag - 4.0, 0.0));
-    float rMax = kAnillo * (0.014 + 0.012 * max(aMag - 5.0, 0.0));
+    float kNucleo = uModo < 0.5 ? 0.75 : 1.0;
+    float kAnillo = uModo < 0.5 ? 0.9 : 1.0;
+    float rNucleo = uK * kNucleo * (0.0045 + 0.0035 * max(aMag - 4.0, 0.0));
+    float rMax = uK * kAnillo * (0.014 + 0.012 * max(aMag - 5.0, 0.0));
     float anillo = -1.0; float nucleo = 1.0;
     if (uModo < 0.5) {
       float edad = uS - aS;
@@ -135,7 +136,7 @@ export class EscenaGlobo {
     contenedor.appendChild(this.canvas);
 
     this.scene = new THREE.Scene();
-    this.camera = new THREE.PerspectiveCamera(FOV, w / Math.max(h, 1), 0.05, 200);
+    this.camera = new THREE.PerspectiveCamera(FOV, w / Math.max(h, 1), 0.005, 120);
     this.camera.position.set(0, 0, 3);
 
     this.controls = new OrbitControls(this.camera, this.canvas);
@@ -229,7 +230,7 @@ export class EscenaGlobo {
     g.setAttribute("aColor", new THREE.BufferAttribute(this.col, 3));
     this.matPuntos = new THREE.ShaderMaterial({
       vertexShader: VERT_PUNTOS, fragmentShader: FRAG_PUNTOS, transparent: true, depthWrite: false,
-      uniforms: { uEscala: { value: 800 }, uDim: { value: 1 } },
+      uniforms: { uEscala: { value: 800 }, uDim: { value: 1 }, uK: { value: 1 } },
     });
     this.puntos = new THREE.Points(g, this.matPuntos);
     this.puntos.frustumCulled = false;
@@ -285,7 +286,7 @@ export class EscenaGlobo {
   #materialEventos(modo) {
     return new THREE.ShaderMaterial({
       vertexShader: VERT_EVENTOS, fragmentShader: FRAG_EVENTOS, transparent: true, depthWrite: false,
-      uniforms: { uEscala: { value: 800 }, uS: { value: 0 }, uTime: { value: 0 }, uModo: { value: modo } },
+      uniforms: { uEscala: { value: 800 }, uS: { value: 0 }, uTime: { value: 0 }, uModo: { value: modo }, uK: { value: 1 } },
     });
   }
 
@@ -389,13 +390,27 @@ export class EscenaGlobo {
     this.matPuntos.uniforms.uDim.value = 0.16; // el resto del mundo queda de fondo
     this.ambiente.visible = false;
 
-    // la cámara va al centro de la secuencia; la distancia depende de qué tan esparcida está
+    // la cámara va al centro de la secuencia y se acerca MUCHO, para que los eventos se vean separados.
+    // Con el campo de visión de 40°, ver un arco de ángulo a (en radianes) exige estar a ~3,3·a de la superficie.
     centro.normalize();
-    let abierto = 0;
-    for (let i = 0; i < m; i++) abierto = Math.max(abierto, Math.acos(Math.min(1, centro.dot(new THREE.Vector3(...latLonAVec3(ev.lat[i], ev.lon[i], 1))))));
+    const angulos = [];
+    for (let i = 0; i < m; i++) angulos.push(Math.acos(Math.min(1, centro.dot(new THREE.Vector3(...latLonAVec3(ev.lat[i], ev.lon[i], 1))))));
+    angulos.sort((a, b) => a - b);
+    const percentil = (p) => angulos[Math.min(m - 1, Math.floor(p * m))];
     const { lat, lon } = vec3ALatLon([centro.x, centro.y, centro.z]);
-    this.volarA(lat, lon, Math.min(Math.max(1.28 + abierto * 2.4, 1.5), 3.4), 1600);
-    return { lat, lon, abierto };
+    this.encuadre = {
+      lat, lon,
+      nucleo: Math.min(Math.max(1 + 3.3 * percentil(0.8) + 0.015, 1.04), 3.4), // donde está el 80 % de los eventos
+      todo: Math.min(Math.max(1 + 3.3 * percentil(1) + 0.03, 1.04), 4.5), // hasta el más lejano
+    };
+    this.volarA(lat, lon, this.encuadre.nucleo, 2400);
+    return this.encuadre;
+  }
+
+  // vuelve a encuadrar la secuencia: sólo el núcleo (más zoom) o todos los eventos
+  encuadrar(modo) {
+    if (!this.encuadre) return;
+    this.volarA(this.encuadre.lat, this.encuadre.lon, modo === "todo" ? this.encuadre.todo : this.encuadre.nucleo, 1500);
   }
 
   fijarTiempo(s) {
@@ -503,6 +518,14 @@ export class EscenaGlobo {
     for (const m of [this.matPuntos, this.matAmbiente, this.matSecuencia]) if (m) m.uniforms.uEscala.value = escala;
   }
 
+  // al acercar la cámara, los puntos se achican (en unidades del mundo) y el giro se vuelve más fino
+  #ajustarSegunDistancia() {
+    const d = this.camera.position.length();
+    const k = Math.min(Math.max((d - 1) / (DIST_REF - 1), 0.03), 1);
+    for (const m of [this.matPuntos, this.matAmbiente, this.matSecuencia]) if (m) m.uniforms.uK.value = k;
+    this.controls.rotateSpeed = 0.55 * Math.min(Math.max((d - 1) / (DIST_REF - 1), 0.12), 1);
+  }
+
   #etiquetasEnPantalla() {
     const w = this.contenedor.clientWidth, h = this.contenedor.clientHeight;
     const c = this.camera.position;
@@ -530,6 +553,7 @@ export class EscenaGlobo {
       this.camera.lookAt(0, 0, 0);
       if (t >= 1) { this.vuelo = null; this.controls.enabled = true; }
     }
+    this.#ajustarSegunDistancia();
     this.controls.update();
     this.#etiquetasEnPantalla();
     this.renderer.render(this.scene, this.camera);

@@ -302,9 +302,13 @@ export default function Globo({ d, filtros, setFiltros, entrada, setEntrada, pre
                   onChange={(e) => { setReproduciendo(false); setTau(Number(e.target.value) / 1000); }} />
                 <button type="button" onClick={limpiar}>Quitar</button>
               </div>
+              <div className="globo-reproductor encuadre">
+                <button type="button" onClick={() => escenaRef.current?.encuadrar("nucleo")}>Acercar al núcleo</button>
+                <button type="button" onClick={() => escenaRef.current?.encuadrar("todo")}>Ver toda la secuencia</button>
+              </div>
               <p className="nota">
                 <strong>{secuencia.lugar}</strong> ({secuencia.fecha ? fecha(secuencia.fecha) : ""}): principal M{n(resumenSecuencia.principal, 1)}, {n(resumenSecuencia.total)} eventos en {resumenSecuencia.duracion}. El tiempo corre en
-                escala <strong>logarítmica</strong>: las primeras horas ocupan tanto como los últimos meses.
+                escala <strong>logarítmica</strong>: las primeras horas ocupan tanto como los últimos meses. La cámara se acerca al núcleo para que se vean separados; con la rueda o «Ver toda la secuencia» se ven también los más lejanos.
               </p>
               {resumenSecuencia.mayorVinoDespues && (
                 <p className="aviso-chico">
