@@ -39,7 +39,7 @@ lleva `_border=<km>`. Las columnas `dist_to_border_km` y `near_border` sólo exi
 cuando los cuatro bordes del rectángulo están definidos.
 
 `horizon_days` (30 por defecto) es la ventana `T` de los objetivos por horizonte
-(`horizons_*.csv`, ver el README de la raíz); si se cambia, el nombre lleva `_T=<días>`.
+(`horizons_*.csv`, ver `docs/PIPELINE_METODO.md`); si se cambia, el nombre lleva `_T=<días>`.
 
 ### Varias regiones: `detector_replicas_regions`
 

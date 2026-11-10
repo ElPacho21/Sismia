@@ -1,0 +1,449 @@
+# Detector de réplicas sísmicas
+
+Proyecto integrador de Ciencia de Datos. Toma los terremotos del catálogo del
+USGS y separa los que ocurrieron por su cuenta de los que son réplicas de otro,
+con el método del vecino más cercano de Zaliapin & Ben-Zion.
+
+Para levantar el pipeline: [`pipeline/README.md`](../pipeline/README.md). El README general del proyecto (la aplicación, cómo regenerarla) está en [`README.md`](../README.md). Este
+archivo explica **qué hace cada paso y por qué está ahí**.
+
+## El problema
+
+Un catálogo sísmico es una lista plana: fecha, lugar, magnitud. Pero los
+terremotos no son independientes entre sí. Después de uno grande vienen
+cientos de réplicas, apretadas en el tiempo y alrededor del mismo lugar.
+
+Eso arruina casi cualquier cuenta que uno quiera hacer. Si preguntás "¿cuántos
+sismos por año hay en esta zona?", la respuesta está inflada por secuencias de
+réplicas que en realidad son *un solo* evento con muchas colas. Separar unos de
+otros se llama **declustering**, y es el paso previo a casi toda la estadística
+sísmica.
+
+## La idea del método
+
+Los métodos clásicos usan una ventana fija: "todo lo que ocurra dentro de 50 km
+y 10 días de un sismo de magnitud 6 es réplica". El problema es que esas
+ventanas son tablas que alguien decidió una vez.
+
+Zaliapin & Ben-Zion lo dan vuelta: definen una **distancia entre pares de
+sismos** y dejan que los datos digan dónde está el corte. Para un sismo `j` y un
+candidato a padre `i` anterior a él:
+
+```
+eta = t · r^d · 10^(-b · m_padre)
+```
+
+Tres factores, cada uno con su intuición:
+
+| Factor | Qué dice |
+|---|---|
+| `t` | Tiempo entre los dos. Cuanto más pasó, menos parece réplica. |
+| `r^d` | Distancia entre epicentros, corregida por lo apelotonados que están los sismos en general. En una región donde todo está amontonado, 10 km es "lejos"; en una dispersa, no. Eso es lo que calibra `d`. |
+| `10^(-b·m_padre)` | El tamaño del padre. Un sismo grande genera réplicas más lejos y durante más tiempo, así que este factor **encoge** las distancias a su alrededor. |
+
+Ojo con el último: la magnitud que entra es la del **padre**, no la del hijo.
+Es lo que hace que un M7 pueda "reclamar" como hijo a un sismo que ocurrió tres
+semanas después y a 200 km, mientras que un M4.5 sólo alcanza a lo que le pasa
+al lado y enseguida.
+
+A cada sismo se le busca, entre **todos** los anteriores, el padre que minimiza
+eta. Si el mínimo es chico, ese sismo tenía a alguien muy cerca → parece
+réplica. Si es grande, apareció solo → parece independiente.
+
+**Lo interesante:** si uno hace el histograma de `eta` sobre un catálogo real,
+aparecen *dos jorobas*. Eso no está impuesto por el método — sale de los datos,
+y es la evidencia de que hay dos poblaciones distintas conviviendo en el
+catálogo. El umbral se ajusta ahí, en el valle entre las dos.
+
+## Por qué cada tarea está donde está
+
+El DAG es [`pipeline/dags/detector_replicas_api.py`](pipeline/dags/detector_replicas_api.py)
+y la lógica vive en [`pipeline/include/sismos/`](pipeline/include/sismos/).
+
+### `land_bronze` → CSV crudo, tal cual vino
+
+Baja el catálogo de la API y lo guarda comprimido sin tocarle una coma. Está
+separado del resto porque **es lo único que puede fallar por razones ajenas al
+código**: la API se cae, cambia, tarda. Si el CSV ya está en disco no se vuelve
+a pedir, así que se puede iterar sobre el resto del pipeline sin castigar al
+USGS.
+
+**El tope de 20000 del servicio.** El FDSN rechaza con HTTP 400 cualquier
+consulta que empareje más de 20000 eventos. Pasarle su parámetro `limit` evita
+el error, pero es peor: como ordena por tiempo descendente, devolvería los 20000
+más recientes y el CSV cubriría una ventana más corta que la pedida sin decirlo
+— el `starttime` del nombre del archivo estaría mintiendo y Mc, `b` y `d`
+saldrían sobre un catálogo recortado a escondidas. Así que `fetch` pregunta
+primero cuántos eventos hay y, si no entran, **parte el rango de fechas por la
+mitad** hasta que cada pedido entre. Bisecta en vez de repartir en partes
+iguales porque los sismos no se distribuyen parejo en el tiempo: una secuencia
+de réplicas mete miles de eventos en un par de días.
+
+El `limit` del DAG es otra cosa: un tope de seguridad. Si el rango empareja más
+que eso, la corrida falla en vez de bajar un catálogo truncado. `0` es sin tope.
+
+**El recorte a una región.** La consulta lleva un rectángulo
+(`minlatitude`/`maxlatitude`/`minlongitude`/`maxlongitude`), que por defecto es
+Argentina continental y lo aplica el propio servicio — filtrar después de bajar
+sería pedir el mundo entero para tirar el 99%, y encima chocaría con el tope de
+20000. Dejar los cuatro en null vuelve a consultar el planeta.
+
+Es la decisión que más cambia los resultados, y no por gusto: el método supone
+un catálogo homogéneo. El mundo entero mezcla regiones con completitudes muy
+distintas, le da a `d` una geometría que responde a los bordes de placa y no a
+una ley de potencias, y hace que los árboles de réplicas encadenen zonas sin
+relación hasta armar clusters de 5000 km.
+
+El rectángulo entra en el nombre de archivo de **todas** las capas, vía
+`partition()`. Sin eso dos regiones distintas se pisarían el mismo `bronze` y
+`silver`, y estarías analizando Argentina creyendo que es California.
+
+### `refine_silver` → el catálogo limpio
+
+Parsea fechas y números, tira las filas sin magnitud o sin epicentro, saca
+duplicados y **ordena por tiempo**. Nada de método todavía, sólo higiene.
+
+Está separado a propósito: silver no depende de ningún parámetro del algoritmo,
+así que se calcula una vez y se reutiliza aunque después cambies el método de
+Mc o el umbral. El orden cronológico es parte del contrato — el vecino más
+cercano recorre el catálogo hacia atrás y lo da por sentado.
+
+### `estimate_mc` → los tres números que el método necesita
+
+De los tres, **uno solo se estima**.
+
+**Mc, la magnitud de completitud.** Un catálogo registra todos los sismos
+grandes y se le escapan los chicos: no hay sismógrafos en todos lados. Mc es la
+magnitud a partir de la cual ya no se le escapa nada. Se calcula por máxima
+curvatura: el bin más poblado de la distribución de magnitudes es donde el
+catálogo deja de crecer y empieza a perder eventos. Éste no se puede tomar de
+tabla, porque depende de qué red cubrió la zona y en qué época, y errarle sesga
+todo lo que venga después.
+
+**`b` y `d` se toman en sus valores estándar** (1.0 y 1.5). Son los que usa la
+literatura cuando no se los ajusta. Para `d` es incluso *más* defendible que
+ajustarlo: el ajuste por integral de correlación obliga a elegir un rango de
+escaleo, y esa elección resultó frágil — sobre California devolvía 0.9 cuando el
+valor publicado para esa región ronda 1.6.
+
+Que sean constantes no invalida el método: entran en eta como una reescala, y el
+umbral que separa réplicas de fondo se ajusta después sobre la distribución de
+eta que salga. Lo que sí se pierde es poder decir que los parámetros son "de
+estos datos".
+
+Es tan barato —un histograma y un argmax— que no se persiste: los tres números
+viajan por XCom hasta los pasos que los necesitan.
+
+### `nearest_neighbor` → el bosque de padres
+
+Calcula eta para todos los pares y le asigna a cada sismo su padre. Es O(N²) —
+un catálogo de 20000 eventos son 400 millones de pares — así que va por bloques
+acumulando resultados en vez de armar la matriz completa, que no entraría en
+memoria.
+
+Guarda `parent_id` y eta, pero también **T y R por separado**: eta se factoriza
+en una mitad de tiempo y una de distancia (`eta = T · R`), y es en el plano
+(T, R) donde las dos poblaciones se ven separadas a simple vista. Eso lo
+necesita el paso siguiente.
+
+Este paso **todavía no decide nada**: sólo tiende el árbol.
+
+### `fit_eta_threshold` → dónde cortar
+
+Le ajusta una mezcla de dos gaussianas al histograma de `log10(eta)` y pone el
+umbral donde las dos se cruzan. El ajuste es EM escrito a mano en vez de traer
+scikit-learn: son treinta líneas para dos gaussianas en una dimensión, y así
+queda a la vista qué se está haciendo.
+
+Reporta además **la separación entre los dos modos** y el error de clasificación
+esperado, y avisa cuando el ajuste no se sostiene. Es importante: el método
+presupone que la bimodalidad existe, y si el catálogo es chico o mezcla
+regiones muy distintas, los dos modos se pisan y el umbral pasa a ser un número
+frágil que conviene fijar a mano.
+
+### `randomize_catalog` → un mundo donde no pasa nada
+
+Baraja los tiempos y las magnitudes entre sí y deja los epicentros donde están.
+Eso destruye la asociación temporal pero conserva la geografía del catálogo
+—que responde a los bordes de placa, no a las réplicas— y da la distribución de
+eta **si no hubiera réplicas en absoluto**.
+
+Sirve para contestar la pregunta que ningún ajuste puede contestar solo: ¿la
+bimodalidad es del catálogo, o la fabrica la métrica? Si el catálogo barajado
+también se parte en dos modos y cae bajo el umbral la misma proporción de
+eventos, entonces lo que se está marcando como réplicas es la forma que tiene
+eta cuando no pasa nada.
+
+Es la parte cara: cada barajada es una corrida completa del vecino más cercano.
+Y es estocástica, así que la semilla es un parámetro del DAG y queda escrita en
+el nombre de los archivos que produce.
+
+### `thinning` → de la línea dura al sorteo
+
+El umbral parte la población con una línea, pero esa línea miente en los
+bordes: un evento que cae justo por debajo no es más réplica que uno que cae
+justo por encima. El thinning reemplaza la línea por un sorteo: a cada evento
+se le calcula la probabilidad de ser fondo y se lo devuelve al fondo con esa
+probabilidad. Los que están lejos del umbral casi no se mueven; los del medio
+se reparten. De ahí sale `is_aftershock`.
+
+**Una desviación del paper que conviene tener presente.** Zaliapin & Ben-Zion
+estiman el peso del fondo comparando la distribución observada contra la del
+catálogo barajado. Acá la probabilidad sale de la mezcla de dos gaussianas ya
+ajustada, no del barajado, porque sobre este catálogo el barajado **no
+identifica ese peso**: al conservar N, tiene el doble de densidad que el fondo
+que quiere modelar, sus vecinos caen más cerca y su eta se corre hacia abajo.
+Sobre un control con 50% de réplicas plantadas el cociente entre distribuciones
+devuelve 0.96 en vez de 0.50, y submuestrear el nulo para igualar densidades no
+lo arregla: la ecuación de punto fijo o es degenerada o converge igual al valor
+equivocado. El posterior de la mezcla, en cambio, recupera el 50% con 94.6% de
+precisión.
+
+### `build_clusters` → de enlaces sueltos a secuencias
+
+Quedarse con los enlaces aceptados deja un bosque: cada evento independiente es
+raíz de un árbol y las réplicas cuelgan de él, **en cadena**. Esa cadena es la
+razón de ser del paso, porque agrupar por `parent_id` cuenta sólo los hijos
+directos:
+
+```
+A (independiente)
+├── B  (réplica de A)
+│   └── D  (réplica de B, pero también del cluster de A)
+└── C  (réplica de A)
+```
+
+`groupby("parent_id")` diría "A tiene 2, B tiene 1". Lo cierto es que el cluster
+de A tiene tres réplicas y B no es sismo principal de nada. Con el decaimiento
+de Omori las cadenas largas son la norma.
+
+Recorrer el bosque sale gratis gracias al contrato de silver: como el catálogo
+está ordenado por tiempo y todo padre es anterior a su hijo, una sola pasada
+hacia adelante alcanza — al llegar a un evento, el cluster de su padre ya está
+resuelto. O(N), sin recursión.
+
+Produce dos tablas: el catálogo evento por evento con `cluster_id`,
+`generation`, `order_in_cluster` e `is_mainshock`, y **el resumen por cluster**,
+que es el entregable: sismo principal, magnitud, cantidad de réplicas,
+premonitores, duración y extensión.
+
+**Quién es el sismo principal** es una decisión, no un detalle. `largest` toma
+el de mayor magnitud (lo que usan Zaliapin & Ben-Zion) y `root` el que disparó
+la secuencia. Difieren cuando hubo premonitores: un M4.5 abre el árbol y tres
+horas después llega el M7. En la corrida de referencia discrepan en el 4.6% de
+los clusters.
+
+### `build_features` → columnas que existirían al predecir
+
+El resumen describía cada secuencia casi sólo con `mainshock_mag` y
+`mainshock_depth`; casi todo lo demás (`n_events`, `n_foreshocks`,
+`duration_days`, `extent_km`…) se conoce recién cuando la secuencia terminó, o
+sea que es fuga si el objetivo es `n_aftershocks`. Esta tarea suma, **al final**
+de `clusters_*.csv` y sin tocar las columnas anteriores, lo que sí se sabía en
+el instante del sismo principal:
+
+- **Sismicidad previa** en una vecindad del epicentro (`prior_radius_km`, 100 km
+  por defecto): cuántos eventos ≥ Mc hubo en los 2, 30 y 365 días anteriores, la
+  mayor magnitud del último año y los días desde el más reciente. Se calcula
+  sobre silver con un `BallTree` haversine, así que no depende del declustering.
+- **Contexto de la región** (`region_mc`, `region_log10_eta0`), que importa cuando
+  se concatenan varias regiones con Mc y umbral propios.
+- **`has_aftershock`** (`n_aftershocks > 0`), el objetivo de clasificación: el 93%
+  de las secuencias tiene cero réplicas y predecir *si habrá* es un problema
+  distinto —y más tratable— que predecir *cuántas*.
+
+Los nulos de `prior_max_mag_365d` y `days_since_prior` son **estructurales**: no
+hubo ningún evento previo en la vecindad. `prior_window_truncated` marca las
+secuencias cuya ventana de 365 días arranca antes que el catálogo: sus conteos
+son un piso, no el valor real.
+
+### `publish_horizons` → "parado a *t* horas del principal, ¿cuántas réplicas más?"
+
+`n_aftershocks` cuenta la secuencia entera, así que casi todo lo que se sabe del
+cluster es fuga para predecirlo. Esta tarea reformula la pregunta con un instante de
+predicción explícito y publica `horizons_*.csv`, **aparte** de `clusters_*.csv` (que no
+se ensancha): una fila por (`cluster_id`, `horizon_hours`), con horizontes de 1, 6, 24,
+72 y 168 horas y una ventana de objetivo de `T` = `horizon_days` (30 por defecto).
+
+| Columna | Qué es |
+|---|---|
+| `horizon_hours` | El instante de predicción `t`, en horas desde `mainshock_time`. Es una feature más. |
+| `n_aft_t` | Réplicas (mismo criterio que `n_aftershocks`) hasta `t`. |
+| `max_aft_mag_t` | Mayor magnitud entre ellas. Nulo estructural si todavía no hubo ninguna. |
+| `hours_since_last_t` | Horas desde el último evento visto; si no hubo réplicas, desde el sismo principal. Nunca nulo. |
+| `y_aft` / `y_has_aft` | **Objetivo**: réplicas entre `t` y `T` días (conteo y `> 0`). |
+| `n_aft_T` | Réplicas hasta `T` días. Siempre `n_aft_t + y_aft`. |
+| `censored_T` | `mainshock_time + T` pasa de `endtime`: el catálogo no alcanza a ver toda la ventana. Se marca, no se borra. |
+| `censored_t` | Lo mismo para la ventana de features (`mainshock_time + t > endtime`). |
+
+Al entrenar hay que separar train y test **por `cluster_id`** (`GroupKFold`): las cinco
+filas de un cluster comparten secuencia y, repartidas entre los dos lados, filtran. Y
+dos advertencias de causalidad: la pertenencia al cluster y η₀ se ajustan con el
+catálogo completo (no son recomputables "hasta *t*"), y el sismo principal es el mayor
+del cluster, que sólo se sabe una vez que ocurrió. En la corrida de referencia salen
+9.890 filas (1.978 × 5) y 283 positivas entre las no censuradas.
+
+### `publish_csv` → el entregable, y dudar de él
+
+Las capas anteriores escriben parquet: se leen entre tareas y ya vienen
+tipadas. Ésta escribe **csv**, que es el formato que se abre con doble clic
+para mirarlo y discutirlo.
+
+Publica dos tablas, que son las dos unidades de análisis posibles del proyecto:
+
+| Archivo | Una fila es | Clave | Objetivo |
+|---|---|---|---|
+| `clusters_*.csv` | una **secuencia sísmica**: un sismo principal con todas sus réplicas | `cluster_id` | `n_aftershocks` |
+| `events_*.csv` | un **terremoto**, con a qué secuencia cayó | `id` | `is_aftershock` |
+
+Y valida antes de dar la corrida por buena: si la clave repite, si quedaron
+menos de 1000 filas o si alguna columna quedó entera en nulo, **la tarea
+falla**. Un dataset roto publicado en verde es peor que una corrida en rojo,
+porque el error aparece recién cuando alguien ya construyó algo encima.
+
+Los nulos no se penalizan —un dataset real los tiene— pero sí se reportan: el
+log deja la proporción de nulos por columna y el conteo de tipos, que son los
+números que hay que tener a mano.
+
+## Diccionario de datos
+
+Definición campo por campo de los dos CSV publicados. La fila, la clave y el
+objetivo de cada uno ya están en la tabla de más arriba; acá está el resto.
+
+### `clusters_*.csv` — una fila es una secuencia sísmica
+
+| Columna | Qué es |
+|---|---|
+| `cluster_id` | Clave. Es el id del sismo raíz: el primero que disparó el árbol. |
+| `mainshock_id` | El sismo principal del cluster (mayor magnitud o raíz, según el parámetro `mainshock`). |
+| `mainshock_place` | Descripción legible del lugar del sismo principal. |
+| `mainshock_mag` | Magnitud del sismo principal. |
+| `mainshock_time` | Hora del sismo principal, en UTC. |
+| `mainshock_lat` / `mainshock_lon` | Epicentro (latitud/longitud) del sismo principal. |
+| `mainshock_depth` | Profundidad del sismo principal, en km. |
+| `n_events` | Tamaño del cluster: principal + réplicas + premonitores. |
+| `n_aftershocks` | Objetivo. `n_events − 1 − n_foreshocks`. |
+| `n_foreshocks` | Eventos del cluster que preceden al sismo principal. |
+| `duration_days` | Días entre el primer y el último evento del cluster. |
+| `extent_km` | Máxima distancia epicentral entre el sismo principal y sus eventos. |
+| `max_generation` | Cuántas réplicas se encadenan una tras otra (profundidad del árbol). |
+| `root_is_mainshock` | Si el id de la raíz coincide con el del sismo principal. Discrepan cuando hubo premonitores. |
+| `n_prior_2d` / `n_prior_30d` / `n_prior_365d` | Eventos ≥ Mc a menos de `prior_radius_km` del sismo principal en los 2 / 30 / 365 días **anteriores** a él (sin contarlo). |
+| `prior_max_mag_365d` | Mayor magnitud entre esos eventos del último año. Nulo estructural si no hubo ninguno. |
+| `days_since_prior` | Días desde el evento previo más reciente de la vecindad. Nulo estructural si no hubo ninguno desde `starttime`. |
+| `prior_window_truncated` | `True` si la ventana de 365 días empieza antes que el catálogo (los conteos son un piso). |
+| `region_mc` / `region_log10_eta0` | Mc y umbral log10(eta_0) de la región (constantes en una corrida; varían al combinar regiones). |
+| `has_aftershock` | `n_aftershocks > 0`. Objetivo de clasificación. |
+| `dist_to_border_km` | Distancia, sobre la esfera, del epicentro del sismo principal al borde más cercano del rectángulo consultado. |
+| `near_border` | `dist_to_border_km < border_buffer_km` (100 km por defecto). Una secuencia pegada al borde pudo perder réplicas que cayeron afuera: sus conteos son un piso. |
+| `region` | Sólo en `clusters_combined_*.csv`: de qué región de `regions.yaml` sale la fila. |
+
+### `events_*.csv` — una fila es un terremoto
+
+| Columna | Qué es |
+|---|---|
+| `id` | Clave (id del evento en el USGS). |
+| `time` | Hora del evento, en UTC. |
+| `latitude` / `longitude` | Epicentro, en grados. |
+| `depth` | Profundidad, en km. |
+| `mag` | Magnitud. |
+| `place` | Descripción legible del lugar. |
+| `parent_id` | El padre elegido por el vecino más cercano: el `id` de un evento anterior. `NaN` si no tiene. |
+| `parent_mag` | Magnitud de ese padre. |
+| `eta` | Proximidad al padre: `t · r^d · 10^(−b·m_padre)`. |
+| `log10_eta` | Logaritmo de eta, la magnitud sobre la que se ajusta el umbral. |
+| `t_years` | Tiempo entre el evento y su padre, en años. |
+| `r_km` | Distancia epicentral al padre, en km. |
+| `log10_T` / `log10_R` | Las dos mitades reescaladas de eta (plano donde fondo y réplicas se separan). |
+| `p_background` | Probabilidad de pertenecer al fondo según el modelo de mezcla. |
+| `is_aftershock` | Objetivo. `True` si el enlace al padre se acepta como réplica tras el thinning. |
+| `is_aftershock_eta` | La clasificación dura por umbral, para comparar cuánto movió el thinning. |
+| `cluster_id` | A qué cluster pertenece el evento. |
+| `generation` | Réplicas encadenadas desde la raíz; `0` es la raíz. |
+| `order_in_cluster` | Posición del evento dentro de su cluster, por tiempo. |
+| `is_mainshock` | Si el evento es el sismo principal de su cluster. |
+| `n_aftershocks_sequence` | Réplicas del cluster al que pertenece (igual para todos sus miembros). |
+| `n_aftershocks` | Réplicas que "produjo" este evento. Sólo el sismo principal las tiene. |
+
+## Una corrida de referencia
+
+Argentina continental, diez años (`starttime` 2016-01-01, `endtime` 2026-01-01),
+`minmagnitude` 3.5, `seed` 1, `n_randomizations` 5. Es la corrida que hay que
+poder repetir: con estos parámetros salen exactamente estos números.
+
+| | |
+|---|---|
+| Eventos en el catálogo limpio | 7320 |
+| Mc (máxima curvatura) | 4.50 |
+| Eventos completos, sobre Mc | 2321 |
+| `b` y `d` | 1.0 y 1.5, estándar |
+| Umbral | log₁₀ η₀ = −5.778 (modos separados 2.01 σ, error esperado 4.6%) |
+| Contraste con el catálogo barajado | 12.2% bajo el umbral contra 6.2% — exceso de 6.0 puntos |
+| Réplicas después del thinning | 343 de 2321 (14.8%) |
+| Clusters | 1978, de los cuales 131 tienen al menos una réplica |
+| Cluster más grande | 32 réplicas |
+| Raíz ≠ sismo principal | 42 clusters (2.1%), o sea secuencias con premonitores |
+| Productividad de Utsu | α = 1.227 (R² 0.991) sobre 5 bins |
+| Entregable | 1978 filas × 15 columnas, sin nulos y sin claves repetidas |
+
+Tres cosas que vale la pena mirar:
+
+**Máxima curvatura acertó el Mc.** Dio 4.50, y es exactamente lo que anticipaba
+mirar los conteos crudos del USGS para Argentina: la cantidad de eventos es
+prácticamente igual pidiendo M≥2.5, 3.0, 3.5 o 4.0, y recién cae en 4.5. Ese
+tramo plano no es sismología, es un catálogo al que le faltan los sismos chicos
+porque la red global no los ve — los tiene INPRES, no el USGS. Los 5000 eventos
+que quedan por debajo de Mc se descartan, y está bien que así sea.
+
+**La productividad reproduce la ley de Utsu.** Es el único control contra un
+hecho externo, y no contra un sintético fabricado acá: el número medio de
+réplicas por bin de magnitud sube de forma limpia y el exponente cae dentro del
+rango que se observa en el mundo. Que R² dé 0.996 dice que los conteos por
+magnitud son coherentes entre sí.
+
+**Todavía hay clusters imposibles.** Dos se extienden más de 1500 km, el mayor
+3610 km. El rectángulo de Argentina abarca 34° de latitud, casi 3800 km, así que
+un sismo grande en Jujuy puede reclamar como hijo a uno en Tierra del Fuego. Es
+el mismo problema de siempre, más chico: acotar más la región, o cortar por
+profundidad, lo seguiría reduciendo. El pipeline no los esconde: los cuenta y
+avisa por log.
+
+## Cómo se sabe que las cuentas están bien
+
+Cada paso se contrastó contra un caso de respuesta conocida:
+
+| Qué | Control | Resultado |
+|---|---|---|
+| Vecino más cercano | Bucle O(N²) ingenuo sobre 300 eventos | 0 padres distintos |
+| Vecino más cercano | Mismo cálculo con bloques de 7 y de 256 | Resultado idéntico |
+| Bimodalidad | Catálogo sintético **sin** réplicas plantadas | Unimodal: no inventa un segundo modo |
+| Bimodalidad | Catálogo sintético **con** 50% de réplicas plantadas | Detecta 48.4%, separación 4.72 desvíos |
+| Mezcla gaussiana | Mezcla sintética de parámetros conocidos | Recupera pesos, medias y desvíos con dos decimales |
+| Thinning | Catálogo con 50% de réplicas plantadas | Marca 49.6%, precisión 94.6%, recall 93.8% |
+| Thinning | Catálogo **sin** réplicas plantadas | Marca 25.6% — pero el contraste con el nulo da 0.0 puntos de exceso y avisa que eso es azar |
+| Semilla | Cinco semillas sobre el catálogo real | Entre 375 y 390 réplicas (42.8–44.5%); con la misma semilla, idéntico |
+| Clusters | Bosque armado a mano con cadena A→B→D y un premonitor | Topología exacta: D hereda el cluster de A a través de B, y el premonitor no queda como sismo principal |
+| Clusters | Invariantes sobre el catálogo real | Los eventos por cluster suman el total, cada evento cae en exactamente un cluster, y réplicas + premonitores + 1 = tamaño |
+| Productividad | Catálogos sintéticos con α conocido | Recupera 0.7 → 0.699, 0.9 → 0.904, 1.1 → 1.105 |
+
+## Lo que falta
+
+Las tareas del método están todas, y el catálogo ya se consulta acotado a un
+rectángulo. Lo que queda es afinar ese recorte y dos guardas que se quedaron
+cortas:
+
+| Pendiente | Qué pasa |
+|---|---|
+| Corte por profundidad | En Argentina importa tanto como el rectángulo: la sismicidad superficial andina y la del slab profundo (100–250 km) son poblaciones distintas con estadística distinta, y mezclarlas ensucia `d` y eta. El FDSN acepta `mindepth`/`maxdepth`. |
+| `b` y `d` no se ajustan | Se toman en sus valores estándar. Es defendible (ver arriba), pero no se puede decir que los parámetros salgan de estos datos. |
+| El contraste con el nulo usa puntos absolutos | Argentina dio 9.8% contra 4.8% — un exceso de **2×**, que es señal — pero como en puntos absolutos son 5.0 y el umbral es 5.0, avisó igual. La corrida global dio 41.9 contra 37.9, que es 1.1× y no significa nada, y avisó lo mismo. Debería ser un cociente. |
+
+## Referencias
+
+- Zaliapin, Gabrielov, Keilis-Borok & Wong (2008), *Clustering analysis of
+  seismicity and aftershock identification* — la métrica eta.
+- Zaliapin & Ben-Zion (2013), *Earthquake clusters in southern California I* —
+  el thinning y la reconstrucción de clusters.
+- Aki (1965) — estimación de `b` por máxima verosimilitud.
+- Wiemer & Wyss (2000) — Mc por bondad de ajuste.
+- Grassberger & Procaccia (1983) — dimensión de correlación.

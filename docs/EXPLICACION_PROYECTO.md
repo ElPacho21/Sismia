@@ -1,7 +1,7 @@
 # Detector de réplicas sísmicas — explicación completa del proyecto
 
 > Documento de estudio para la Entrega 1. Cubre el **dominio** (sismología) y lo
-> **técnico** (qué se implementó y por qué). Complementa al `README.md` de la
+> **técnico** (qué se implementó y por qué). Complementa al `docs/PIPELINE_METODO.md` de la
 > raíz, que está escrito para responder "qué hace cada paso y por qué está ahí".
 >
 > **Actualizado al commit `2a72f9d` ("feat: publicar el dataset en csv y
@@ -585,7 +585,7 @@ exactamente estos números."*
 
 ### Cada paso contra un caso de respuesta conocida
 
-El `README.md` tiene la tabla completa. Los conceptualmente importantes:
+El `docs/PIPELINE_METODO.md` tiene la tabla completa. Los conceptualmente importantes:
 
 - **Vecino más cercano**: contra un bucle O(N²) ingenuo sobre 300 eventos → **0
   padres distintos**. Y con bloques de 7 vs 256 → **idéntico** (el chunking no
@@ -621,7 +621,7 @@ de ellas. Estado actual:
 | 7.4 | El docstring del DAG estaba desactualizado | ✅ **Resuelto** en `2a72f9d` |
 | 7.5 | Ventana de fechas: tiene que ser larga | ⚠️ No es un bug, pero hay que saberlo |
 | 7.6 | Target inflado de ceros (Unidad 3) | 🔜 Sigue abierto, es para más adelante |
-| 7.7 | Números inconsistentes dentro del `README.md` | ⚠️ Menor, conviene alinearlos antes del oral |
+| 7.7 | Números inconsistentes dentro del `docs/PIPELINE_METODO.md` | ⚠️ Menor, conviene alinearlos antes del oral |
 
 ### 7.1. El DAG ya parsea *(resuelto)*
 
@@ -671,7 +671,7 @@ solo 131 con réplicas (≈93% de ceros). Para modelar vas a necesitar algo que 
 maneje (Poisson/binomial negativa con inflado de ceros, o un modelo en dos
 etapas). No afecta la Entrega 1.
 
-### 7.7. Inconsistencias menores en el `README.md`
+### 7.7. Inconsistencias menores en el `docs/PIPELINE_METODO.md`
 
 `2a72f9d` actualizó la tabla de la corrida de referencia pero dejó dos números
 viejos en el texto en prosa:
@@ -701,7 +701,7 @@ tabla: 2.1% y 0.991).
 | ¿Dónde está el dato crudo (bronce)? | `include/output/.../bronze/earthquake_...csv.gz`, la respuesta de la API sin tocar. |
 | ¿Quién verifica los 7 criterios? | El propio pipeline: la tarea `publish_csv` los chequea y deja la corrida en rojo si alguno falla. |
 | La concesión de tu dataset | `b` y `d` fijos (no "de estos datos"); thinning basado en la mezcla y no en el barajado; 2 clusters de >1.500 km que el método encadena mal (el pipeline los cuenta y avisa); contraste con el nulo en puntos absolutos. |
-| Por qué cada tarea está donde está | Sección 4 de este documento + el `README.md` de la raíz. |
+| Por qué cada tarea está donde está | Sección 4 de este documento + el `docs/PIPELINE_METODO.md`. |
 
 ---
 
