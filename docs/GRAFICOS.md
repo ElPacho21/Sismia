@@ -3,7 +3,7 @@
 Todos hechos con Altair en `graficos.py` y exportados por `build_app.py` como especificaciones
 Vega-Lite en `app/public/specs/`. **Regla de color:** el color siempre es la *clase de réplicas*
 (escala `ESCALA_CLASE`, definida una vez en `palette.py`); lo que no es una clase va en grises o
-en el azul verdoso `#0b7285`, que significa sólo «el modelo elegido».
+en el azul verdoso `#3bb3c8`, que significa sólo «el modelo elegido».
 
 Clases: `ninguna (0)` gris · `pocas (1–2)` azul · `moderadas (3–10)` naranja · `muchas (11+)` verde.
 

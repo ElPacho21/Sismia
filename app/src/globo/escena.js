@@ -147,6 +147,10 @@ export class EscenaGlobo {
     this.controls.maxDistance = DIST_MAX;
     this.controls.rotateSpeed = 0.55;
     this.controls.zoomSpeed = 0.7;
+    // en pantallas táctiles un dedo desplaza la página y dos dedos giran y acercan el globo
+    if (typeof matchMedia === "function" && matchMedia("(pointer: coarse)").matches) {
+      this.controls.touches = { ONE: -1, TWO: THREE.TOUCH.DOLLY_ROTATE };
+    }
 
     this.#construirMundo(o.tierra);
     this.#construirPuntos();

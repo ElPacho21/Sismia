@@ -15,5 +15,7 @@
 /app/node_modules
 /app/dist
 /app/tests
+/app/visual
+/app/e2e
 /.env.local
 /.vercel

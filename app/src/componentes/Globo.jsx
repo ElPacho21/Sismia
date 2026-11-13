@@ -232,7 +232,7 @@ export default function Globo({ d, filtros, setFiltros, entrada, setEntrada, pre
           <div className="globo-filtros">
             <label>
               Región
-              <select value={filtros.region} onChange={(e) => setFiltros((f) => ({ ...f, region: e.target.value }))}>
+              <select name="region" autoComplete="off" value={filtros.region} onChange={(e) => setFiltros((f) => ({ ...f, region: e.target.value }))}>
                 <option value="todas">todas</option>
                 {regiones.map((r) => (
                   <option key={r.nombre} value={r.nombre}>
@@ -243,11 +243,11 @@ export default function Globo({ d, filtros, setFiltros, entrada, setEntrada, pre
             </label>
             <label>
               Magnitud mínima: {n(filtros.magMin, 1)}
-              <input type="range" min="4" max="8" step="0.1" value={filtros.magMin} onChange={(e) => setFiltros((f) => ({ ...f, magMin: Number(e.target.value) }))} />
+              <input name="magnitud-minima" type="range" min="4" max="8" step="0.1" value={filtros.magMin} onChange={(e) => setFiltros((f) => ({ ...f, magMin: Number(e.target.value) }))} />
             </label>
             <label>
               Secuencias
-              <select value={filtros.ver} onChange={(e) => setFiltros((f) => ({ ...f, ver: e.target.value }))}>
+              <select name="ver" autoComplete="off" value={filtros.ver} onChange={(e) => setFiltros((f) => ({ ...f, ver: e.target.value }))}>
                 {opciones.ver.map((o) => (
                   <option key={o}>{o}</option>
                 ))}
@@ -255,7 +255,7 @@ export default function Globo({ d, filtros, setFiltros, entrada, setEntrada, pre
             </label>
             <label>
               Pintar según
-              <select value={filtros.colorPor} onChange={(e) => setFiltros((f) => ({ ...f, colorPor: e.target.value }))}>
+              <select name="pintar-segun" autoComplete="off" value={filtros.colorPor} onChange={(e) => setFiltros((f) => ({ ...f, colorPor: e.target.value }))}>
                 {opciones.color.map((o) => (
                   <option key={o}>{o}</option>
                 ))}
@@ -280,7 +280,7 @@ export default function Globo({ d, filtros, setFiltros, entrada, setEntrada, pre
           <h3>Animá una secuencia</h3>
           <label>
             Elegí una
-            <select value={secuencia ? destacadas.find((x) => x.indice === secuencia.indice)?.id ?? "" : ""} onChange={(e) => {
+            <select name="secuencia" autoComplete="off" value={secuencia ? destacadas.find((x) => x.indice === secuencia.indice)?.id ?? "" : ""} onChange={(e) => {
               const x = destacadas.find((z) => z.id === e.target.value);
               if (x) elegirSecuencia(x.indice);
             }}>
@@ -298,7 +298,7 @@ export default function Globo({ d, filtros, setFiltros, entrada, setEntrada, pre
                 <button type="button" onClick={() => { if (tau >= 1) setTau(0); setReproduciendo((r) => !r); }}>
                   {reproduciendo ? "⏸ Pausa" : "▶ Reproducir"}
                 </button>
-                <input type="range" min="0" max="1000" value={Math.round(tau * 1000)} aria-label="Momento de la secuencia"
+                <input name="momento" type="range" min="0" max="1000" value={Math.round(tau * 1000)} aria-label="Momento de la secuencia"
                   onChange={(e) => { setReproduciendo(false); setTau(Number(e.target.value) / 1000); }} />
                 <button type="button" onClick={limpiar}>Quitar</button>
               </div>

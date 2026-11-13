@@ -14,20 +14,25 @@ export default function Grafico({ url, descripcion, senales, alCambiarSenal }) {
   senalesRef.current = senales;
   avisoRef.current = alCambiarSenal;
   const [error, setError] = useState(null);
+  const [listo, setListo] = useState(false);
+  const [hayMas, setHayMas] = useState(false);
+  const figura = useRef(null);
 
   useEffect(() => {
     let cancelado = false;
     (async () => {
       try {
-        const [{ default: embed }, spec] = await Promise.all([
+        const [{ default: embed }, , spec] = await Promise.all([
           import("vega-embed"),
+          // el lienzo no espera a las fuentes: se las pide antes de dibujar
+          document.fonts?.load("12px 'Instrument Sans Variable'").catch(() => null),
           fetch(url).then((r) => {
             if (!r.ok) throw new Error(`${url}: ${r.status}`);
             return r.json();
           }),
         ]);
         if (cancelado) return;
-        const resultado = await embed(contenedor.current, spec, { actions: false, formatLocale: LOCALE_VEGA, renderer: "canvas" });
+        const resultado = await embed(contenedor.current, spec, { actions: false, formatLocale: LOCALE_VEGA, renderer: "canvas", tooltip: { theme: "dark" } });
         const vista = resultado.view;
         if (cancelado) return vista.finalize();
         vistaRef.current = vista;
@@ -36,6 +41,7 @@ export default function Grafico({ url, descripcion, senales, alCambiarSenal }) {
           vista.addSignalListener(nombre, (_, v) => avisoRef.current?.(nombre, v));
         }
         await vista.runAsync();
+        if (!cancelado) setListo(true);
       } catch (e) {
         if (!cancelado) setError(e.message);
       }
@@ -61,8 +67,24 @@ export default function Grafico({ url, descripcion, senales, alCambiarSenal }) {
     if (cambio) vista.runAsync();
   }, [senales]);
 
+  // si el gráfico es más ancho que su caja, se avisa con un desvanecido en el borde (data-mas)
+  useEffect(() => {
+    const el = figura.current;
+    if (!el) return;
+    const medir = () => setHayMas(el.scrollWidth - el.clientWidth - el.scrollLeft > 4);
+    medir();
+    el.addEventListener("scroll", medir, { passive: true });
+    const ojo = new ResizeObserver(medir);
+    ojo.observe(el);
+    if (el.firstElementChild) ojo.observe(el.firstElementChild);
+    return () => {
+      el.removeEventListener("scroll", medir);
+      ojo.disconnect();
+    };
+  }, [listo]);
+
   return (
-    <figure className="grafico" aria-label={descripcion}>
+    <figure ref={figura} className="grafico" data-mas={hayMas} tabIndex={0} aria-label={descripcion} data-cargando={!listo && !error}>
       <div ref={contenedor} />
       {error && <p className="error">No se pudo dibujar el gráfico: {error}</p>}
     </figure>

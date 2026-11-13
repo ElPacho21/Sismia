@@ -40,6 +40,25 @@ export default function App() {
 
   const prediccion = usePrediccion(d?.modelo ?? null, entrada);
 
+  // la barra marca la sección que se está leyendo
+  const [actual, setActual] = useState("proyecto");
+  const listoParaMirar = Boolean(d && filtros);
+  useEffect(() => {
+    if (!listoParaMirar) return;
+    const ojo = new IntersectionObserver(
+      (entradas) => {
+        const visible = entradas.filter((e) => e.isIntersecting).sort((x, y) => y.intersectionRatio - x.intersectionRatio)[0];
+        if (visible) setActual(visible.target.id);
+      },
+      { rootMargin: "-30% 0px -55% 0px", threshold: [0, 0.01, 0.5] },
+    );
+    for (const [id] of NAV) {
+      const el = document.getElementById(id);
+      if (el) ojo.observe(el);
+    }
+    return () => ojo.disconnect();
+  }, [listoParaMirar]);
+
   if (error) return <p className="error centro">No se pudo cargar la aplicación: {error}</p>;
   if (!d || !filtros) return <p className="cargando centro">Cargando…</p>;
 
@@ -49,11 +68,11 @@ export default function App() {
   return (
     <>
       <nav className="barra" aria-label="Secciones">
-        <a className="marca" href="#proyecto">
+        <a className="marca" href="#proyecto" translate="no">
           Sisimia
         </a>
         {NAV.map(([id, nombre]) => (
-          <a key={id} href={`#${id}`}>
+          <a key={id} href={`#${id}`} aria-current={actual === id ? "true" : undefined}>
             {nombre}
           </a>
         ))}

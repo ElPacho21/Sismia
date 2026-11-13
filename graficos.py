@@ -15,14 +15,15 @@ import altair as alt
 import numpy as np
 import pandas as pd
 
-from palette import CLASES, COLOR_CLASE, COLOR_DATOS, COLOR_ELEGIDO, COLOR_NEUTRO
+from palette import (CLASES, COLOR_CLASE, COLOR_DATOS, COLOR_ELEGIDO, COLOR_NEUTRO, EJE, FONDO_GRAFICO, GRILLA,
+                     TEXTO_FUERTE, TEXTO_GRAFICO, TRAZO_CAJAS)
 
 alt.data_transformers.disable_max_rows()
 
 # la misma escala de color en todos los gráficos
 ESCALA_CLASE = alt.Scale(domain=CLASES, range=COLOR_CLASE)
 CORTE_ALTO = 2.5            # tramo (+2,5 a +3,0 sobre el umbral) que el título de H1 cita; se lee directo en el gráfico
-FUENTE = "system-ui, -apple-system, 'Segoe UI', sans-serif"
+FUENTE = "'Instrument Sans Variable', system-ui, -apple-system, 'Segoe UI', sans-serif"
 
 
 def es(valor, decimales=0):
@@ -32,9 +33,12 @@ def es(valor, decimales=0):
 
 
 def estilo(chart):
-    return (chart.configure(font=FUENTE).configure_axis(labelFontSize=12, titleFontSize=12, grid=True,
-                                                         gridColor="#ece9e1", domainColor="#8a877f")
-            .configure_view(stroke=None).configure_legend(labelFontSize=12, titleFontSize=12))
+    return (chart.configure(font=FUENTE, background=FONDO_GRAFICO)
+            .configure_axis(labelFontSize=13, titleFontSize=13, grid=True, gridColor=GRILLA, domainColor=EJE,
+                            tickColor=EJE, labelColor=TEXTO_GRAFICO, titleColor=TEXTO_GRAFICO)
+            .configure_view(stroke=None)
+            .configure_legend(labelFontSize=13, titleFontSize=13, labelColor=TEXTO_GRAFICO, titleColor=TEXTO_GRAFICO,
+                              symbolFillColor=TEXTO_GRAFICO))
 
 
 # =================================================================== 1. LOS DATOS
@@ -54,7 +58,7 @@ def grafico_datos(df):
                  alt.Tooltip("porcentaje:Q", title="%", format=".1f")])
     # el número va a la derecha de cada barra; las barras chicas quedan legibles
     texto = base.mark_text(align="left", dx=6, fontSize=13).encode(
-        text=alt.Text("etiqueta:N"), color=alt.value("#222")).transform_calculate(
+        text=alt.Text("etiqueta:N"), color=alt.value(TEXTO_FUERTE)).transform_calculate(
         etiqueta="format(datum.secuencias, ',') + '  (' + format(datum.porcentaje, '.1f') + ' %)'")
     return (barras + texto).properties(width=560, height=170)
 
@@ -115,9 +119,9 @@ def grafico_modelo(comparacion):
         x="f1:Q", tooltip=[alt.Tooltip("modelo:N", title="Modelo"), alt.Tooltip("f1:Q", title="f1 macro", format=".3f"),
                            alt.Tooltip("desvio:Q", title="Desvío", format=".3f")])
     etiqueta = base.mark_text(align="left", dx=10, fontSize=11).encode(
-        x="alto:Q", text=alt.Text("f1:Q", format=".2f"), color=alt.value("#444"))
+        x="alto:Q", text=alt.Text("f1:Q", format=".2f"), color=alt.value(TEXTO_GRAFICO))
     linea_piso = alt.Chart(pd.DataFrame({"piso": [piso]})).mark_rule(
-        strokeDash=[5, 4], color="#222", strokeWidth=1.5).encode(x="piso:Q")
+        strokeDash=[5, 4], color=TEXTO_FUERTE, strokeWidth=1.5).encode(x="piso:Q")
     return (linea_piso + rango + punto + etiqueta).properties(width=520, height=330)
 
 
@@ -161,9 +165,9 @@ def grafico_explora(datos, regiones, nombres_region):
     filtro = ("(region == 'todas' || datum.region == region) && datum.mag >= mag_min"
               " && (ver == '" + OPC_VER[1] + "' || datum.test == 1)")
 
-    cajas = alt.Chart(regiones).mark_rect(fill=None, stroke="#9c998f", strokeDash=[4, 3], strokeWidth=1.2).encode(
+    cajas = alt.Chart(regiones).mark_rect(fill=None, stroke=TRAZO_CAJAS, strokeDash=[4, 3], strokeWidth=1.2).encode(
         x="oeste:Q", x2="este:Q", y="sur:Q", y2="norte:Q")
-    nombres = alt.Chart(regiones).mark_text(align="left", baseline="top", dx=4, dy=3, fontSize=11, color="#6b6860").encode(
+    nombres = alt.Chart(regiones).mark_text(align="left", baseline="top", dx=4, dy=3, fontSize=11, color=TEXTO_GRAFICO).encode(
         x="oeste:Q", y="norte:Q", text="nombre:N")
 
     mapa = (alt.Chart(datos)
@@ -171,7 +175,7 @@ def grafico_explora(datos, regiones, nombres_region):
             .transform_calculate(clase_mostrada="color_por == '" + OPC_COLOR[0] + "' ? datum.real : datum.pred",
                                  orden="color_por == '" + OPC_COLOR[0] + "' ? datum.real_i : datum.pred_i",
                                  particion="datum.test == 1 ? 'test' : 'entrenamiento'")
-            .mark_circle(stroke="white", strokeWidth=0.3)
+            .mark_circle(stroke=FONDO_GRAFICO, strokeWidth=0.3)
             .encode(x=alt.X("lon:Q", title="Longitud", scale=alt.Scale(zero=False, domain=[-112, 150])),
                     y=alt.Y("lat:Q", title="Latitud", scale=alt.Scale(zero=False, domain=[-57, 48])),
                     size=alt.Size("mag:Q", scale=alt.Scale(type="sqrt", domain=[4, 9], range=[10, 320]),

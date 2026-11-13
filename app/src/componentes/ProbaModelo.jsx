@@ -29,6 +29,12 @@ function leerCaso(entrada) {
   return { caso: { magnitud, profundidad, region: entrada.region } };
 }
 
+// ¿el valor escrito no sirve? (para marcar el campo; el mensaje lo da leerCaso)
+const fueraDeRango = (texto, maximo) => {
+  const v = Number(texto);
+  return texto.trim() === "" || !Number.isFinite(v) || v < 0 || v > maximo;
+};
+
 // Pide la predicción (servidor, o navegador si no contesta) cada vez que cambia el caso.
 export function usePrediccion(modelo, entrada) {
   const [resultado, setResultado] = useState(null);
@@ -65,7 +71,7 @@ export function CamposCaso({ modelo, entrada, setEntrada, conEjemplos = true }) 
     <form className="formulario" onSubmit={(e) => e.preventDefault()}>
       <label>
         Región
-        <select value={entrada.region} onChange={cambiar("region")}>
+        <select name="region" autoComplete="off" value={entrada.region} onChange={cambiar("region")}>
           {Object.keys(modelo.mc_por_region).map((r) => (
             <option key={r} value={r}>
               {NOMBRE_REGION[r] ?? r} (Mc {n(modelo.mc_por_region[r], 1)})
@@ -75,14 +81,14 @@ export function CamposCaso({ modelo, entrada, setEntrada, conEjemplos = true }) 
       </label>
       <label>
         Magnitud del sismo principal
-        <input type="number" inputMode="decimal" step="0.1" min="0" max="10" value={entrada.magnitud} onChange={cambiar("magnitud")} />
+        <input name="magnitud" autoComplete="off" type="number" inputMode="decimal" step="0.1" min="0" max="10" value={entrada.magnitud} onChange={cambiar("magnitud")} aria-invalid={fueraDeRango(entrada.magnitud, 10)} />
         <small>
           El modelo vio magnitudes de {n(rangos.magnitud[0], 1)} a {n(rangos.magnitud[1], 1)}.
         </small>
       </label>
       <label>
         Profundidad (km)
-        <input type="number" inputMode="decimal" step="1" min="0" max="800" value={entrada.profundidad} onChange={cambiar("profundidad")} />
+        <input name="profundidad" autoComplete="off" type="number" inputMode="decimal" step="1" min="0" max="800" value={entrada.profundidad} onChange={cambiar("profundidad")} aria-invalid={fueraDeRango(entrada.profundidad, 800)} />
         <small>
           El modelo vio profundidades de {n(rangos.profundidad[0])} a {n(rangos.profundidad[1])} km.
         </small>
@@ -91,7 +97,12 @@ export function CamposCaso({ modelo, entrada, setEntrada, conEjemplos = true }) 
         <div className="ejemplos">
           <span>Ejemplos:</span>
           {EJEMPLOS.map((ej) => (
-            <button type="button" key={ej.nombre} onClick={() => setEntrada(ej)}>
+            <button
+              type="button"
+              key={ej.nombre}
+              onClick={() => setEntrada(ej)}
+              aria-pressed={ej.magnitud === entrada.magnitud && ej.profundidad === entrada.profundidad && ej.region === entrada.region}
+            >
               {ej.nombre}
             </button>
           ))}
@@ -111,7 +122,7 @@ export function Respuesta({ modelo, paleta, resultado, calculando, compacta = fa
       {!resultado.rechazado && (
         <>
           <p className="dice">El modelo dice</p>
-          <p className="clase" style={{ borderColor: colorDe(resultado.clase) }}>
+          <p className="clase" key={resultado.clase} style={{ borderColor: colorDe(resultado.clase) }}>
             <span className="chip" style={{ background: colorDe(resultado.clase) }} />
             {resultado.clase}
           </p>
