@@ -83,6 +83,7 @@ export default function App() {
           <p className="etiqueta">El proyecto</p>
           <p className="pregunta">{textos.pregunta}</p>
           <h1>{textos.oracion}</h1>
+          <p className="aclaracion">{textos.aclaracion}</p>
           <ul className="numeros">
             {textos.numeros.map((x) => (
               <li key={x.valor}>

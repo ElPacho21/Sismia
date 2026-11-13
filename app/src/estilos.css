@@ -246,7 +246,7 @@ h2 {
   font-size: 1.15rem;
 }
 .portada h1 {
-  margin: 0 0 3rem;
+  margin: 0 0 1.1rem;
   font-family: var(--titulos);
   font-size: clamp(1.9rem, 4vw, 3.15rem);
   line-height: 1.1;
@@ -254,6 +254,14 @@ h2 {
   letter-spacing: -0.025em;
   max-width: 21em;
   text-wrap: balance;
+}
+.portada .aclaracion {
+  margin: 0 0 3rem;
+  color: var(--suave);
+  font-size: 1.15rem;
+  line-height: 1.5;
+  max-width: 40em;
+  text-wrap: pretty;
 }
 .numeros {
   list-style: none;

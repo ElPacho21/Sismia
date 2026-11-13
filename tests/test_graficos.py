@@ -63,4 +63,4 @@ def test_los_titulos_salen_de_los_numeros_calculados():
     assert "21.292" in t["titulo_datos"]
     assert t["numeros"][1]["valor"].startswith("59,7")
     assert t["numeros"][2]["valor"].endswith("7,6")
-    assert "6 de cada 10" in t["oracion"]
+    assert "6 de cada 10" in t["aclaracion"] and "3 de cada 4" in t["aclaracion"]
