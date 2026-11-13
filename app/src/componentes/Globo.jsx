@@ -137,7 +137,7 @@ export default function Globo({ d, filtros, setFiltros }) {
     if (!ev) return;
     escena.cargarSecuencia(ev, g.real[i]);
     const fila = filasRef.current?.[i];
-    setSecuencia({ indice: i, ev, sMax: tiempoLog(ev.h[ev.h.length - 1]), lugar: fila?.lugar ?? g.id[i], fecha: fila?.fecha, claseIdx: g.real[i] });
+    setSecuencia({ indice: i, ev, sMax: tiempoLog(ev.h[ev.h.length - 1]), lugar: fila?.lugar ?? g.id[i], fecha: fila?.fecha, claseIdx: g.real[i], fila });
     setTau(0);
     setReproduciendo(!reducirMovimiento());
     mostrarDetalle(-1, 0, 0);
@@ -258,26 +258,49 @@ export default function Globo({ d, filtros, setFiltros }) {
             <li className="chico">Tamaño = magnitud · anillos = sismos M7+</li>
           </ul>
           {reloj && (
-            // arriba al centro: el reloj y, si corresponde, el aviso del sismo mayor (plegado, para no tapar el globo)
+            // arriba: el reloj al centro y el resumen de la secuencia a la derecha (en pantallas chicas, uno debajo del otro)
             <div className="globo-arriba">
               <div className="globo-reloj" aria-live="off">
                 <strong>{reloj.texto}</strong>
                 <span>desde el sismo principal · {n(reloj.vistos)} de {n(resumenSecuencia.total)} eventos</span>
               </div>
-              {resumenSecuencia.mayorVinoDespues && (
-                <details className="globo-aviso-mayor" key={secuencia.indice}>
-                  <summary>
-                    Luego hubo un sismo mayor que el principal: M{n(resumenSecuencia.mayor, 1)} frente a M{n(resumenSecuencia.principal, 1)}
-                    <span className="mas">¿Qué implica?</span>
-                    <span className="menos">Ocultar ▴</span>
-                  </summary>
-                  <p>
-                    Esta secuencia comenzó con un sismo de M{n(resumenSecuencia.principal, 1)}, pero luego se produjo uno de M{n(resumenSecuencia.mayor, 1)}. El modelo toma como sismo
-                    principal al primero, por lo que esperaba las réplicas de un M{n(resumenSecuencia.principal, 1)} y no las de un M{n(resumenSecuencia.mayor, 1)}. En casos como este,
-                    el modelo tiende a predecir menos réplicas de las que realmente ocurren.
-                  </p>
-                </details>
-              )}
+              <section className="globo-resumen" aria-label="Resumen de la secuencia">
+                <p className="lugar">
+                  <strong>{secuencia.lugar}</strong>
+                  {secuencia.fecha && <span> · {fecha(secuencia.fecha)}</span>}
+                </p>
+                {secuencia.fila && (
+                  <dl>
+                    <dt>Réplicas</dt>
+                    <dd>
+                      {n(secuencia.fila.replicas)} <i style={{ background: paleta.color_clase[secuencia.fila.real_i] }} />
+                      {secuencia.fila.real}
+                    </dd>
+                    <dt>El modelo dijo</dt>
+                    <dd>
+                      <i style={{ background: paleta.color_clase[secuencia.fila.pred_i] }} />
+                      {secuencia.fila.pred}{" "}
+                      <span className={secuencia.fila.real_i === secuencia.fila.pred_i ? "acerto" : "fallo"}>
+                        {secuencia.fila.real_i === secuencia.fila.pred_i ? "· acertó" : "· no acertó"}
+                      </span>
+                    </dd>
+                  </dl>
+                )}
+                {resumenSecuencia.mayorVinoDespues && (
+                  <details className="globo-aviso-mayor" key={secuencia.indice}>
+                    <summary>
+                      Luego hubo un M{n(resumenSecuencia.mayor, 1)}, mayor que el principal
+                      <span className="mas">¿Qué implica?</span>
+                      <span className="menos">Ocultar ▴</span>
+                    </summary>
+                    <p>
+                      Esta secuencia comenzó con un sismo de M{n(resumenSecuencia.principal, 1)}, pero luego se produjo uno de M{n(resumenSecuencia.mayor, 1)}. El modelo toma como sismo
+                      principal al primero, por lo que esperaba las réplicas de un M{n(resumenSecuencia.principal, 1)} y no las de un M{n(resumenSecuencia.mayor, 1)}. En casos como este,
+                      el modelo tiende a predecir menos réplicas de las que realmente ocurren.
+                    </p>
+                  </details>
+                )}
+              </section>
             </div>
           )}
           {datos && (

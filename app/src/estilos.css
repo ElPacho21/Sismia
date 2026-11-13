@@ -905,18 +905,71 @@ tr.resaltada td {
   margin-top: 0.3rem;
   color: #a3b0c5;
 }
+/* franja de arriba del globo: reloj al centro y resumen a la derecha; el espacio vacío deja pasar el mouse al globo */
 .globo-arriba {
   position: absolute;
-  left: 50%;
+  left: 14px;
+  right: 14px;
   top: 14px;
-  transform: translateX(-50%);
   z-index: 2;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-  width: max-content;
-  max-width: calc(100% - 28px);
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: start;
+  gap: 0.6rem;
+  pointer-events: none;
+}
+.globo-arriba > * {
+  pointer-events: auto;
+}
+.globo-arriba .globo-reloj {
+  grid-column: 2;
+}
+.globo-resumen {
+  grid-column: 3;
+  justify-self: end;
+  width: 100%;
+  max-width: 19rem;
+  padding: 0.6rem 0.8rem;
+  background: rgba(4, 7, 13, 0.82);
+  border: 1px solid var(--trazo);
+  border-radius: var(--r-placa);
+  color: #e6edf8;
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+.globo-resumen .lugar {
+  margin: 0 0 0.4rem;
+}
+.globo-resumen .lugar span {
+  color: #a3b0c5;
+}
+.globo-resumen dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.2rem 0.7rem;
+  margin: 0;
+}
+.globo-resumen dt {
+  color: #a3b0c5;
+}
+.globo-resumen dd {
+  margin: 0;
+}
+.globo-resumen i {
+  display: inline-block;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  margin: 0 0.3rem 0 0.15rem;
+}
+.globo-resumen .acerto {
+  color: #8fd4a8;
+}
+.globo-resumen .fallo {
+  color: #f1b36b;
+}
+.globo-resumen .globo-aviso-mayor {
+  margin-top: 0.55rem;
 }
 .globo-reloj {
   text-align: center;
@@ -938,7 +991,6 @@ tr.resaltada td {
 }
 /* el aviso del sismo mayor: una línea bajo el reloj; se despliega para leer la explicación */
 .globo-aviso-mayor {
-  max-width: 34rem;
   background: rgba(20, 14, 6, 0.9);
   border: 1px solid rgba(224, 160, 74, 0.6);
   border-radius: var(--r-placa);
@@ -948,7 +1000,7 @@ tr.resaltada td {
 }
 .globo-aviso-mayor summary {
   cursor: pointer;
-  padding: 0.4rem 0.8rem 0.4rem 1.8rem;
+  padding: 0.4rem 0.7rem 0.4rem 1.6rem;
   position: relative;
   list-style: none;
 }
@@ -983,7 +1035,22 @@ tr.resaltada td {
 }
 .globo-aviso-mayor p {
   margin: 0;
-  padding: 0 0.8rem 0.6rem 1.8rem;
+  padding: 0 0.7rem 0.6rem 1.6rem;
+}
+/* pantallas medianas y chicas: el resumen va debajo del reloj, a todo el ancho */
+@media (max-width: 900px) {
+  .globo-arriba {
+    grid-template-columns: 1fr;
+  }
+  .globo-arriba .globo-reloj {
+    grid-column: 1;
+    justify-self: center;
+  }
+  .globo-resumen {
+    grid-column: 1;
+    justify-self: stretch;
+    max-width: none;
+  }
 }
 .globo-teclas {
   display: flex;
