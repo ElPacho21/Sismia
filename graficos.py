@@ -16,7 +16,7 @@ import numpy as np
 import pandas as pd
 
 from palette import (CLASES, COLOR_CLASE, COLOR_DATOS, COLOR_ELEGIDO, COLOR_NEUTRO, EJE, FONDO_GRAFICO, GRILLA,
-                     TEXTO_FUERTE, TEXTO_GRAFICO, TRAZO_CAJAS)
+                     TEXTO_FUERTE, TEXTO_GRAFICO, TRAZO_CAJAS, COLOR_COSTA)
 
 alt.data_transformers.disable_max_rows()
 
@@ -145,6 +145,42 @@ def filas_explora(secuencias):
     return d.drop(columns=["id"])
 
 
+def costas(caja=(-125, 165, -62, 52)):
+    """Costas del mundo (Natural Earth 110m, vía world-atlas) como anillos en longitud/latitud, para dibujarlas
+    detrás de los puntos con las mismas escalas del mapa. Sólo anillos que tocan la caja visible."""
+    t = json.loads((Path(__file__).parent / "data" / "mapa" / "land-110m.json").read_text(encoding="utf-8"))
+    (sx, sy), (tx, ty) = t["transform"]["scale"], t["transform"]["translate"]
+    arcos = []
+    for arco in t["arcs"]:
+        x = y = 0
+        pts = []
+        for dx, dy in arco:
+            x, y = x + dx, y + dy
+            pts.append((x * sx + tx, y * sy + ty))
+        arcos.append(pts)
+
+    def anillo(indices):
+        out = []
+        for i in indices:
+            pts = arcos[i] if i >= 0 else arcos[~i][::-1]
+            out.extend(pts if not out else pts[1:])
+        return out
+
+    oeste, este, sur, norte = caja
+    filas, n = [], 0
+    for geo in t["objects"]["land"]["geometries"]:
+        poligonos = geo["arcs"] if geo["type"] == "MultiPolygon" else [geo["arcs"]]
+        for poligono in poligonos:
+            for indices in poligono:
+                pts = anillo(indices)
+                if not any(oeste <= lon <= este and sur <= lat <= norte for lon, lat in pts):
+                    continue
+                for orden, (lon, lat) in enumerate(pts):
+                    filas.append({"anillo": n, "orden": orden, "lon": round(lon, 2), "lat": round(lat, 2)})
+                n += 1
+    return pd.DataFrame(filas)
+
+
 def grafico_explora(datos, regiones, nombres_region):
     """Panorama + detalle a pedido + resultado del modelo. Los controles son parámetros con nombre:
          region    -> filtra por región           (transform_filter de todas las capas)
@@ -170,6 +206,13 @@ def grafico_explora(datos, regiones, nombres_region):
     nombres = alt.Chart(regiones).mark_text(align="left", baseline="top", dx=4, dy=3, fontSize=11, color=TEXTO_GRAFICO).encode(
         x="oeste:Q", y="norte:Q", text="nombre:N")
 
+    # el mundo de fondo: mismas escalas que los puntos, así que cada sismo cae sobre su lugar real
+    esc_x = alt.Scale(zero=False, domain=[-112, 150])
+    esc_y = alt.Scale(zero=False, domain=[-57, 48])
+    fondo = (alt.Chart(costas()).mark_line(clip=True, color=COLOR_COSTA, strokeWidth=0.9, opacity=0.45)
+             .encode(x=alt.X("lon:Q", title="Longitud", scale=esc_x), y=alt.Y("lat:Q", title="Latitud", scale=esc_y),
+                     detail="anillo:N", order="orden:Q"))
+
     mapa = (alt.Chart(datos)
             .transform_filter(filtro)
             .transform_calculate(clase_mostrada="color_por == '" + OPC_COLOR[0] + "' ? datum.real : datum.pred",
@@ -193,7 +236,7 @@ def grafico_explora(datos, regiones, nombres_region):
                              alt.Tooltip("p_muchas:Q", title="P(muchas)", format=".0%"),
                              alt.Tooltip("particion:N", title="Partición")])
             .add_params(zona))
-    panorama = alt.layer(cajas, nombres, mapa).properties(width=680, height=380)
+    panorama = alt.layer(fondo, cajas, nombres, mapa).properties(width=680, height=380)
 
     # qué dijo el modelo para lo que realmente fue cada clase (se mueve con todos los controles y con la zona dibujada)
     resultado = (alt.Chart(datos)

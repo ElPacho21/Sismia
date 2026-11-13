@@ -17,3 +17,4 @@ TEXTO_FUERTE = "#e8edf5"
 GRILLA = "#202e47"
 EJE = "#566890"
 TRAZO_CAJAS = "#6f82a3"
+COLOR_COSTA = "#8aa0c4"      # costas del mapa de fondo de Explorá: finas y tenues
