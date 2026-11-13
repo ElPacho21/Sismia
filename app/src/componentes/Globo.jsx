@@ -311,8 +311,9 @@ export default function Globo({ d, filtros, setFiltros }) {
               </p>
               {resumenSecuencia.mayorVinoDespues && (
                 <p className="aviso-chico">
-                  El principal (el que abre la secuencia) fue M{n(resumenSecuencia.principal, 1)}, pero después hubo un M{n(resumenSecuencia.mayor, 1)}. Por eso con <code>mainshock = root</code> a este
-                  sismo se le asignan las réplicas de toda la secuencia: es uno de los casos que el modelo subestima.
+                  Esta secuencia comenzó con un sismo de M{n(resumenSecuencia.principal, 1)}, pero luego se produjo uno de M{n(resumenSecuencia.mayor, 1)}. El modelo toma como sismo
+                  principal al primero, por lo que esperaba las réplicas de un M{n(resumenSecuencia.principal, 1)} y no las de un M{n(resumenSecuencia.mayor, 1)}. En casos como este, el
+                  modelo tiende a predecir menos réplicas de las que realmente ocurren.
                 </p>
               )}
             </>
