@@ -27,7 +27,8 @@ export default function GloboPuerta(props) {
       <h2>Los mismos datos, en el globo: elegí una región o animá una secuencia</h2>
       <p className="nota globo-intro">
         Es una vista extra. Cada efecto codifica un dato: el tamaño es la magnitud, el color es la clase, los anillos marcan los sismos M7 o más y, al animar una secuencia, el anillo
-        de cada evento nace cuando le toca.
+        de cada evento nace cuando le toca. El tiempo de la animación corre en escala logarítmica: las primeras horas, cuando hay más réplicas, ocupan tanto como los
+        últimos meses.
       </p>
       {cerca ? (
         <Suspense fallback={<p className="globo-cargando-fuera">Cargando el globo…</p>}>

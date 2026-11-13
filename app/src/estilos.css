@@ -739,16 +739,14 @@ tr.resaltada td {
   font-variant-numeric: tabular-nums;
 }
 .avisos,
-.globo-aviso,
-.aviso-chico {
+.globo-aviso {
   position: relative;
   background: var(--aviso-fondo);
   border: 1px solid rgba(224, 160, 74, 0.45);
   border-radius: var(--r-control);
 }
 .avisos::before,
-.globo-aviso::before,
-.aviso-chico::before {
+.globo-aviso::before {
   content: "";
   position: absolute;
   top: 1.05rem;
@@ -907,11 +905,20 @@ tr.resaltada td {
   margin-top: 0.3rem;
   color: #a3b0c5;
 }
-.globo-reloj {
+.globo-arriba {
   position: absolute;
   left: 50%;
   top: 14px;
   transform: translateX(-50%);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  width: max-content;
+  max-width: calc(100% - 28px);
+}
+.globo-reloj {
   text-align: center;
   background: rgba(4, 7, 13, 0.75);
   border: 1px solid var(--trazo);
@@ -928,6 +935,55 @@ tr.resaltada td {
 .globo-reloj span {
   font-size: 0.82rem;
   color: #c3d0e6;
+}
+/* el aviso del sismo mayor: una línea bajo el reloj; se despliega para leer la explicación */
+.globo-aviso-mayor {
+  max-width: 34rem;
+  background: rgba(20, 14, 6, 0.9);
+  border: 1px solid rgba(224, 160, 74, 0.6);
+  border-radius: var(--r-placa);
+  color: #f3e3cc;
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+.globo-aviso-mayor summary {
+  cursor: pointer;
+  padding: 0.4rem 0.8rem 0.4rem 1.8rem;
+  position: relative;
+  list-style: none;
+}
+.globo-aviso-mayor summary::-webkit-details-marker {
+  display: none;
+}
+.globo-aviso-mayor summary::before {
+  content: "";
+  position: absolute;
+  left: 0.75rem;
+  top: 0.85rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--aviso);
+}
+.globo-aviso-mayor .mas,
+.globo-aviso-mayor .menos {
+  margin-left: 0.6rem;
+  color: var(--aviso);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  white-space: nowrap;
+}
+/* cerrado ofrece «¿Qué implica?»; abierto, «Ocultar» para volver a plegarlo */
+.globo-aviso-mayor .menos,
+.globo-aviso-mayor[open] .mas {
+  display: none;
+}
+.globo-aviso-mayor[open] .menos {
+  display: inline;
+}
+.globo-aviso-mayor p {
+  margin: 0;
+  padding: 0 0.8rem 0.6rem 1.8rem;
 }
 .globo-teclas {
   display: flex;
@@ -1052,13 +1108,6 @@ tr.resaltada td {
 }
 .globo-caja:has(.globo-reproductor) .globo-leyenda {
   bottom: 76px;
-}
-.aviso-chico {
-  padding: 0.55rem 0.85rem 0.55rem 2rem;
-  font-size: 0.88rem;
-}
-.aviso-chico::before {
-  top: 0.8rem;
 }
 
 /* ---------- táctil: objetivos de 44px, y el globo deja pasar el desplazamiento de un dedo ---------- */

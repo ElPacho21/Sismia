@@ -188,7 +188,7 @@ export default function Globo({ d, filtros, setFiltros }) {
     if (!secuencia) return null;
     const mags = secuencia.ev.mag;
     const mayor = Math.max(...mags);
-    return { principal: mags[0], mayor, mayorVinoDespues: mayor > mags[0] + 0.05, total: mags.length, duracion: horasATexto(secuencia.ev.h[secuencia.ev.h.length - 1]) };
+    return { principal: mags[0], mayor, mayorVinoDespues: mayor > mags[0] + 0.05, total: mags.length };
   }, [secuencia]);
 
   const region = regiones.find((r) => r.nombre === filtros.region);
@@ -234,7 +234,8 @@ export default function Globo({ d, filtros, setFiltros }) {
                 <option key={o}>{o}</option>
               ))}
             </select>
-          </label>        </div>
+          </label>
+        </div>
         <div
           className="globo-caja"
           ref={caja}
@@ -257,9 +258,26 @@ export default function Globo({ d, filtros, setFiltros }) {
             <li className="chico">Tamaño = magnitud · anillos = sismos M7+</li>
           </ul>
           {reloj && (
-            <div className="globo-reloj" aria-live="off">
-              <strong>{reloj.texto}</strong>
-              <span>desde el sismo principal · {n(reloj.vistos)} de {n(resumenSecuencia.total)} eventos</span>
+            // arriba al centro: el reloj y, si corresponde, el aviso del sismo mayor (plegado, para no tapar el globo)
+            <div className="globo-arriba">
+              <div className="globo-reloj" aria-live="off">
+                <strong>{reloj.texto}</strong>
+                <span>desde el sismo principal · {n(reloj.vistos)} de {n(resumenSecuencia.total)} eventos</span>
+              </div>
+              {resumenSecuencia.mayorVinoDespues && (
+                <details className="globo-aviso-mayor" key={secuencia.indice}>
+                  <summary>
+                    Luego hubo un sismo mayor que el principal: M{n(resumenSecuencia.mayor, 1)} frente a M{n(resumenSecuencia.principal, 1)}
+                    <span className="mas">¿Qué implica?</span>
+                    <span className="menos">Ocultar ▴</span>
+                  </summary>
+                  <p>
+                    Esta secuencia comenzó con un sismo de M{n(resumenSecuencia.principal, 1)}, pero luego se produjo uno de M{n(resumenSecuencia.mayor, 1)}. El modelo toma como sismo
+                    principal al primero, por lo que esperaba las réplicas de un M{n(resumenSecuencia.principal, 1)} y no las de un M{n(resumenSecuencia.mayor, 1)}. En casos como este,
+                    el modelo tiende a predecir menos réplicas de las que realmente ocurren.
+                  </p>
+                </details>
+              )}
             </div>
           )}
           {datos && (
@@ -331,26 +349,10 @@ export default function Globo({ d, filtros, setFiltros }) {
 
         <section>
           <h3>Animá una secuencia</h3>
-          {secuencia ? (
-            <>
-              <p className="nota">
-                <strong>{secuencia.lugar}</strong> ({secuencia.fecha ? fecha(secuencia.fecha) : ""}): principal M{n(resumenSecuencia.principal, 1)}, {n(resumenSecuencia.total)} eventos en {resumenSecuencia.duracion}. El tiempo corre en
-                escala <strong>logarítmica</strong>: las primeras horas ocupan tanto como los últimos meses. La cámara se acerca a donde se concentran los eventos para que se vean separados; con la rueda o «Vista completa» se ven también los más lejanos.
-              </p>
-              {resumenSecuencia.mayorVinoDespues && (
-                <p className="aviso-chico">
-                  Esta secuencia comenzó con un sismo de M{n(resumenSecuencia.principal, 1)}, pero luego se produjo uno de M{n(resumenSecuencia.mayor, 1)}. El modelo toma como sismo
-                  principal al primero, por lo que esperaba las réplicas de un M{n(resumenSecuencia.principal, 1)} y no las de un M{n(resumenSecuencia.mayor, 1)}. En casos como este, el
-                  modelo tiende a predecir menos réplicas de las que realmente ocurren.
-                </p>
-              )}
-            </>
-          ) : (
-            <p className="nota">
-              Elegí una de las secuencias más largas en la barra de abajo del globo, o clickeá un punto. Cada evento aparece en su momento, con un anillo del tamaño de su magnitud,
-              pintado con la clase real de la secuencia.
-            </p>
-          )}
+          <p className="nota">
+            Elegí una de las secuencias más largas en la barra de abajo del globo, o clickeá un punto. Cada evento aparece en su momento, con un anillo del tamaño de su magnitud,
+            pintado con la clase real de la secuencia.
+          </p>
         </section>
       </aside>
     </div>
