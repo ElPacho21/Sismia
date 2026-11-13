@@ -236,6 +236,19 @@ export default function Globo({ d, filtros, setFiltros }) {
             </select>
           </label>
         </div>
+        {/* el resultado de la región elegida, pegado al filtro que la cambia */}
+        <p className="globo-region" aria-live="polite">
+          {region ? (
+            <>
+              <strong>{NOMBRE_REGION[region.nombre]}</strong>: Mc {n(region.mc, 1)} · {n(region.secuencias)} secuencias ({n(region.secuencias_test)} de test) · en el test, f1{" "}
+              <strong>{n(region.f1_test, 2)}</strong> y acierta el intervalo en el {n(region.acierto_test * 100, 0)} % <span className="aclaracion">(un único modelo para todas las regiones)</span>
+            </>
+          ) : (
+            <>
+              <strong>Todas las regiones</strong>: f1 {n(metricas.final.f1_test, 2)} en el test. Elegí una región, o clickeá una en el globo, para ver su resultado.
+            </>
+          )}
+        </p>
         <div
           className="globo-caja"
           ref={caja}
@@ -271,6 +284,10 @@ export default function Globo({ d, filtros, setFiltros }) {
                 </p>
                 {secuencia.fila && (
                   <dl>
+                    <dt>Magnitud</dt>
+                    <dd>M{n(secuencia.fila.mag, 1)}</dd>
+                    <dt>Profundidad</dt>
+                    <dd>{n(secuencia.fila.prof, 0)} km</dd>
                     <dt>Réplicas</dt>
                     <dd>
                       {n(secuencia.fila.replicas)} <i style={{ background: paleta.color_clase[secuencia.fila.real_i] }} />
@@ -352,32 +369,6 @@ export default function Globo({ d, filtros, setFiltros }) {
           <span>Arrastrá para girar, rueda para acercar, o usá las flechas con el globo enfocado.{secuencia && " Esc quita la secuencia."}</span>
         </div>
       </div>
-
-      <aside className="globo-panel">
-        <section>
-          <h3>Resultado por región</h3>
-          <p className="nota">
-            {region ? (
-              <>
-                <strong>{NOMBRE_REGION[region.nombre]}</strong>: Mc {n(region.mc, 1)}, {n(region.secuencias)} secuencias ({n(region.secuencias_test)} de test). En el test, f1{" "}
-                <strong>{n(region.f1_test, 2)}</strong> y acierto del intervalo {n(region.acierto_test * 100, 0)} %. Es un único modelo para todas las regiones; este es su resultado en esta.
-              </>
-            ) : (
-              <>
-                Todas las regiones: f1 {n(metricas.final.f1_test, 2)} en el test. Clickeá una región en el globo, o elegila arriba, para ver su resultado.
-              </>
-            )}
-          </p>
-        </section>
-
-        <section>
-          <h3>Animá una secuencia</h3>
-          <p className="nota">
-            Elegí una de las secuencias más largas en la barra de abajo del globo, o clickeá un punto. Cada evento aparece en su momento, con un anillo del tamaño de su magnitud,
-            pintado con la clase real de la secuencia.
-          </p>
-        </section>
-      </aside>
     </div>
   );
 }

@@ -893,7 +893,9 @@ tr.resaltada td {
 }
 .globo-caja {
   position: relative;
-  height: 640px;
+  /* el globo se achica en pantallas bajas para que entre junto con los filtros y la línea de la región
+     (190px = barra de navegación + filtros + línea de la región + márgenes) */
+  height: clamp(400px, calc(100svh - 190px), 640px);
   background: #04070d;
   border: 1px solid var(--trazo);
   border-radius: var(--r-globo);
@@ -1137,22 +1139,17 @@ tr.resaltada td {
   padding: 0.3rem 0.55rem;
   border-radius: var(--r-control);
 }
-.globo-panel {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1.1rem;
-  align-items: start;
+/* una línea con el resultado de la región, entre los filtros y el globo */
+.globo-region {
+  margin: 0 0 0.8rem;
+  font-size: 0.88rem;
+  color: var(--suave);
 }
-.globo-panel > section {
-  background: var(--placa);
-  border: 1px solid var(--trazo);
-  border-radius: var(--r-placa);
-  padding: 0 1.2rem 1.2rem;
+.globo-region strong {
+  color: var(--texto);
 }
-.globo-panel h3 {
-  margin: 1.1rem 0 0.7rem;
-  font-family: var(--titulos);
-  font-size: 1.02rem;
+.globo-region .aclaracion {
+  color: #8f9bb0;
 }
 /* filtros en una fila, justo arriba del globo */
 .globo-filtros {
@@ -1299,7 +1296,8 @@ tr.resaltada td {
     padding-bottom: 1rem;
   }
   .globo-caja {
-    height: 520px;
+    /* en el celular los filtros y la línea de la región ocupan más alto */
+    height: clamp(340px, calc(100svh - 330px), 520px);
   }
   /* los filtros en dos columnas, pegados al globo */
   .globo-filtros {
