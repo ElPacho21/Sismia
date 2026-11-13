@@ -4,10 +4,10 @@ import land from "world-atlas/land-110m.json";
 import { EscenaGlobo, webglDisponible } from "../globo/escena.js";
 import { centroRegion, eventosHasta, horasATexto, horasDeTiempoLog, tiempoLog } from "../globo/geo.js";
 import { fecha, n } from "../lib/formato.js";
-import { CamposCaso, NOMBRE_REGION, Respuesta } from "./ProbaModelo.jsx";
+import { NOMBRE_REGION } from "./ProbaModelo.jsx";
 
-// El globo (extra de la copa): los mismos datos de Explorá en 3D, con la animación de una secuencia
-// y la prueba del modelo. Se carga recién cuando el usuario llega hasta acá (ver GloboPuerta).
+// El globo (extra de la copa): los mismos datos de Explorá en 3D, con la animación de una secuencia.
+// Se carga recién cuando el usuario llega hasta acá (ver GloboPuerta).
 const DURACION_S = 14; // lo que tarda en correr toda la secuencia
 const escapar = (t) => String(t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const reducirMovimiento = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -17,8 +17,8 @@ const TIERRA = feature(land, land.objects.land).features.map((f) => f.geometry);
 
 const pedirJson = (ruta) => fetch(ruta).then((r) => (r.ok ? r.json() : Promise.reject(new Error(`${ruta}: ${r.status}`))));
 
-export default function Globo({ d, filtros, setFiltros, entrada, setEntrada, prediccion }) {
-  const { textos, metricas, regiones, modelo, paleta } = d;
+export default function Globo({ d, filtros, setFiltros }) {
+  const { textos, metricas, regiones, paleta } = d;
   const opciones = textos.opciones;
   const [datos, setDatos] = useState(null);
   const [error, setError] = useState(null);
@@ -100,7 +100,6 @@ export default function Globo({ d, filtros, setFiltros, entrada, setEntrada, pre
       else escena.volarA(12, 120, 3.1);
     }
     regionPrevia.current = filtros.region;
-    if (filtros.region !== "todas") setEntrada((e) => (e.region === filtros.region ? e : { ...e, region: filtros.region }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [datos, filtros, soloTest, colorPorReal]);
 
@@ -190,7 +189,7 @@ export default function Globo({ d, filtros, setFiltros, entrada, setEntrada, pre
   const destacadas = datos?.destacadas ?? [];
 
   if (sinWebgl)
-    return <p className="globo-aviso">Tu navegador no tiene WebGL activado, así que el globo no puede dibujarse. Explorá y Probá el modelo cubren lo mismo en 2D.</p>;
+    return <p className="globo-aviso">Tu navegador no tiene WebGL activado, así que el globo no puede dibujarse. Explorá muestra los mismos datos en 2D.</p>;
   if (error) return <p className="error">No se pudo cargar el globo: {error}</p>;
 
   return (
@@ -320,12 +319,6 @@ export default function Globo({ d, filtros, setFiltros, entrada, setEntrada, pre
           ) : (
             <p className="nota">Cada evento aparece en su momento, con un anillo del tamaño de su magnitud, pintado con la clase real de la secuencia.</p>
           )}
-        </section>
-
-        <section>
-          <h3>Probá el modelo desde acá</h3>
-          <CamposCaso modelo={modelo} entrada={entrada} setEntrada={setEntrada} conEjemplos={false} />
-          <Respuesta modelo={modelo} paleta={paleta} resultado={prediccion.resultado} calculando={prediccion.calculando} compacta />
         </section>
       </aside>
     </div>

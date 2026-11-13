@@ -966,8 +966,7 @@ tr.resaltada td {
   font-weight: 600;
   margin-bottom: 0.7rem;
 }
-.globo-panel select,
-.globo-panel input[type="number"] {
+.globo-panel select {
   display: block;
   width: 100%;
   margin-top: 0.3rem;
@@ -981,19 +980,6 @@ tr.resaltada td {
 .globo-panel input[type="range"] {
   width: 100%;
   accent-color: var(--hielo);
-}
-.globo-panel .formulario,
-.globo-panel .resultado {
-  background: none;
-  border: none;
-  padding: 0;
-}
-.globo-panel .resultado.compacta .clase {
-  font-size: 1.2rem;
-}
-.globo-panel .barras li {
-  grid-template-columns: 7.5em 1fr 3.6em;
-  font-size: 0.8rem;
 }
 .globo-reproductor {
   display: flex;

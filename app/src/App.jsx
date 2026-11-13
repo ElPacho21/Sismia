@@ -23,9 +23,15 @@ const NAV = [
 export default function App() {
   const [d, setD] = useState(null);
   const [error, setError] = useState(null);
-  // lo que comparten Explorá y el globo (filtros) y «Probá el modelo» y el globo (el caso cargado)
+  // lo que comparten Explorá y el globo (filtros) y el caso cargado en «Probá el modelo»
   const [filtros, setFiltros] = useState(null);
   const [entrada, setEntrada] = useState(EJEMPLOS[0]);
+
+  // la región elegida en Explorá o en el globo pasa también al caso de «Probá el modelo»
+  const regionFiltrada = filtros?.region;
+  useEffect(() => {
+    if (regionFiltrada && regionFiltrada !== "todas") setEntrada((e) => (e.region === regionFiltrada ? e : { ...e, region: regionFiltrada }));
+  }, [regionFiltrada]);
 
   useEffect(() => {
     despertarApi(); // la función del servidor arranca en frío: se la despierta ya
@@ -154,7 +160,7 @@ export default function App() {
         </div>
 
         <Explora filtros={filtros} setFiltros={setFiltros} />
-        <GloboPuerta d={d} filtros={filtros} setFiltros={setFiltros} entrada={entrada} setEntrada={setEntrada} prediccion={prediccion} />
+        <GloboPuerta d={d} filtros={filtros} setFiltros={setFiltros} />
         <ProbaModelo modelo={modelo} paleta={paleta} entrada={entrada} setEntrada={setEntrada} prediccion={prediccion} />
       </main>
 
