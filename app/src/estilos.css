@@ -960,15 +960,28 @@ tr.resaltada td {
   font-family: var(--titulos);
   font-size: 1.02rem;
 }
-.globo-panel label {
+/* filtros en una fila, justo arriba del globo */
+.globo-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
+  align-items: flex-end;
+  margin-bottom: 0.8rem;
+}
+.globo-filtros label {
   display: block;
   font-size: 0.85rem;
   font-weight: 600;
-  margin-bottom: 0.7rem;
 }
-.globo-panel select {
+.globo-filtros .titulo-filtros {
+  padding-bottom: 0.45rem;
+  font-family: var(--titulos);
+  font-size: 1.02rem;
+  font-weight: 700;
+}
+.globo-filtros select {
   display: block;
-  width: 100%;
+  min-width: 10rem;
   margin-top: 0.3rem;
   padding: 0.4rem 0.55rem;
   font: inherit;
@@ -977,11 +990,15 @@ tr.resaltada td {
   border-radius: var(--r-control);
   background: var(--placa-alta);
 }
-.globo-panel input[type="range"] {
-  width: 100%;
-  accent-color: var(--hielo);
+.globo-filtros .rango {
+  flex: 0 1 12rem;
 }
-/* controles de la secuencia, superpuestos abajo del globo; la leyenda sube para dejarles lugar */
+.globo-filtros input[type="range"] {
+  display: block;
+  width: 100%;
+  margin-top: 0.55rem;
+  accent-color: var(--hielo);
+}/* controles de la secuencia, superpuestos abajo del globo; la leyenda sube para dejarles lugar */
 .globo-reproductor {
   position: absolute;
   left: 14px;
@@ -1016,6 +1033,7 @@ tr.resaltada td {
   white-space: nowrap;
 }
 .globo-reproductor .selector {
+  align-self: stretch; /* la misma altura que los botones de la barra */
   min-width: 0;
   padding: 0.35rem 0.5rem;
   font: inherit;
@@ -1047,7 +1065,7 @@ tr.resaltada td {
 @media (pointer: coarse) {
   .formulario input,
   .formulario select,
-  .globo-panel select,
+  .globo-filtros select,
   .vega-bind select,
   .ejemplos button,
   .globo-teclas button,
@@ -1056,7 +1074,7 @@ tr.resaltada td {
     min-height: 44px;
   }
   .vega-bind input[type="range"],
-  .globo-panel input[type="range"],
+  .globo-filtros input[type="range"],
   .globo-reproductor input[type="range"] {
     min-height: 44px;
     margin: 0;
@@ -1096,7 +1114,20 @@ tr.resaltada td {
   .globo-caja {
     height: 520px;
   }
-  /* en el celular, sólo lo esencial sobre el globo: elegir; o reproducir, el tiempo y la ✕ */
+  /* los filtros en dos columnas, pegados al globo */
+  .globo-filtros {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem 0.8rem;
+  }
+  .globo-filtros select {
+    width: 100%;
+    min-width: 0;
+  }
+  .globo-filtros .titulo-filtros {
+    grid-column: 1 / -1;
+    padding-bottom: 0;
+  }  /* en el celular, sólo lo esencial sobre el globo: elegir; o reproducir, el tiempo y la ✕ */
   .globo-reproductor .encuadre,
   .globo-reproductor .titulo-barra,
   .globo-reproductor:not(.sin-secuencia) .selector {

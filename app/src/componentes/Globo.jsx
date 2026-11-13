@@ -201,6 +201,40 @@ export default function Globo({ d, filtros, setFiltros }) {
   return (
     <div className="globo-grilla">
       <div className="globo-escena">
+        {/* los filtros, justo arriba del globo para ver el efecto sin desplazarse (son los mismos de Explorá) */}
+        <div className="globo-filtros" role="group" aria-labelledby="globo-filtros-titulo">
+          <span id="globo-filtros-titulo" className="titulo-filtros">Filtros</span>
+          <label>
+            Región
+            <select name="region" autoComplete="off" value={filtros.region} onChange={(e) => setFiltros((f) => ({ ...f, region: e.target.value }))}>
+              <option value="todas">todas</option>
+              {regiones.map((r) => (
+                <option key={r.nombre} value={r.nombre}>
+                  {NOMBRE_REGION[r.nombre] ?? r.nombre}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="rango">
+            Magnitud mínima: {n(filtros.magMin, 1)}
+            <input name="magnitud-minima" type="range" min="4" max="8" step="0.1" value={filtros.magMin} onChange={(e) => setFiltros((f) => ({ ...f, magMin: Number(e.target.value) }))} />
+          </label>
+          <label>
+            Secuencias
+            <select name="ver" autoComplete="off" value={filtros.ver} onChange={(e) => setFiltros((f) => ({ ...f, ver: e.target.value }))}>
+              {opciones.ver.map((o) => (
+                <option key={o}>{o}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Pintar según
+            <select name="pintar-segun" autoComplete="off" value={filtros.colorPor} onChange={(e) => setFiltros((f) => ({ ...f, colorPor: e.target.value }))}>
+              {opciones.color.map((o) => (
+                <option key={o}>{o}</option>
+              ))}
+            </select>
+          </label>        </div>
         <div
           className="globo-caja"
           ref={caja}
@@ -280,40 +314,7 @@ export default function Globo({ d, filtros, setFiltros }) {
 
       <aside className="globo-panel">
         <section>
-          <h3>Filtros (los mismos de Explorá)</h3>
-          <div className="globo-filtros">
-            <label>
-              Región
-              <select name="region" autoComplete="off" value={filtros.region} onChange={(e) => setFiltros((f) => ({ ...f, region: e.target.value }))}>
-                <option value="todas">todas</option>
-                {regiones.map((r) => (
-                  <option key={r.nombre} value={r.nombre}>
-                    {NOMBRE_REGION[r.nombre] ?? r.nombre}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Magnitud mínima: {n(filtros.magMin, 1)}
-              <input name="magnitud-minima" type="range" min="4" max="8" step="0.1" value={filtros.magMin} onChange={(e) => setFiltros((f) => ({ ...f, magMin: Number(e.target.value) }))} />
-            </label>
-            <label>
-              Secuencias
-              <select name="ver" autoComplete="off" value={filtros.ver} onChange={(e) => setFiltros((f) => ({ ...f, ver: e.target.value }))}>
-                {opciones.ver.map((o) => (
-                  <option key={o}>{o}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Pintar según
-              <select name="pintar-segun" autoComplete="off" value={filtros.colorPor} onChange={(e) => setFiltros((f) => ({ ...f, colorPor: e.target.value }))}>
-                {opciones.color.map((o) => (
-                  <option key={o}>{o}</option>
-                ))}
-              </select>
-            </label>
-          </div>
+          <h3>Resultado por región</h3>
           <p className="nota">
             {region ? (
               <>
