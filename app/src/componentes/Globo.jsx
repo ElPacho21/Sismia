@@ -202,7 +202,7 @@ export default function Globo({ d, filtros, setFiltros }) {
     <div className="globo-grilla">
       <div className="globo-escena">
         <div
-          className={`globo-caja${secuencia ? " con-secuencia" : ""}`}
+          className="globo-caja"
           ref={caja}
           onKeyDown={(e) => {
             if (e.key === "Escape" && secuencia) {
@@ -228,19 +228,42 @@ export default function Globo({ d, filtros, setFiltros }) {
               <span>desde el sismo principal · {n(reloj.vistos)} de {n(resumenSecuencia.total)} eventos</span>
             </div>
           )}
-          {secuencia && (
-            // los controles de la animación, sobre el globo (como en un reproductor de video)
-            <div className="globo-reproductor" role="group" aria-label="Controles de la secuencia">
-              <button type="button" onClick={() => { if (tau >= 1) setTau(0); setReproduciendo((r) => !r); }} aria-label={reproduciendo ? "Pausar" : "Reproducir"}>
-                {reproduciendo ? "⏸" : "▶"}
-              </button>
-              <input name="momento" type="range" min="0" max="1000" value={Math.round(tau * 1000)} aria-label="Momento de la secuencia"
-                onChange={(e) => { setReproduciendo(false); setTau(Number(e.target.value) / 1000); }} />
-              <button type="button" className="encuadre" onClick={() => escenaRef.current?.encuadrar("nucleo")}
-                title="Acerca la cámara a donde se concentra la mayoría de los eventos">Vista cercana</button>
-              <button type="button" className="encuadre" onClick={() => escenaRef.current?.encuadrar("todo")}
-                title="Aleja la cámara hasta que se ven todos los eventos, incluidos los más lejanos">Vista completa</button>
-              <button type="button" className="cerrar" onClick={quitarSecuencia} aria-label="Quitar la secuencia (Esc)" title="Quitar la secuencia (Esc)">✕</button>
+          {datos && (
+            // elegir y controlar la secuencia, sobre el globo (como en un reproductor de video)
+            <div className={`globo-reproductor${secuencia ? "" : " sin-secuencia"}`} role="group" aria-label="Animación de una secuencia">
+              {secuencia ? (
+                <>
+                  <button type="button" onClick={() => { if (tau >= 1) setTau(0); setReproduciendo((r) => !r); }} aria-label={reproduciendo ? "Pausar" : "Reproducir"}>
+                    {reproduciendo ? "⏸" : "▶"}
+                  </button>
+                  <input name="momento" type="range" min="0" max="1000" value={Math.round(tau * 1000)} aria-label="Momento de la secuencia"
+                    onChange={(e) => { setReproduciendo(false); setTau(Number(e.target.value) / 1000); }} />
+                </>
+              ) : (
+                <span className="titulo-barra" aria-hidden="true">Animá una secuencia:</span>
+              )}
+              <select name="secuencia" className="selector" autoComplete="off" aria-label="Elegí una secuencia para animar"
+                value={secuencia ? destacadas.find((x) => x.indice === secuencia.indice)?.id ?? "" : ""}
+                onChange={(e) => {
+                  const x = destacadas.find((z) => z.id === e.target.value);
+                  if (x) elegirSecuencia(x.indice);
+                }}>
+                <option value="">{secuencia && !destacadas.some((x) => x.indice === secuencia.indice) ? secuencia.lugar : "Las más largas, o clickeá un punto del globo"}</option>
+                {destacadas.map((x) => (
+                  <option key={x.id} value={x.id}>
+                    {fecha(x.fecha)} · M{n(x.mag, 1)} · {n(x.eventos)} eventos · {x.lugar}
+                  </option>
+                ))}
+              </select>
+              {secuencia && (
+                <>
+                  <button type="button" className="encuadre" onClick={() => escenaRef.current?.encuadrar("nucleo")}
+                    title="Acerca la cámara a donde se concentra la mayoría de los eventos">Vista cercana</button>
+                  <button type="button" className="encuadre" onClick={() => escenaRef.current?.encuadrar("todo")}
+                    title="Aleja la cámara hasta que se ven todos los eventos, incluidos los más lejanos">Vista completa</button>
+                  <button type="button" className="cerrar" onClick={quitarSecuencia} aria-label="Quitar la secuencia (Esc)" title="Quitar la secuencia (Esc)">✕</button>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -307,20 +330,6 @@ export default function Globo({ d, filtros, setFiltros }) {
 
         <section>
           <h3>Animá una secuencia</h3>
-          <label>
-            Elegí una
-            <select name="secuencia" autoComplete="off" value={secuencia ? destacadas.find((x) => x.indice === secuencia.indice)?.id ?? "" : ""} onChange={(e) => {
-              const x = destacadas.find((z) => z.id === e.target.value);
-              if (x) elegirSecuencia(x.indice);
-            }}>
-              <option value="">{secuencia && !destacadas.some((x) => x.indice === secuencia.indice) ? secuencia.lugar : "Las más largas, o clickeá un punto del globo"}</option>
-              {destacadas.map((x) => (
-                <option key={x.id} value={x.id}>
-                  {fecha(x.fecha)} · M{n(x.mag, 1)} · {n(x.eventos)} eventos · {x.lugar}
-                </option>
-              ))}
-            </select>
-          </label>
           {secuencia ? (
             <>
               <p className="nota">
@@ -336,7 +345,10 @@ export default function Globo({ d, filtros, setFiltros }) {
               )}
             </>
           ) : (
-            <p className="nota">Cada evento aparece en su momento, con un anillo del tamaño de su magnitud, pintado con la clase real de la secuencia.</p>
+            <p className="nota">
+              Elegí una de las secuencias más largas en la barra de abajo del globo, o clickeá un punto. Cada evento aparece en su momento, con un anillo del tamaño de su magnitud,
+              pintado con la clase real de la secuencia.
+            </p>
           )}
         </section>
       </aside>

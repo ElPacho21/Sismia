@@ -1009,7 +1009,30 @@ tr.resaltada td {
 .globo-reproductor .cerrar {
   min-width: 2.3rem;
 }
-.globo-caja.con-secuencia .globo-leyenda {
+.globo-reproductor .titulo-barra {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #c3d0e6;
+  white-space: nowrap;
+}
+.globo-reproductor .selector {
+  min-width: 0;
+  padding: 0.35rem 0.5rem;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--texto);
+  border: 1px solid var(--trazo-fuerte);
+  border-radius: var(--r-control);
+  background: var(--placa-alta);
+}
+/* sin secuencia el selector ocupa la barra; con secuencia le deja el lugar al tiempo */
+.globo-reproductor.sin-secuencia .selector {
+  flex: 1;
+}
+.globo-reproductor:not(.sin-secuencia) .selector {
+  flex: 0 1 15rem;
+}
+.globo-caja:has(.globo-reproductor) .globo-leyenda {
   bottom: 76px;
 }
 .aviso-chico {
@@ -1028,7 +1051,8 @@ tr.resaltada td {
   .vega-bind select,
   .ejemplos button,
   .globo-teclas button,
-  .globo-reproductor button {
+  .globo-reproductor button,
+  .globo-reproductor .selector {
     min-height: 44px;
   }
   .vega-bind input[type="range"],
@@ -1072,8 +1096,10 @@ tr.resaltada td {
   .globo-caja {
     height: 520px;
   }
-  /* en el celular, sólo lo esencial sobre el globo: reproducir, el tiempo y la ✕ */
-  .globo-reproductor .encuadre {
+  /* en el celular, sólo lo esencial sobre el globo: elegir; o reproducir, el tiempo y la ✕ */
+  .globo-reproductor .encuadre,
+  .globo-reproductor .titulo-barra,
+  .globo-reproductor:not(.sin-secuencia) .selector {
     display: none;
   }
   .grafico {
