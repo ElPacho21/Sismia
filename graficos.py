@@ -239,16 +239,21 @@ def grafico_explora(datos, regiones, nombres_region):
     panorama = alt.layer(fondo, cajas, nombres, mapa).properties(width=680, height=380)
 
     # qué dijo el modelo para lo que realmente fue cada clase (se mueve con todos los controles y con la zona dibujada)
+    # se cuenta por (real, dijo el modelo) y se divide por el total de la barra para tener el % del tramo
     resultado = (alt.Chart(datos)
                  .transform_filter(filtro).transform_filter(zona)
+                 .transform_aggregate(n="count()", groupby=["real", "pred", "pred_i"])
+                 .transform_joinaggregate(total="sum(n)", groupby=["real"])
+                 .transform_calculate(proporcion="datum.n / datum.total")
                  .mark_bar()
                  .encode(x=alt.X("real:N", sort=CLASES, title="Lo que realmente pasó", axis=alt.Axis(labelAngle=0)),
-                         y=alt.Y("count():Q", stack="normalize", title="Lo que dijo el modelo",
+                         y=alt.Y("n:Q", stack="normalize", title="Lo que dijo el modelo",
                                  axis=alt.Axis(format="%")),
                          color=alt.Color("pred:N", scale=ESCALA_CLASE, legend=None),
                          order=alt.Order("pred_i:Q", sort="ascending"),
                          tooltip=[alt.Tooltip("real:N", title="Real"), alt.Tooltip("pred:N", title="Dijo el modelo"),
-                                  alt.Tooltip("count():Q", title="Secuencias")])
+                                  alt.Tooltip("n:Q", title="Secuencias"),
+                                  alt.Tooltip("proporcion:Q", title="% de la barra", format=".1%")])
                  .properties(width=680, height=170))
 
     # la escala de color de las barras es independiente (la leyenda ya está en el mapa); es la misma escala de clases
@@ -266,12 +271,15 @@ def textos(df, medidas, comparacion):
     mult = pendiente_h1(t_h1)
     alto = t_h1.loc[np.isclose(t_h1["tramo"], CORTE_ALTO), "media"].iloc[0]   # el punto del gráfico en ese tramo
     f_test, f_piso = medidas["final"]["f1_test"], medidas["piso"]["f1_test"]
-    avisados = medidas["avisos_test"]["avisados_pct"]
+    avisos = medidas["avisos_test"]
+    avisados = avisos["avisados_pct"]
+    falsas = avisos["falsas_alarmas"] / (avisos["falsas_alarmas"] + avisos["avisos_correctos"])
     veces = f_test / f_piso
     return {
-        "oracion": ("Con la magnitud sobre el umbral de su región y la profundidad, el modelo sirve para priorizar "
-                    f"qué sismos vigilar, no para emitir alertas: avisa de {round(avisados / 10)} de cada 10 "
-                    "secuencias con réplicas."),
+        "oracion": "El modelo sirve para priorizar qué sismos vigilar, no para emitir alertas.",
+        "aclaracion": ("Con la magnitud sobre el umbral de su región y la profundidad, avisa de "
+                       f"{round(avisados / 10)} de cada 10 secuencias que tuvieron réplicas, pero "
+                       f"{round(falsas * 4)} de cada 4 avisos son falsas alarmas."),
         "pregunta": "Cuando ocurre un sismo, ¿cuántas réplicas podemos esperar?",
         "numeros": [
             {"valor": f"{es(f_test, 2)} contra {es(f_piso, 2)}", "texto": "f1 macro del modelo contra el piso, en sismos que no vio al entrenar (test)"},

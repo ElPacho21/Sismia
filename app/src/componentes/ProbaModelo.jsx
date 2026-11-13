@@ -160,10 +160,12 @@ export function Respuesta({ modelo, paleta, resultado, calculando, compacta = fa
               <span>La respuesta es una extrapolación: tomala con cautela.</span>
             </div>
           )}
-          <p className={`origen ${resultado.origen}`}>
-            {calculando ? "Calculando…" : resultado.origen === "servidor" ? "Calculado en el servidor" : "Calculado en tu navegador (el servidor no respondió a tiempo)"}
-            {" · "}modelo {resultado.version_modelo}
-          </p>
+          {resultado.origen !== "servidor" && (
+            <p className={`origen ${resultado.origen}`}>
+              {calculando ? "Calculando…" : "Calculado en tu navegador (el servidor no respondió a tiempo)"}
+              {" · "}modelo {resultado.version_modelo}
+            </p>
+          )}
         </>
       )}
     </div>

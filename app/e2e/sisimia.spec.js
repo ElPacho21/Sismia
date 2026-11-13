@@ -37,7 +37,8 @@ const porcentajes = async (page, selector) => {
 // ---------------------------------------------------------------- portada y tallo
 test("la portada tiene la pregunta, la oración y tres números", async ({ page }) => {
   await page.goto("/");
-  await expect(page.locator("h1")).toContainText("6 de cada 10 secuencias con réplicas");
+  await expect(page.locator("h1")).toContainText("priorizar qué sismos vigilar");
+  await expect(page.locator(".portada .aclaracion")).toContainText("6 de cada 10 secuencias que tuvieron réplicas");
   await expect(page.locator(".numeros li")).toHaveCount(3);
   await expect(page.locator(".numeros li").nth(0)).toContainText("0,50 contra 0,24");
   expect(errores).toEqual([]);
@@ -144,7 +145,7 @@ test("Probá el modelo: clase, probabilidades que suman 100 % y origen del cálc
   const suma = (await porcentajes(page, "#proba")).reduce((a, b) => a + b, 0);
   expect(suma).toBeGreaterThan(99.5);
   expect(suma).toBeLessThan(100.5);
-  await expect(p.locator(".origen")).toContainText("Calculado en el servidor");
+  await expect(p.locator(".origen")).toHaveCount(0);
   await p.getByRole("button", { name: "M7,5 en los Andes" }).click();
   await expect(p.locator(".resultado .clase")).toContainText("muchas");
   expect(errores).toEqual([]);
@@ -175,10 +176,13 @@ test("Probá el modelo: lo que no tiene sentido se rechaza con un motivo", async
 });
 
 test("si el servidor no responde, el navegador calcula lo mismo y lo avisa", async ({ page }) => {
+  const respuesta = page.waitForResponse((r) => r.url().includes("/api/predict") && r.ok());
   await page.goto("/");
   const p = page.locator("#proba");
   await p.scrollIntoViewIfNeeded();
-  await expect(p.locator(".origen")).toContainText("servidor");
+  await respuesta;
+  await expect(p.locator(".clase")).toBeVisible();
+  await expect(p.locator(".origen")).toHaveCount(0); // el cálculo del servidor no muestra mensaje de origen
   const delServidor = { clase: await p.locator(".clase").innerText(), barras: await p.locator(".barras").innerText() };
 
   await page.route("**/api/predict", (r) => r.abort());
