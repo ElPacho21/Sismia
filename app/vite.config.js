@@ -5,6 +5,6 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   plugins: [react()],
   server: { proxy: { "/api": "http://localhost:8000" } },
-  preview: { proxy: { "/api": "http://localhost:8000" } }, // para los tests end-to-end sobre el sitio compilado
+  preview: { proxy: { "/api": "http://localhost:8000" } }, // para probar el sitio compilado con la API local
   test: { include: ["tests/**/*.test.js"] },
 });

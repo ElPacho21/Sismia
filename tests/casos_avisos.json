@@ -1,9 +1,0 @@
-[
-  {"nombre": "caso normal", "magnitud": 5.5, "profundidad": 30, "region": "japan", "codigos": []},
-  {"nombre": "justo en el Mc de la región", "magnitud": 4.6, "profundidad": 30, "region": "japan", "codigos": []},
-  {"nombre": "menor que el Mc de Japón (4,6) pero dentro del rango global", "magnitud": 4.5, "profundidad": 30, "region": "japan", "codigos": ["mag_menor_mc"]},
-  {"nombre": "magnitud muy chica", "magnitud": 3.0, "profundidad": 30, "region": "mexico_ca", "codigos": ["mag_menor_mc", "mag_fuera_rango"]},
-  {"nombre": "magnitud más grande que todo lo visto", "magnitud": 9.5, "profundidad": 30, "region": "andes", "codigos": ["mag_fuera_rango"]},
-  {"nombre": "más profundo que todo lo visto", "magnitud": 5.5, "profundidad": 700, "region": "japan", "codigos": ["prof_fuera_rango"]},
-  {"nombre": "todo a la vez", "magnitud": 3.0, "profundidad": 790, "region": "philippines", "codigos": ["mag_menor_mc", "mag_fuera_rango", "prof_fuera_rango"]}
-]
