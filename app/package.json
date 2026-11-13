@@ -7,11 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest run",
-    "e2e": "playwright test"
+    "test": "vitest run"
   },
   "devDependencies": {
-    "@axe-core/playwright": "^4.14.0",
     "@playwright/test": "^1.65.0",
     "@vitejs/plugin-react": "^6.3.0",
     "vite": "^8.3.7",

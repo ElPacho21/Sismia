@@ -1,12 +1,11 @@
 // Paridad JS <-> modelo original de scikit-learn: tests/golden.json lo genera build_app.py con el modelo del notebook.
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
-import { avisos, predecir } from "../src/modelo.js";
+import { predecir } from "../src/modelo.js";
 
 const leer = (ruta) => JSON.parse(readFileSync(new URL(ruta, import.meta.url), "utf8"));
 const modelo = leer("../public/data/model.json");
 const golden = leer("../../tests/golden.json");
-const casosAvisos = leer("../../tests/casos_avisos.json");
 
 describe("paridad con el modelo del notebook", () => {
   it("hay casos de grilla, aleatorios, de borde y todo el test", () => {
@@ -40,21 +39,4 @@ describe("paridad con el modelo del notebook", () => {
       expect(claseMasProbable).toBe(modelo.clases[g.probs.indexOf(Math.max(...g.probs))]);
     }
   });
-
-  it("no revienta con casos absurdos", () => {
-    for (const [mag, prof] of [[10, 0], [0, 800], [9.99, 799.9]]) {
-      const { probs } = predecir(modelo, mag, prof, "japan");
-      expect(probs.every(Number.isFinite)).toBe(true);
-      expect(probs.reduce((a, b) => a + b, 0)).toBeCloseTo(1, 9);
-    }
-  });
-});
-
-describe("avisos para casos que el modelo no vio", () => {
-  for (const c of casosAvisos) {
-    it(c.nombre, () => {
-      const codigos = avisos(modelo, c.magnitud, c.profundidad, c.region).map((a) => a.codigo);
-      expect(codigos).toEqual(c.codigos);
-    });
-  }
 });

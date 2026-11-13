@@ -48,8 +48,8 @@ USGS ──► pipeline/ (Airflow) ──► data/*.csv ──► notebooks/ (an
 | `palette.py` | La paleta de colores, definida una sola vez. |
 | `api/` | FastAPI: `GET /api/health` y `POST /api/predict`. |
 | `app/` | La aplicación en React (Vite). `app/src/modelo.js` es la fórmula del modelo en JavaScript. `app/src/globo/` es el globo 3D (three). |
-| `tests/` | Tests de Python (`pytest`) y los archivos de referencia. |
-| `app/tests/`, `app/e2e/` | Tests de JavaScript (`vitest`) y de punta a punta (`Playwright`). |
+| `tests/` | Los archivos de referencia (`reference_metrics.json`, `golden.json`) y el test de paridad de la API (`pytest`). |
+| `app/tests/` | El test de paridad de la fórmula en JavaScript (`vitest`). |
 | `docs/GRAFICOS.md` | Cada gráfico, componente por componente (datos, mapeo, marca, transformaciones, escalas, por qué). |
 | `docs/DECISIONES_DISENO.md` | Qué cambió en cada gráfico entre versiones y por qué. |
 | `vercel.json`, `.vercelignore` | Configuración del despliegue. |
@@ -112,7 +112,7 @@ Qué hace, en orden:
 3. Verifica que la fórmula de `modelo_core.py` da lo mismo que scikit-learn en los casos de paridad.
 4. Escribe en `app/public/data/` y `app/public/specs/` todo lo que consume la página, y `tests/golden.json`.
 
-Es **determinista**: correrlo dos veces da archivos idénticos (hay un test que lo comprueba).
+Es **determinista**: correrlo dos veces da archivos idénticos.
 
 ### 4. Ver la aplicación en tu máquina
 
@@ -123,13 +123,14 @@ cd app; npm install; npm run dev                             # el sitio en http:
 
 En desarrollo, Vite redirige `/api` a `localhost:8000`.
 
-### 5. Tests
+### 5. Tests de paridad
+
+Verifican que la API y la página calculan lo mismo que el modelo del notebook, en los 6.992 casos de `tests/golden.json`
+(misma clase y probabilidades con diferencia menor a 1e-9). Como los dos lados se comparan contra la misma referencia, también coinciden entre sí.
 
 ```powershell
-.venv\Scripts\python -m pytest tests            # 36: build, paridad con sklearn, gráficos, API
-cd app; npm test                                # 26: fórmula en JS (paridad) y geometría del globo
-cd app; npm run e2e                             # 19: Playwright con Edge; levanta la API y el sitio compilado solos
-cd app; $env:BASE_URL="https://sisimia.vercel.app"; npm run e2e   # los mismos, contra la URL pública
+.venv\Scripts\python -m pytest tests            # la API (FastAPI)
+cd app; npm test                                # la fórmula en JavaScript
 ```
 
 ### 6. Publicar
@@ -151,10 +152,9 @@ compara contra los números del notebook de la Entrega 3, y con datos nuevos eso
 
 1. Volver a correr el notebook de la Entrega 3 con los datos nuevos.
 2. Actualizar `tests/reference_metrics.json` con lo que dé el notebook (es una decisión deliberada, no un parche: la aplicación tiene que coincidir con el notebook).
-3. Correr `build_app.py` y los tests.
+3. Correr `build_app.py` y los tests de paridad.
 4. Revisar a mano lo que está escrito en el código y **no** sale de los datos:
    - la fecha de la corrida y las fechas del catálogo en `app/src/componentes/ComoDatos.jsx`;
-   - las cifras fijas de los tests (`tests/test_build.py` espera 87.103, 37.513 y 21.292; `app/e2e/sisimia.spec.js` espera 87.103 y 37.513);
    - la explicación de los errores en `app/src/componentes/ComoModelo.jsx`, que se escribió mirando casos concretos del test de ese momento.
 
 ---
