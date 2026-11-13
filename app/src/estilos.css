@@ -565,6 +565,77 @@ tr.resaltada td {
   accent-color: var(--hielo);
 }
 
+/* los controles con título «Filtros» (Explorá): arriba del gráfico, o al costado debajo de las leyendas si hay lugar */
+.controles-grafico {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 1.4rem;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--trazo);
+  font-size: 0.88rem;
+  color: var(--suave);
+}
+.controles-grafico[hidden] {
+  display: none;
+}
+/* arriba del gráfico: no se van con el desplazamiento lateral, y cada control se parte si no entra */
+.controles-grafico:not([data-al-lado="true"]) {
+  position: sticky;
+  left: 0;
+}
+.controles-grafico .vega-bind label {
+  flex-wrap: wrap;
+}
+.controles-grafico .vega-bind select {
+  max-width: 100%;
+}
+.controles-grafico .titulo-controles {
+  margin: 0;
+  font-family: var(--titulos);
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: var(--texto);
+}
+.controles-grafico .enlaces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1.6rem;
+}
+.controles-grafico[data-al-lado="true"] {
+  position: absolute;
+  z-index: 1;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.7rem;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+.controles-grafico[data-al-lado="true"] .enlaces {
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.controles-grafico[data-al-lado="true"] .vega-bind label {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.3rem 0.5rem;
+  max-width: 18rem;
+}
+.controles-grafico[data-al-lado="true"] .vega-bind-name {
+  grid-column: 1 / -1;
+  font-weight: 600;
+  color: var(--texto);
+}
+.controles-grafico[data-al-lado="true"] .vega-bind select {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+.controles-grafico[data-al-lado="true"] .vega-bind input[type="range"] {
+  width: 100%;
+}
+
 /* ---------- probá el modelo ---------- */
 .proba {
   display: grid;

@@ -21,7 +21,7 @@ export default function Explora({ filtros, setFiltros }) {
           cinco regiones.
         </li>
         <li>
-          <strong>Zoom y filtro:</strong> elegí la región, subí la magnitud mínima, o dibujá un rectángulo sobre el mapa para quedarte con una zona.
+          <strong>Filtrá:</strong> elegí la región, subí la magnitud mínima, o dibujá un rectángulo sobre el mapa para quedarte con una zona.
         </li>
         <li>
           <strong>Pintar según:</strong> compará el mapa pintado con la clase real y con la que dijo el modelo.
@@ -38,6 +38,7 @@ export default function Explora({ filtros, setFiltros }) {
         url="specs/explora.json"
         descripcion="Mapa de las secuencias sísmicas coloreadas por clase de réplicas y, debajo, lo que dijo el modelo para cada clase real."
         senales={senales}
+        controles
         alCambiarSenal={(nombre, valor) => setFiltros((f) => ({ ...f, [CAMPO[nombre]]: valor }))}
       />
       <p className="nota">
