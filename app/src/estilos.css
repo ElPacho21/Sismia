@@ -981,15 +981,36 @@ tr.resaltada td {
   width: 100%;
   accent-color: var(--hielo);
 }
+/* controles de la secuencia, superpuestos abajo del globo; la leyenda sube para dejarles lugar */
 .globo-reproductor {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 14px;
+  z-index: 2;
   display: flex;
   gap: 0.45rem;
   align-items: center;
+  padding: 0.5rem 0.6rem;
+  background: rgba(4, 7, 13, 0.82);
+  border: 1px solid var(--trazo);
+  border-radius: var(--r-placa);
+}
+.globo-reproductor input[type="range"] {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--hielo);
 }
 .globo-reproductor button {
   border-radius: var(--r-control);
   padding: 0.35rem 0.7rem;
   white-space: nowrap;
+}
+.globo-reproductor .cerrar {
+  min-width: 2.3rem;
+}
+.globo-caja.con-secuencia .globo-leyenda {
+  bottom: 76px;
 }
 .aviso-chico {
   padding: 0.55rem 0.85rem 0.55rem 2rem;
@@ -1004,7 +1025,6 @@ tr.resaltada td {
   .formulario input,
   .formulario select,
   .globo-panel select,
-  .globo-panel input[type="number"],
   .vega-bind select,
   .ejemplos button,
   .globo-teclas button,
@@ -1012,7 +1032,8 @@ tr.resaltada td {
     min-height: 44px;
   }
   .vega-bind input[type="range"],
-  .globo-panel input[type="range"] {
+  .globo-panel input[type="range"],
+  .globo-reproductor input[type="range"] {
     min-height: 44px;
     margin: 0;
   }
@@ -1050,6 +1071,10 @@ tr.resaltada td {
   }
   .globo-caja {
     height: 520px;
+  }
+  /* en el celular, sólo lo esencial sobre el globo: reproducir, el tiempo y la ✕ */
+  .globo-reproductor .encuadre {
+    display: none;
   }
   .grafico {
     padding: 0.9rem 0.6rem 0.7rem;

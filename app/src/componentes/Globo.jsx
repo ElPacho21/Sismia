@@ -150,6 +150,12 @@ export default function Globo({ d, filtros, setFiltros }) {
     setTau(0);
   }
 
+  // desde la ✕ o con Esc: el foco vuelve al globo, porque los controles desaparecen
+  function quitarSecuencia() {
+    limpiar();
+    caja.current?.querySelector("canvas")?.focus({ preventScroll: true });
+  }
+
   useEffect(() => {
     if (!reproduciendo || !secuencia) return;
     let ultimo = performance.now();
@@ -195,7 +201,16 @@ export default function Globo({ d, filtros, setFiltros }) {
   return (
     <div className="globo-grilla">
       <div className="globo-escena">
-        <div className="globo-caja" ref={caja}>
+        <div
+          className={`globo-caja${secuencia ? " con-secuencia" : ""}`}
+          ref={caja}
+          onKeyDown={(e) => {
+            if (e.key === "Escape" && secuencia) {
+              e.preventDefault();
+              quitarSecuencia();
+            }
+          }}
+        >
           {!datos && <p className="globo-cargando">Cargando el globo…</p>}
           <div className="globo-detalle" ref={tip} style={{ display: "none" }} />
           <ul className="globo-leyenda" aria-label="Colores de las clases">
@@ -213,6 +228,21 @@ export default function Globo({ d, filtros, setFiltros }) {
               <span>desde el sismo principal · {n(reloj.vistos)} de {n(resumenSecuencia.total)} eventos</span>
             </div>
           )}
+          {secuencia && (
+            // los controles de la animación, sobre el globo (como en un reproductor de video)
+            <div className="globo-reproductor" role="group" aria-label="Controles de la secuencia">
+              <button type="button" onClick={() => { if (tau >= 1) setTau(0); setReproduciendo((r) => !r); }} aria-label={reproduciendo ? "Pausar" : "Reproducir"}>
+                {reproduciendo ? "⏸" : "▶"}
+              </button>
+              <input name="momento" type="range" min="0" max="1000" value={Math.round(tau * 1000)} aria-label="Momento de la secuencia"
+                onChange={(e) => { setReproduciendo(false); setTau(Number(e.target.value) / 1000); }} />
+              <button type="button" className="encuadre" onClick={() => escenaRef.current?.encuadrar("nucleo")}
+                title="Acerca la cámara a donde se concentra la mayoría de los eventos">Vista cercana</button>
+              <button type="button" className="encuadre" onClick={() => escenaRef.current?.encuadrar("todo")}
+                title="Aleja la cámara hasta que se ven todos los eventos, incluidos los más lejanos">Vista completa</button>
+              <button type="button" className="cerrar" onClick={quitarSecuencia} aria-label="Quitar la secuencia (Esc)" title="Quitar la secuencia (Esc)">✕</button>
+            </div>
+          )}
         </div>
         <div className="globo-teclas" role="group" aria-label="Mover el globo">
           <button type="button" onClick={() => escenaRef.current?.girar(-0.3, 0)} aria-label="Girar a la izquierda">←</button>
@@ -221,7 +251,7 @@ export default function Globo({ d, filtros, setFiltros }) {
           <button type="button" onClick={() => escenaRef.current?.girar(0, -0.3)} aria-label="Girar hacia abajo">↓</button>
           <button type="button" onClick={() => escenaRef.current?.acercar(0.8)} aria-label="Acercar">+</button>
           <button type="button" onClick={() => escenaRef.current?.acercar(1.25)} aria-label="Alejar">−</button>
-          <span>Arrastrá para girar, rueda para acercar, o usá las flechas con el globo enfocado.</span>
+          <span>Arrastrá para girar, rueda para acercar, o usá las flechas con el globo enfocado.{secuencia && " Esc quita la secuencia."}</span>
         </div>
       </div>
 
@@ -293,21 +323,9 @@ export default function Globo({ d, filtros, setFiltros }) {
           </label>
           {secuencia ? (
             <>
-              <div className="globo-reproductor">
-                <button type="button" onClick={() => { if (tau >= 1) setTau(0); setReproduciendo((r) => !r); }}>
-                  {reproduciendo ? "⏸ Pausa" : "▶ Reproducir"}
-                </button>
-                <input name="momento" type="range" min="0" max="1000" value={Math.round(tau * 1000)} aria-label="Momento de la secuencia"
-                  onChange={(e) => { setReproduciendo(false); setTau(Number(e.target.value) / 1000); }} />
-                <button type="button" onClick={limpiar}>Quitar</button>
-              </div>
-              <div className="globo-reproductor encuadre">
-                <button type="button" onClick={() => escenaRef.current?.encuadrar("nucleo")}>Acercar al núcleo</button>
-                <button type="button" onClick={() => escenaRef.current?.encuadrar("todo")}>Ver toda la secuencia</button>
-              </div>
               <p className="nota">
                 <strong>{secuencia.lugar}</strong> ({secuencia.fecha ? fecha(secuencia.fecha) : ""}): principal M{n(resumenSecuencia.principal, 1)}, {n(resumenSecuencia.total)} eventos en {resumenSecuencia.duracion}. El tiempo corre en
-                escala <strong>logarítmica</strong>: las primeras horas ocupan tanto como los últimos meses. La cámara se acerca al núcleo para que se vean separados; con la rueda o «Ver toda la secuencia» se ven también los más lejanos.
+                escala <strong>logarítmica</strong>: las primeras horas ocupan tanto como los últimos meses. La cámara se acerca a donde se concentran los eventos para que se vean separados; con la rueda o «Vista completa» se ven también los más lejanos.
               </p>
               {resumenSecuencia.mayorVinoDespues && (
                 <p className="aviso-chico">
