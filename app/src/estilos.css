@@ -565,6 +565,77 @@ tr.resaltada td {
   accent-color: var(--hielo);
 }
 
+/* los controles con título «Filtros» (Explorá): arriba del gráfico, o al costado debajo de las leyendas si hay lugar */
+.controles-grafico {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 1.4rem;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--trazo);
+  font-size: 0.88rem;
+  color: var(--suave);
+}
+.controles-grafico[hidden] {
+  display: none;
+}
+/* arriba del gráfico: no se van con el desplazamiento lateral, y cada control se parte si no entra */
+.controles-grafico:not([data-al-lado="true"]) {
+  position: sticky;
+  left: 0;
+}
+.controles-grafico .vega-bind label {
+  flex-wrap: wrap;
+}
+.controles-grafico .vega-bind select {
+  max-width: 100%;
+}
+.controles-grafico .titulo-controles {
+  margin: 0;
+  font-family: var(--titulos);
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: var(--texto);
+}
+.controles-grafico .enlaces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1.6rem;
+}
+.controles-grafico[data-al-lado="true"] {
+  position: absolute;
+  z-index: 1;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.7rem;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+.controles-grafico[data-al-lado="true"] .enlaces {
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.controles-grafico[data-al-lado="true"] .vega-bind label {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.3rem 0.5rem;
+  max-width: 18rem;
+}
+.controles-grafico[data-al-lado="true"] .vega-bind-name {
+  grid-column: 1 / -1;
+  font-weight: 600;
+  color: var(--texto);
+}
+.controles-grafico[data-al-lado="true"] .vega-bind select {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+.controles-grafico[data-al-lado="true"] .vega-bind input[type="range"] {
+  width: 100%;
+}
+
 /* ---------- probá el modelo ---------- */
 .proba {
   display: grid;
@@ -739,16 +810,14 @@ tr.resaltada td {
   font-variant-numeric: tabular-nums;
 }
 .avisos,
-.globo-aviso,
-.aviso-chico {
+.globo-aviso {
   position: relative;
   background: var(--aviso-fondo);
   border: 1px solid rgba(224, 160, 74, 0.45);
   border-radius: var(--r-control);
 }
 .avisos::before,
-.globo-aviso::before,
-.aviso-chico::before {
+.globo-aviso::before {
   content: "";
   position: absolute;
   top: 1.05rem;
@@ -824,7 +893,9 @@ tr.resaltada td {
 }
 .globo-caja {
   position: relative;
-  height: 640px;
+  /* el globo se achica en pantallas bajas para que entre junto con los filtros y la línea de la región
+     (190px = barra de navegación + filtros + línea de la región + márgenes) */
+  height: clamp(400px, calc(100svh - 190px), 640px);
   background: #04070d;
   border: 1px solid var(--trazo);
   border-radius: var(--r-globo);
@@ -907,11 +978,73 @@ tr.resaltada td {
   margin-top: 0.3rem;
   color: #a3b0c5;
 }
-.globo-reloj {
+/* franja de arriba del globo: reloj al centro y resumen a la derecha; el espacio vacío deja pasar el mouse al globo */
+.globo-arriba {
   position: absolute;
-  left: 50%;
+  left: 14px;
+  right: 14px;
   top: 14px;
-  transform: translateX(-50%);
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: start;
+  gap: 0.6rem;
+  pointer-events: none;
+}
+.globo-arriba > * {
+  pointer-events: auto;
+}
+.globo-arriba .globo-reloj {
+  grid-column: 2;
+}
+.globo-resumen {
+  grid-column: 3;
+  justify-self: end;
+  width: 100%;
+  max-width: 19rem;
+  padding: 0.6rem 0.8rem;
+  background: rgba(4, 7, 13, 0.82);
+  border: 1px solid var(--trazo);
+  border-radius: var(--r-placa);
+  color: #e6edf8;
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+.globo-resumen .lugar {
+  margin: 0 0 0.4rem;
+}
+.globo-resumen .lugar span {
+  color: #a3b0c5;
+}
+.globo-resumen dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.2rem 0.7rem;
+  margin: 0;
+}
+.globo-resumen dt {
+  color: #a3b0c5;
+}
+.globo-resumen dd {
+  margin: 0;
+}
+.globo-resumen i {
+  display: inline-block;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  margin: 0 0.3rem 0 0.15rem;
+}
+.globo-resumen .acerto {
+  color: #8fd4a8;
+}
+.globo-resumen .fallo {
+  color: #f1b36b;
+}
+.globo-resumen .globo-aviso-mayor {
+  margin-top: 0.55rem;
+}
+.globo-reloj {
   text-align: center;
   background: rgba(4, 7, 13, 0.75);
   border: 1px solid var(--trazo);
@@ -929,6 +1062,69 @@ tr.resaltada td {
   font-size: 0.82rem;
   color: #c3d0e6;
 }
+/* el aviso del sismo mayor: una línea bajo el reloj; se despliega para leer la explicación */
+.globo-aviso-mayor {
+  background: rgba(20, 14, 6, 0.9);
+  border: 1px solid rgba(224, 160, 74, 0.6);
+  border-radius: var(--r-placa);
+  color: #f3e3cc;
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+.globo-aviso-mayor summary {
+  cursor: pointer;
+  padding: 0.4rem 0.7rem 0.4rem 1.6rem;
+  position: relative;
+  list-style: none;
+}
+.globo-aviso-mayor summary::-webkit-details-marker {
+  display: none;
+}
+.globo-aviso-mayor summary::before {
+  content: "";
+  position: absolute;
+  left: 0.75rem;
+  top: 0.85rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--aviso);
+}
+.globo-aviso-mayor .mas,
+.globo-aviso-mayor .menos {
+  margin-left: 0.6rem;
+  color: var(--aviso);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  white-space: nowrap;
+}
+/* cerrado ofrece «¿Qué implica?»; abierto, «Ocultar» para volver a plegarlo */
+.globo-aviso-mayor .menos,
+.globo-aviso-mayor[open] .mas {
+  display: none;
+}
+.globo-aviso-mayor[open] .menos {
+  display: inline;
+}
+.globo-aviso-mayor p {
+  margin: 0;
+  padding: 0 0.7rem 0.6rem 1.6rem;
+}
+/* pantallas medianas y chicas: el resumen va debajo del reloj, a todo el ancho */
+@media (max-width: 900px) {
+  .globo-arriba {
+    grid-template-columns: 1fr;
+  }
+  .globo-arriba .globo-reloj {
+    grid-column: 1;
+    justify-self: center;
+  }
+  .globo-resumen {
+    grid-column: 1;
+    justify-self: stretch;
+    max-width: none;
+  }
+}
 .globo-teclas {
   display: flex;
   flex-wrap: wrap;
@@ -943,33 +1139,40 @@ tr.resaltada td {
   padding: 0.3rem 0.55rem;
   border-radius: var(--r-control);
 }
-.globo-panel {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1.1rem;
-  align-items: start;
+/* una línea con el resultado de la región, entre los filtros y el globo */
+.globo-region {
+  margin: 0 0 0.8rem;
+  font-size: 0.88rem;
+  color: var(--suave);
 }
-.globo-panel > section {
-  background: var(--placa);
-  border: 1px solid var(--trazo);
-  border-radius: var(--r-placa);
-  padding: 0 1.2rem 1.2rem;
+.globo-region strong {
+  color: var(--texto);
 }
-.globo-panel h3 {
-  margin: 1.1rem 0 0.7rem;
-  font-family: var(--titulos);
-  font-size: 1.02rem;
+.globo-region .aclaracion {
+  color: #8f9bb0;
 }
-.globo-panel label {
+/* filtros en una fila, justo arriba del globo */
+.globo-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
+  align-items: flex-end;
+  margin-bottom: 0.8rem;
+}
+.globo-filtros label {
   display: block;
   font-size: 0.85rem;
   font-weight: 600;
-  margin-bottom: 0.7rem;
 }
-.globo-panel select,
-.globo-panel input[type="number"] {
+.globo-filtros .titulo-filtros {
+  padding-bottom: 0.45rem;
+  font-family: var(--titulos);
+  font-size: 1.02rem;
+  font-weight: 700;
+}
+.globo-filtros select {
   display: block;
-  width: 100%;
+  min-width: 10rem;
   margin-top: 0.3rem;
   padding: 0.4rem 0.55rem;
   font: inherit;
@@ -978,55 +1181,85 @@ tr.resaltada td {
   border-radius: var(--r-control);
   background: var(--placa-alta);
 }
-.globo-panel input[type="range"] {
+.globo-filtros .rango {
+  flex: 0 1 12rem;
+}
+.globo-filtros input[type="range"] {
+  display: block;
   width: 100%;
+  margin-top: 0.55rem;
   accent-color: var(--hielo);
-}
-.globo-panel .formulario,
-.globo-panel .resultado {
-  background: none;
-  border: none;
-  padding: 0;
-}
-.globo-panel .resultado.compacta .clase {
-  font-size: 1.2rem;
-}
-.globo-panel .barras li {
-  grid-template-columns: 7.5em 1fr 3.6em;
-  font-size: 0.8rem;
-}
+}/* controles de la secuencia, superpuestos abajo del globo; la leyenda sube para dejarles lugar */
 .globo-reproductor {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 14px;
+  z-index: 2;
   display: flex;
   gap: 0.45rem;
   align-items: center;
+  padding: 0.5rem 0.6rem;
+  background: rgba(4, 7, 13, 0.82);
+  border: 1px solid var(--trazo);
+  border-radius: var(--r-placa);
+}
+.globo-reproductor input[type="range"] {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--hielo);
 }
 .globo-reproductor button {
   border-radius: var(--r-control);
   padding: 0.35rem 0.7rem;
   white-space: nowrap;
 }
-.aviso-chico {
-  padding: 0.55rem 0.85rem 0.55rem 2rem;
-  font-size: 0.88rem;
+.globo-reproductor .cerrar {
+  min-width: 2.3rem;
 }
-.aviso-chico::before {
-  top: 0.8rem;
+.globo-reproductor .titulo-barra {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #c3d0e6;
+  white-space: nowrap;
+}
+.globo-reproductor .selector {
+  align-self: stretch; /* la misma altura que los botones de la barra */
+  min-width: 0;
+  padding: 0.35rem 0.5rem;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--texto);
+  border: 1px solid var(--trazo-fuerte);
+  border-radius: var(--r-control);
+  background: var(--placa-alta);
+}
+/* sin secuencia el selector ocupa la barra; con secuencia le deja el lugar al tiempo */
+.globo-reproductor.sin-secuencia .selector {
+  flex: 1;
+}
+.globo-reproductor:not(.sin-secuencia) .selector {
+  flex: 0 1 15rem;
+}
+.globo-caja:has(.globo-reproductor) .globo-leyenda {
+  bottom: 76px;
 }
 
 /* ---------- táctil: objetivos de 44px, y el globo deja pasar el desplazamiento de un dedo ---------- */
 @media (pointer: coarse) {
   .formulario input,
   .formulario select,
-  .globo-panel select,
-  .globo-panel input[type="number"],
+  .globo-filtros select,
   .vega-bind select,
   .ejemplos button,
   .globo-teclas button,
-  .globo-reproductor button {
+  .globo-reproductor button,
+  .globo-reproductor .selector {
     min-height: 44px;
   }
   .vega-bind input[type="range"],
-  .globo-panel input[type="range"] {
+  .globo-filtros input[type="range"],
+  .globo-reproductor input[type="range"] {
     min-height: 44px;
     margin: 0;
   }
@@ -1063,7 +1296,27 @@ tr.resaltada td {
     padding-bottom: 1rem;
   }
   .globo-caja {
-    height: 520px;
+    /* en el celular los filtros y la línea de la región ocupan más alto */
+    height: clamp(340px, calc(100svh - 330px), 520px);
+  }
+  /* los filtros en dos columnas, pegados al globo */
+  .globo-filtros {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem 0.8rem;
+  }
+  .globo-filtros select {
+    width: 100%;
+    min-width: 0;
+  }
+  .globo-filtros .titulo-filtros {
+    grid-column: 1 / -1;
+    padding-bottom: 0;
+  }  /* en el celular, sólo lo esencial sobre el globo: elegir; o reproducir, el tiempo y la ✕ */
+  .globo-reproductor .encuadre,
+  .globo-reproductor .titulo-barra,
+  .globo-reproductor:not(.sin-secuencia) .selector {
+    display: none;
   }
   .grafico {
     padding: 0.9rem 0.6rem 0.7rem;

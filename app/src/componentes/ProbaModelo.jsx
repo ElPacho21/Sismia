@@ -64,7 +64,7 @@ export function usePrediccion(modelo, entrada) {
 }
 
 // Los campos del caso: región, magnitud y profundidad.
-export function CamposCaso({ modelo, entrada, setEntrada, conEjemplos = true }) {
+function CamposCaso({ modelo, entrada, setEntrada }) {
   const cambiar = (campo) => (e) => setEntrada((x) => ({ ...x, [campo]: e.target.value }));
   const rangos = modelo.rangos;
   return (
@@ -93,31 +93,29 @@ export function CamposCaso({ modelo, entrada, setEntrada, conEjemplos = true }) 
           El modelo vio profundidades de {n(rangos.profundidad[0])} a {n(rangos.profundidad[1])} km.
         </small>
       </label>
-      {conEjemplos && (
-        <div className="ejemplos">
-          <span>Ejemplos:</span>
-          {EJEMPLOS.map((ej) => (
-            <button
-              type="button"
-              key={ej.nombre}
-              onClick={() => setEntrada(ej)}
-              aria-pressed={ej.magnitud === entrada.magnitud && ej.profundidad === entrada.profundidad && ej.region === entrada.region}
-            >
-              {ej.nombre}
-            </button>
-          ))}
-        </div>
-      )}
+      <div className="ejemplos">
+        <span>Ejemplos:</span>
+        {EJEMPLOS.map((ej) => (
+          <button
+            type="button"
+            key={ej.nombre}
+            onClick={() => setEntrada(ej)}
+            aria-pressed={ej.magnitud === entrada.magnitud && ej.profundidad === entrada.profundidad && ej.region === entrada.region}
+          >
+            {ej.nombre}
+          </button>
+        ))}
+      </div>
     </form>
   );
 }
 
 // La respuesta: clase, probabilidades, avisos y de dónde salió el cálculo.
-export function Respuesta({ modelo, paleta, resultado, calculando, compacta = false }) {
+function Respuesta({ modelo, paleta, resultado, calculando }) {
   const colorDe = (clase) => paleta.color_clase[paleta.clases.indexOf(clase)];
   if (!resultado) return <div className="resultado" aria-live="polite" />;
   return (
-    <div className={`resultado${compacta ? " compacta" : ""}`} aria-live="polite">
+    <div className="resultado" aria-live="polite">
       {resultado.rechazado && <p className="rechazo">{resultado.rechazado}</p>}
       {!resultado.rechazado && (
         <>

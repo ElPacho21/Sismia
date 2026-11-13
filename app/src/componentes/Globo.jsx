@@ -4,10 +4,10 @@ import land from "world-atlas/land-110m.json";
 import { EscenaGlobo, webglDisponible } from "../globo/escena.js";
 import { centroRegion, eventosHasta, horasATexto, horasDeTiempoLog, tiempoLog } from "../globo/geo.js";
 import { fecha, n } from "../lib/formato.js";
-import { CamposCaso, NOMBRE_REGION, Respuesta } from "./ProbaModelo.jsx";
+import { NOMBRE_REGION } from "./ProbaModelo.jsx";
 
-// El globo (extra de la copa): los mismos datos de Explorá en 3D, con la animación de una secuencia
-// y la prueba del modelo. Se carga recién cuando el usuario llega hasta acá (ver GloboPuerta).
+// El globo (extra de la copa): los mismos datos de Explorá en 3D, con la animación de una secuencia.
+// Se carga recién cuando el usuario llega hasta acá (ver GloboPuerta).
 const DURACION_S = 14; // lo que tarda en correr toda la secuencia
 const escapar = (t) => String(t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const reducirMovimiento = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -17,8 +17,8 @@ const TIERRA = feature(land, land.objects.land).features.map((f) => f.geometry);
 
 const pedirJson = (ruta) => fetch(ruta).then((r) => (r.ok ? r.json() : Promise.reject(new Error(`${ruta}: ${r.status}`))));
 
-export default function Globo({ d, filtros, setFiltros, entrada, setEntrada, prediccion }) {
-  const { textos, metricas, regiones, modelo, paleta } = d;
+export default function Globo({ d, filtros, setFiltros }) {
+  const { textos, metricas, regiones, paleta } = d;
   const opciones = textos.opciones;
   const [datos, setDatos] = useState(null);
   const [error, setError] = useState(null);
@@ -100,7 +100,6 @@ export default function Globo({ d, filtros, setFiltros, entrada, setEntrada, pre
       else escena.volarA(12, 120, 3.1);
     }
     regionPrevia.current = filtros.region;
-    if (filtros.region !== "todas") setEntrada((e) => (e.region === filtros.region ? e : { ...e, region: filtros.region }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [datos, filtros, soloTest, colorPorReal]);
 
@@ -138,7 +137,7 @@ export default function Globo({ d, filtros, setFiltros, entrada, setEntrada, pre
     if (!ev) return;
     escena.cargarSecuencia(ev, g.real[i]);
     const fila = filasRef.current?.[i];
-    setSecuencia({ indice: i, ev, sMax: tiempoLog(ev.h[ev.h.length - 1]), lugar: fila?.lugar ?? g.id[i], fecha: fila?.fecha, claseIdx: g.real[i] });
+    setSecuencia({ indice: i, ev, sMax: tiempoLog(ev.h[ev.h.length - 1]), lugar: fila?.lugar ?? g.id[i], fecha: fila?.fecha, claseIdx: g.real[i], fila });
     setTau(0);
     setReproduciendo(!reducirMovimiento());
     mostrarDetalle(-1, 0, 0);
@@ -149,6 +148,12 @@ export default function Globo({ d, filtros, setFiltros, entrada, setEntrada, pre
     setSecuencia(null);
     setReproduciendo(false);
     setTau(0);
+  }
+
+  // desde la ✕ o con Esc: el foco vuelve al globo, porque los controles desaparecen
+  function quitarSecuencia() {
+    limpiar();
+    caja.current?.querySelector("canvas")?.focus({ preventScroll: true });
   }
 
   useEffect(() => {
@@ -183,20 +188,77 @@ export default function Globo({ d, filtros, setFiltros, entrada, setEntrada, pre
     if (!secuencia) return null;
     const mags = secuencia.ev.mag;
     const mayor = Math.max(...mags);
-    return { principal: mags[0], mayor, mayorVinoDespues: mayor > mags[0] + 0.05, total: mags.length, duracion: horasATexto(secuencia.ev.h[secuencia.ev.h.length - 1]) };
+    return { principal: mags[0], mayor, mayorVinoDespues: mayor > mags[0] + 0.05, total: mags.length };
   }, [secuencia]);
 
   const region = regiones.find((r) => r.nombre === filtros.region);
   const destacadas = datos?.destacadas ?? [];
 
   if (sinWebgl)
-    return <p className="globo-aviso">Tu navegador no tiene WebGL activado, así que el globo no puede dibujarse. Explorá y Probá el modelo cubren lo mismo en 2D.</p>;
+    return <p className="globo-aviso">Tu navegador no tiene WebGL activado, así que el globo no puede dibujarse. Explorá muestra los mismos datos en 2D.</p>;
   if (error) return <p className="error">No se pudo cargar el globo: {error}</p>;
 
   return (
     <div className="globo-grilla">
       <div className="globo-escena">
-        <div className="globo-caja" ref={caja}>
+        {/* los filtros, justo arriba del globo para ver el efecto sin desplazarse (son los mismos de Explorá) */}
+        <div className="globo-filtros" role="group" aria-labelledby="globo-filtros-titulo">
+          <span id="globo-filtros-titulo" className="titulo-filtros">Filtros</span>
+          <label>
+            Región
+            <select name="region" autoComplete="off" value={filtros.region} onChange={(e) => setFiltros((f) => ({ ...f, region: e.target.value }))}>
+              <option value="todas">todas</option>
+              {regiones.map((r) => (
+                <option key={r.nombre} value={r.nombre}>
+                  {NOMBRE_REGION[r.nombre] ?? r.nombre}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="rango">
+            Magnitud mínima: {n(filtros.magMin, 1)}
+            <input name="magnitud-minima" type="range" min="4" max="8" step="0.1" value={filtros.magMin} onChange={(e) => setFiltros((f) => ({ ...f, magMin: Number(e.target.value) }))} />
+          </label>
+          <label>
+            Secuencias
+            <select name="ver" autoComplete="off" value={filtros.ver} onChange={(e) => setFiltros((f) => ({ ...f, ver: e.target.value }))}>
+              {opciones.ver.map((o) => (
+                <option key={o}>{o}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Pintar según
+            <select name="pintar-segun" autoComplete="off" value={filtros.colorPor} onChange={(e) => setFiltros((f) => ({ ...f, colorPor: e.target.value }))}>
+              {opciones.color.map((o) => (
+                <option key={o}>{o}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+        {/* el resultado de la región elegida, pegado al filtro que la cambia */}
+        <p className="globo-region" aria-live="polite">
+          {region ? (
+            <>
+              <strong>{NOMBRE_REGION[region.nombre]}</strong>: Mc {n(region.mc, 1)} · {n(region.secuencias)} secuencias ({n(region.secuencias_test)} de test) · en el test, f1{" "}
+              <strong>{n(region.f1_test, 2)}</strong> y acierta el intervalo en el {n(region.acierto_test * 100, 0)} % <span className="aclaracion">(un único modelo para todas las regiones)</span>
+            </>
+          ) : (
+            <>
+              <strong>Todas las regiones</strong>: f1 {n(metricas.final.f1_test, 2)} en el test. Elegí una región, o clickeá una en el globo, para ver su resultado.
+            </>
+          )}
+        </p>
+        <div
+          className="globo-caja"
+          ref={caja}
+          onKeyDown={(e) => {
+            if (e.key === "Escape" && secuencia) {
+              e.preventDefault();
+              quitarSecuencia();
+            }
+          }}
+        >
           {!datos && <p className="globo-cargando">Cargando el globo…</p>}
           <div className="globo-detalle" ref={tip} style={{ display: "none" }} />
           <ul className="globo-leyenda" aria-label="Colores de las clases">
@@ -209,9 +271,91 @@ export default function Globo({ d, filtros, setFiltros, entrada, setEntrada, pre
             <li className="chico">Tamaño = magnitud · anillos = sismos M7+</li>
           </ul>
           {reloj && (
-            <div className="globo-reloj" aria-live="off">
-              <strong>{reloj.texto}</strong>
-              <span>desde el sismo principal · {n(reloj.vistos)} de {n(resumenSecuencia.total)} eventos</span>
+            // arriba: el reloj al centro y el resumen de la secuencia a la derecha (en pantallas chicas, uno debajo del otro)
+            <div className="globo-arriba">
+              <div className="globo-reloj" aria-live="off">
+                <strong>{reloj.texto}</strong>
+                <span>desde el sismo principal · {n(reloj.vistos)} de {n(resumenSecuencia.total)} eventos</span>
+              </div>
+              <section className="globo-resumen" aria-label="Resumen de la secuencia">
+                <p className="lugar">
+                  <strong>{secuencia.lugar}</strong>
+                  {secuencia.fecha && <span> · {fecha(secuencia.fecha)}</span>}
+                </p>
+                {secuencia.fila && (
+                  <dl>
+                    <dt>Magnitud</dt>
+                    <dd>M{n(secuencia.fila.mag, 1)}</dd>
+                    <dt>Profundidad</dt>
+                    <dd>{n(secuencia.fila.prof, 0)} km</dd>
+                    <dt>Réplicas</dt>
+                    <dd>
+                      {n(secuencia.fila.replicas)} <i style={{ background: paleta.color_clase[secuencia.fila.real_i] }} />
+                      {secuencia.fila.real}
+                    </dd>
+                    <dt>El modelo dijo</dt>
+                    <dd>
+                      <i style={{ background: paleta.color_clase[secuencia.fila.pred_i] }} />
+                      {secuencia.fila.pred}{" "}
+                      <span className={secuencia.fila.real_i === secuencia.fila.pred_i ? "acerto" : "fallo"}>
+                        {secuencia.fila.real_i === secuencia.fila.pred_i ? "· acertó" : "· no acertó"}
+                      </span>
+                    </dd>
+                  </dl>
+                )}
+                {resumenSecuencia.mayorVinoDespues && (
+                  <details className="globo-aviso-mayor" key={secuencia.indice}>
+                    <summary>
+                      Luego hubo un M{n(resumenSecuencia.mayor, 1)}, mayor que el principal
+                      <span className="mas">¿Qué implica?</span>
+                      <span className="menos">Ocultar ▴</span>
+                    </summary>
+                    <p>
+                      Esta secuencia comenzó con un sismo de M{n(resumenSecuencia.principal, 1)}, pero luego se produjo uno de M{n(resumenSecuencia.mayor, 1)}. El modelo toma como sismo
+                      principal al primero, por lo que esperaba las réplicas de un M{n(resumenSecuencia.principal, 1)} y no las de un M{n(resumenSecuencia.mayor, 1)}. En casos como este,
+                      el modelo tiende a predecir menos réplicas de las que realmente ocurren.
+                    </p>
+                  </details>
+                )}
+              </section>
+            </div>
+          )}
+          {datos && (
+            // elegir y controlar la secuencia, sobre el globo (como en un reproductor de video)
+            <div className={`globo-reproductor${secuencia ? "" : " sin-secuencia"}`} role="group" aria-label="Animación de una secuencia">
+              {secuencia ? (
+                <>
+                  <button type="button" onClick={() => { if (tau >= 1) setTau(0); setReproduciendo((r) => !r); }} aria-label={reproduciendo ? "Pausar" : "Reproducir"}>
+                    {reproduciendo ? "⏸" : "▶"}
+                  </button>
+                  <input name="momento" type="range" min="0" max="1000" value={Math.round(tau * 1000)} aria-label="Momento de la secuencia"
+                    onChange={(e) => { setReproduciendo(false); setTau(Number(e.target.value) / 1000); }} />
+                </>
+              ) : (
+                <span className="titulo-barra" aria-hidden="true">Animá una secuencia:</span>
+              )}
+              <select name="secuencia" className="selector" autoComplete="off" aria-label="Elegí una secuencia para animar"
+                value={secuencia ? destacadas.find((x) => x.indice === secuencia.indice)?.id ?? "" : ""}
+                onChange={(e) => {
+                  const x = destacadas.find((z) => z.id === e.target.value);
+                  if (x) elegirSecuencia(x.indice);
+                }}>
+                <option value="">{secuencia && !destacadas.some((x) => x.indice === secuencia.indice) ? secuencia.lugar : "Las más largas, o clickeá un punto del globo"}</option>
+                {destacadas.map((x) => (
+                  <option key={x.id} value={x.id}>
+                    {fecha(x.fecha)} · M{n(x.mag, 1)} · {n(x.eventos)} eventos · {x.lugar}
+                  </option>
+                ))}
+              </select>
+              {secuencia && (
+                <>
+                  <button type="button" className="encuadre" onClick={() => escenaRef.current?.encuadrar("nucleo")}
+                    title="Acerca la cámara a donde se concentra la mayoría de los eventos">Vista cercana</button>
+                  <button type="button" className="encuadre" onClick={() => escenaRef.current?.encuadrar("todo")}
+                    title="Aleja la cámara hasta que se ven todos los eventos, incluidos los más lejanos">Vista completa</button>
+                  <button type="button" className="cerrar" onClick={quitarSecuencia} aria-label="Quitar la secuencia (Esc)" title="Quitar la secuencia (Esc)">✕</button>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -222,112 +366,9 @@ export default function Globo({ d, filtros, setFiltros, entrada, setEntrada, pre
           <button type="button" onClick={() => escenaRef.current?.girar(0, -0.3)} aria-label="Girar hacia abajo">↓</button>
           <button type="button" onClick={() => escenaRef.current?.acercar(0.8)} aria-label="Acercar">+</button>
           <button type="button" onClick={() => escenaRef.current?.acercar(1.25)} aria-label="Alejar">−</button>
-          <span>Arrastrá para girar, rueda para acercar, o usá las flechas con el globo enfocado.</span>
+          <span>Arrastrá para girar, rueda para acercar, o usá las flechas con el globo enfocado.{secuencia && " Esc quita la secuencia."}</span>
         </div>
       </div>
-
-      <aside className="globo-panel">
-        <section>
-          <h3>Filtros (los mismos de Explorá)</h3>
-          <div className="globo-filtros">
-            <label>
-              Región
-              <select name="region" autoComplete="off" value={filtros.region} onChange={(e) => setFiltros((f) => ({ ...f, region: e.target.value }))}>
-                <option value="todas">todas</option>
-                {regiones.map((r) => (
-                  <option key={r.nombre} value={r.nombre}>
-                    {NOMBRE_REGION[r.nombre] ?? r.nombre}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Magnitud mínima: {n(filtros.magMin, 1)}
-              <input name="magnitud-minima" type="range" min="4" max="8" step="0.1" value={filtros.magMin} onChange={(e) => setFiltros((f) => ({ ...f, magMin: Number(e.target.value) }))} />
-            </label>
-            <label>
-              Secuencias
-              <select name="ver" autoComplete="off" value={filtros.ver} onChange={(e) => setFiltros((f) => ({ ...f, ver: e.target.value }))}>
-                {opciones.ver.map((o) => (
-                  <option key={o}>{o}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Pintar según
-              <select name="pintar-segun" autoComplete="off" value={filtros.colorPor} onChange={(e) => setFiltros((f) => ({ ...f, colorPor: e.target.value }))}>
-                {opciones.color.map((o) => (
-                  <option key={o}>{o}</option>
-                ))}
-              </select>
-            </label>
-          </div>
-          <p className="nota">
-            {region ? (
-              <>
-                <strong>{NOMBRE_REGION[region.nombre]}</strong>: Mc {n(region.mc, 1)}, {n(region.secuencias)} secuencias ({n(region.secuencias_test)} de test). En el test, f1{" "}
-                <strong>{n(region.f1_test, 2)}</strong> y acierto del intervalo {n(region.acierto_test * 100, 0)} %. Es un único modelo para todas las regiones; este es su resultado en esta.
-              </>
-            ) : (
-              <>
-                Todas las regiones: f1 {n(metricas.final.f1_test, 2)} en el test. Clickeá una región en el globo, o elegila arriba, para ver su resultado.
-              </>
-            )}
-          </p>
-        </section>
-
-        <section>
-          <h3>Animá una secuencia</h3>
-          <label>
-            Elegí una
-            <select name="secuencia" autoComplete="off" value={secuencia ? destacadas.find((x) => x.indice === secuencia.indice)?.id ?? "" : ""} onChange={(e) => {
-              const x = destacadas.find((z) => z.id === e.target.value);
-              if (x) elegirSecuencia(x.indice);
-            }}>
-              <option value="">{secuencia && !destacadas.some((x) => x.indice === secuencia.indice) ? secuencia.lugar : "Las más largas, o clickeá un punto del globo"}</option>
-              {destacadas.map((x) => (
-                <option key={x.id} value={x.id}>
-                  {fecha(x.fecha)} · M{n(x.mag, 1)} · {n(x.eventos)} eventos · {x.lugar}
-                </option>
-              ))}
-            </select>
-          </label>
-          {secuencia ? (
-            <>
-              <div className="globo-reproductor">
-                <button type="button" onClick={() => { if (tau >= 1) setTau(0); setReproduciendo((r) => !r); }}>
-                  {reproduciendo ? "⏸ Pausa" : "▶ Reproducir"}
-                </button>
-                <input name="momento" type="range" min="0" max="1000" value={Math.round(tau * 1000)} aria-label="Momento de la secuencia"
-                  onChange={(e) => { setReproduciendo(false); setTau(Number(e.target.value) / 1000); }} />
-                <button type="button" onClick={limpiar}>Quitar</button>
-              </div>
-              <div className="globo-reproductor encuadre">
-                <button type="button" onClick={() => escenaRef.current?.encuadrar("nucleo")}>Acercar al núcleo</button>
-                <button type="button" onClick={() => escenaRef.current?.encuadrar("todo")}>Ver toda la secuencia</button>
-              </div>
-              <p className="nota">
-                <strong>{secuencia.lugar}</strong> ({secuencia.fecha ? fecha(secuencia.fecha) : ""}): principal M{n(resumenSecuencia.principal, 1)}, {n(resumenSecuencia.total)} eventos en {resumenSecuencia.duracion}. El tiempo corre en
-                escala <strong>logarítmica</strong>: las primeras horas ocupan tanto como los últimos meses. La cámara se acerca al núcleo para que se vean separados; con la rueda o «Ver toda la secuencia» se ven también los más lejanos.
-              </p>
-              {resumenSecuencia.mayorVinoDespues && (
-                <p className="aviso-chico">
-                  El principal (el que abre la secuencia) fue M{n(resumenSecuencia.principal, 1)}, pero después hubo un M{n(resumenSecuencia.mayor, 1)}. Por eso con <code>mainshock = root</code> a este
-                  sismo se le asignan las réplicas de toda la secuencia: es uno de los casos que el modelo subestima.
-                </p>
-              )}
-            </>
-          ) : (
-            <p className="nota">Cada evento aparece en su momento, con un anillo del tamaño de su magnitud, pintado con la clase real de la secuencia.</p>
-          )}
-        </section>
-
-        <section>
-          <h3>Probá el modelo desde acá</h3>
-          <CamposCaso modelo={modelo} entrada={entrada} setEntrada={setEntrada} conEjemplos={false} />
-          <Respuesta modelo={modelo} paleta={paleta} resultado={prediccion.resultado} calculando={prediccion.calculando} compacta />
-        </section>
-      </aside>
     </div>
   );
 }
