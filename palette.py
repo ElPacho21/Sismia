@@ -5,8 +5,13 @@ CLASES = ["ninguna (0)", "pocas (1–2)", "moderadas (3–10)", "muchas (11+)"]
 COLOR_CLASE = ["#7a7974", "#2a78d6", "#d6762a", "#1f9e6b"]
 # partición de los datos: misma codificación en todos los gráficos
 COLOR_PARTICION = {"entrenamiento": "#5d6d8a", "test": "#e8edf5"}
-# fuera de las clases: el modelo elegido destaca (sigue siendo el azul verdoso del texto); lo demás, en grises fríos
-COLOR_ELEGIDO = "#3bb3c8"
+# fuera de las clases, dos acentos con significado fijo en todos los gráficos (validados con scripts de la guía de
+# visualización sobre el fondo de los gráficos: entre sí se distinguen también con daltonismo). No comparten gráfico
+# con los colores de las clases, así que no se confunden con ellas.
+#   azul verdoso = lo que se adoptó, lo que usa el modelo, el modelo elegido
+#   rosa         = lo que se descartó, lo que no puede entrar, lo que se probó y no se eligió
+COLOR_ELEGIDO = "#19a4b7"
+COLOR_DESCARTE = "#d15d7d"
 COLOR_NEUTRO = "#8593ab"
 COLOR_DATOS = "#dbe3f0"
 
@@ -16,5 +21,3 @@ TEXTO_GRAFICO = "#b7c3d6"
 TEXTO_FUERTE = "#e8edf5"
 GRILLA = "#202e47"
 EJE = "#566890"
-TRAZO_CAJAS = "#6f82a3"
-COLOR_COSTA = "#8aa0c4"      # costas del mapa de fondo de Explorá: finas y tenues

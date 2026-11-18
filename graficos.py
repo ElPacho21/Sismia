@@ -1,22 +1,23 @@
 """Gráficos de Sisimia, todos con Altair.
 
-Cada función devuelve un gráfico; exportar_specs() los guarda como especificaciones
+Cada función devuelve un gráfico; build_app.py los guarda como especificaciones
 Vega-Lite (JSON) en app/public/specs/ y la página los dibuja con vega-embed.
 La tabla componente por componente de cada uno está en docs/GRAFICOS.md.
 
 Regla de color (una sola paleta, en palette.py):
-  * el color SIEMPRE es la clase de réplicas (ninguna / pocas / moderadas / muchas);
-  * lo que no es una clase (modelos, regiones, partición) va en grises o con otro canal.
+  * el color de las cuatro clases SIEMPRE es la clase de réplicas (ninguna / pocas / moderadas / muchas): donde el
+    gráfico muestra secuencias o cantidades de réplicas, se pintan por su clase;
+  * lo que no es una clase usa dos acentos fijos: azul verdoso = lo adoptado / lo que usa el modelo; rosa = lo
+    descartado / lo que no puede entrar. Lo demás, en grises; los grupos de casos, con la forma.
 """
 import json
-from pathlib import Path
 
 import altair as alt
 import numpy as np
 import pandas as pd
 
-from palette import (CLASES, COLOR_CLASE, COLOR_DATOS, COLOR_ELEGIDO, COLOR_NEUTRO, EJE, FONDO_GRAFICO, GRILLA,
-                     TEXTO_FUERTE, TEXTO_GRAFICO, TRAZO_CAJAS, COLOR_COSTA)
+from palette import (CLASES, COLOR_CLASE, COLOR_DATOS, COLOR_DESCARTE, COLOR_ELEGIDO, COLOR_NEUTRO, COLOR_PARTICION, EJE,
+                     FONDO_GRAFICO, GRILLA, TEXTO_FUERTE, TEXTO_GRAFICO)
 
 alt.data_transformers.disable_max_rows()
 
@@ -37,6 +38,8 @@ def estilo(chart):
             .configure_axis(labelFontSize=13, titleFontSize=13, grid=True, gridColor=GRILLA, domainColor=EJE,
                             tickColor=EJE, labelColor=TEXTO_GRAFICO, titleColor=TEXTO_GRAFICO)
             .configure_view(stroke=None)
+            .configure_title(fontSize=13, fontWeight=600, color=TEXTO_FUERTE, anchor="start", offset=10)
+            .configure_header(labelFontSize=13, labelColor=TEXTO_FUERTE, titleFontSize=13, titleColor=TEXTO_GRAFICO)
             .configure_legend(labelFontSize=13, titleFontSize=13, labelColor=TEXTO_GRAFICO, titleColor=TEXTO_GRAFICO,
                               symbolFillColor=TEXTO_GRAFICO))
 
@@ -63,6 +66,42 @@ def grafico_datos(df):
     return (barras + texto).properties(width=560, height=170)
 
 
+# los grupos, en el orden en que se lee el gráfico: de lo que sale primero a lo que llega al modelo
+GRUPOS_COLUMNAS = ["Identifican la secuencia", "Son la respuesta", "Fuga: se saben cuando la secuencia terminó",
+                   "Constantes en este dataset", "Correlación casi nula en el análisis exploratorio",
+                   "Existen al predecir, no se probaron", "Se probaron y no mejoraron", "Usa el modelo"]
+
+
+def grafico_columnas(inventario):
+    """Las columnas del dataset, un cuadrado por columna, en filas según por qué entran o no al modelo."""
+    t = inventario.copy()
+    t["fila"] = t["grupo"].map({g: i for i, g in enumerate(GRUPOS_COLUMNAS)})
+    t = t.sort_values(["fila", "columna"], kind="stable")
+    t["posicion"] = t.groupby("grupo").cumcount()
+    t["estado"] = np.select([t["grupo"] == GRUPOS_COLUMNAS[-1], t["grupo"].isin(GRUPOS_COLUMNAS[4:7])],
+                            ["las usa el modelo", "existen al predecir"], "no pueden entrar")
+    # a la derecha de cada fila, cuántas son (y cuáles, en las dos filas que importan para el modelo)
+    r = t.groupby("grupo", sort=False).agg(n=("columna", "size"), fila=("fila", "first")).reset_index()
+    nombres = {GRUPOS_COLUMNAS[4]: "latitud y longitud",
+               GRUPOS_COLUMNAS[6]: "región y sismos de los 30 días previos",
+               GRUPOS_COLUMNAS[7]: "magnitud, umbral de la región y profundidad"}
+    r["rotulo"] = [f"{n}: {nombres[g]}" if g in nombres else str(n) for g, n in zip(r["grupo"], r["n"])]
+    r["x"] = r["n"] - 0.45
+    y = alt.Y("grupo:N", sort=GRUPOS_COLUMNAS, title=None,
+              axis=alt.Axis(labelLimit=320, domain=False, ticks=False, grid=False, labelPadding=10))
+    x = alt.Scale(domain=[-0.6, 16.5])
+    cuadros = alt.Chart(t).mark_square(size=250, opacity=1).encode(
+        x=alt.X("posicion:Q", scale=x, axis=None), y=y,
+        color=alt.Color("estado:N", scale=alt.Scale(domain=["no pueden entrar", "existen al predecir", "las usa el modelo"],
+                                                    range=[COLOR_DESCARTE, COLOR_NEUTRO, COLOR_ELEGIDO]),
+                        legend=alt.Legend(title=None, orient="bottom", direction="horizontal")),
+        tooltip=[alt.Tooltip("columna:N", title="Columna"), alt.Tooltip("grupo:N", title="Grupo"),
+                 alt.Tooltip("motivo:N", title="Por qué")])
+    rotulos = alt.Chart(r).mark_text(align="left", baseline="middle", fontSize=13, color=TEXTO_FUERTE).encode(
+        x=alt.X("x:Q", scale=x, axis=None), y=y, text="rotulo:N")
+    return (cuadros + rotulos).properties(width=480, height=280)
+
+
 # =================================================================== 2. LO QUE ENCONTRAMOS (H1)
 def tabla_h1(df, ancho=0.5, minimo=10):
     """Réplicas medias por tramo de magnitud SOBRE el umbral de su región (mag_sobre_mc)."""
@@ -75,54 +114,428 @@ def tabla_h1(df, ancho=0.5, minimo=10):
     return t
 
 
+def ajuste_h1(t):
+    """Recta sobre log(media) por tramo: (pendiente, ordenada). exp(pendiente) es cuánto se multiplica por punto."""
+    pendiente, ordenada = np.polyfit(t["centro"], np.log(t["media"]), 1)
+    return float(pendiente), float(ordenada)
+
+
 def pendiente_h1(t):
     """Cuánto se multiplican las réplicas medias por punto de magnitud (ajuste exponencial de los tramos)."""
-    return float(np.exp(np.polyfit(t["centro"], np.log(t["media"]), 1)[0]))
+    return float(np.exp(ajuste_h1(t)[0]))
 
 
 def grafico_hallazgo(df):
+    """Los mismos tramos con el eje vertical lineal (se ve la explosión) y logarítmico (se ve el factor constante)."""
+    from referencia_sklearn import a_intervalo
     t = tabla_h1(df)
-    base = alt.Chart(t).encode(
-        x=alt.X("centro:Q", title="Magnitud del sismo principal sobre el umbral de su región (puntos)",
-                scale=alt.Scale(zero=False, nice=False), axis=alt.Axis(values=list(np.arange(0, 5.1, 0.5)), format=".1f")),
-        y=alt.Y("media:Q", title="Réplicas medias por secuencia (escala logarítmica)",
-                scale=alt.Scale(type="log", domain=[0.1, 1000]), axis=alt.Axis(format="~g")))
-    # recta de crecimiento constante: se ajusta una recta a log(media) y se vuelve a la escala original
-    recta = (base.transform_calculate(ln="log(datum.media)")
-             .transform_regression("centro", "ln")
-             .transform_calculate(media="exp(datum.ln)")
-             .mark_line(color=COLOR_NEUTRO, strokeDash=[6, 4], strokeWidth=2))
-    puntos = base.mark_circle(color=COLOR_DATOS, opacity=0.9).encode(
-        size=alt.Size("secuencias:Q", scale=alt.Scale(type="sqrt", range=[40, 900]),
-                      legend=alt.Legend(title="Secuencias en el tramo", values=[10, 100, 1000, 10000])),
-        tooltip=[alt.Tooltip("rotulo:N", title="Magnitud sobre el umbral"),
-                 alt.Tooltip("secuencias:Q", title="Secuencias", format=","),
-                 alt.Tooltip("media:Q", title="Réplicas medias", format=".2f")])
-    return (recta + puntos).properties(width=560, height=330)
+    # la clase del promedio redondeado: en promedio, un sismo de este tramo deja tantas réplicas, que caen en esta clase
+    t["clase"] = a_intervalo(np.round(t["media"]).astype(int))
+    pendiente, ordenada = ajuste_h1(t)
+    curva = pd.DataFrame({"centro": np.linspace(t["centro"].min(), t["centro"].max(), 80)})
+    curva["media"] = np.exp(ordenada + pendiente * curva["centro"])
+    x = alt.X("centro:Q", title="Magnitud sobre el umbral de su región (puntos)",
+              scale=alt.Scale(zero=False, nice=False, domain=[0, 3.5]),
+              axis=alt.Axis(values=list(np.arange(0, 3.6, 0.5)), format=".1f"))
+    tamano = alt.Size("secuencias:Q", scale=alt.Scale(type="sqrt", range=[40, 700]),
+                      legend=alt.Legend(title="Secuencias en el tramo", values=[10, 100, 1000, 10000], orient="bottom",
+                                        direction="horizontal"))
+    tooltip = [alt.Tooltip("rotulo:N", title="Magnitud sobre el umbral"),
+               alt.Tooltip("secuencias:Q", title="Secuencias", format=","),
+               alt.Tooltip("media:Q", title="Réplicas medias", format=".2f")]
+
+    def panel(logaritmico):
+        if logaritmico:
+            y = alt.Y("media:Q", title="Réplicas medias (escala logarítmica)",
+                      scale=alt.Scale(type="log", domain=[0.1, 1000]), axis=alt.Axis(values=[0.1, 1, 10, 100, 1000], format="~g"))
+            titulo = "Eje logarítmico: cada tramo multiplica al anterior"
+        else:
+            y = alt.Y("media:Q", title="Réplicas medias por secuencia", scale=alt.Scale(zero=True, domain=[0, 140]))
+            titulo = "Eje lineal: casi plano y después se dispara"
+        linea = alt.Chart(curva).mark_line(color=TEXTO_GRAFICO, strokeDash=[6, 4], strokeWidth=2).encode(x=x, y=y)
+        puntos = alt.Chart(t).mark_circle(opacity=0.95, stroke=FONDO_GRAFICO, strokeWidth=1).encode(
+            x=x, y=y, size=tamano, tooltip=tooltip + [alt.Tooltip("clase:N", title="Clase del promedio")],
+            color=alt.Color("clase:N", scale=ESCALA_CLASE,
+                            legend=alt.Legend(title="Clase del promedio (redondeado)", orient="bottom", direction="horizontal",
+                                              titleLimit=300)))
+        return (linea + puntos).properties(width=300, height=290, title=titulo)
+
+    return alt.hconcat(panel(False), panel(True), spacing=36)
+
+
+GRUPO_ATIPICO = ["Resto de las secuencias", "Después vino un sismo mayor que el principal", "M7 o más con 2 réplicas o menos"]
+
+
+def grafico_atipicos(datos, anotaciones):
+    """Magnitud contra réplicas de todas las secuencias: el color es la clase de réplicas y la forma, el grupo
+    (los dos grupos de casos atípicos)."""
+    y = alt.Y("replicas:Q", title="Réplicas (escala logarítmica, con el 0)",
+              scale=alt.Scale(type="symlog", constant=1, domain=[0, 5000]),
+              axis=alt.Axis(values=[0, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000], format=",.0f"))
+    x = alt.X("mag:Q", title="Magnitud del sismo principal", scale=alt.Scale(domain=[4, 9.4], nice=False))
+    puntos = (alt.Chart(datos)
+              .transform_calculate(
+                  grupo=f"datum.mag_max > datum.mag + 1e-9 ? '{GRUPO_ATIPICO[1]}' : "
+                        f"(datum.mag >= 7 && datum.replicas <= 2 ? '{GRUPO_ATIPICO[2]}' : '{GRUPO_ATIPICO[0]}')",
+                  capa=f"datum.grupo == '{GRUPO_ATIPICO[0]}' ? 0 : 1",
+                  # tamaño y opacidad por grupo: valores directos (sin escala ni leyenda), la leyenda la dan color y forma
+                  tamano=f"datum.grupo == '{GRUPO_ATIPICO[0]}' ? 24 : datum.grupo == '{GRUPO_ATIPICO[1]}' ? 75 : 120",
+                  opacidad=f"datum.grupo == '{GRUPO_ATIPICO[0]}' ? 0.6 : datum.grupo == '{GRUPO_ATIPICO[1]}' ? 0.9 : 1")
+              .mark_point(filled=True, strokeWidth=1.6)
+              .encode(x=x, y=y,
+                      color=alt.Color("real:N", scale=ESCALA_CLASE,
+                                      legend=alt.Legend(title="Réplicas", orient="bottom", direction="vertical")),
+                      shape=alt.Shape("grupo:N", scale=alt.Scale(domain=GRUPO_ATIPICO, range=["circle", "triangle-up", "square"]),
+                                      legend=alt.Legend(title="Secuencia", orient="bottom", direction="vertical", labelLimit=420)),
+                      size=alt.Size("tamano:Q", scale=None),
+                      opacity=alt.Opacity("opacidad:Q", scale=None),
+                      order=alt.Order("capa:Q"),
+                      tooltip=[alt.Tooltip("lugar:N", title="Lugar"), alt.Tooltip("fecha:T", title="Fecha", format="%d/%m/%Y"),
+                               alt.Tooltip("mag:Q", title="Magnitud del principal"),
+                               alt.Tooltip("mag_max:Q", title="Magnitud mayor de la secuencia"),
+                               alt.Tooltip("prof:Q", title="Profundidad (km)"), alt.Tooltip("replicas:Q", title="Réplicas")]))
+    flechas = alt.Chart(anotaciones).mark_rule(color=TEXTO_GRAFICO, strokeWidth=1).encode(
+        x="mag:Q", y="replicas:Q", x2="x_texto:Q", y2="y_texto:Q")
+    # el texto sale del extremo de la línea, hacia el lado que indica cada anotación
+    rotulos = [alt.Chart(anotaciones).transform_filter(f"datum.alinear == '{lado}'").mark_text(
+        fontSize=12, color=TEXTO_FUERTE, align=lado, baseline="middle", dx=4 if lado == "left" else -4).encode(
+        x="x_texto:Q", y="y_texto:Q", text="rotulo:N") for lado in ("left", "right")]
+    return alt.layer(puntos, flechas, *rotulos).properties(width=600, height=360)
 
 
 # =================================================================== 3. EL MODELO
-def grafico_modelo(comparacion):
-    """f1 macro de validación (media ± desvío) de cada modelo, con el piso marcado."""
-    t = pd.DataFrame([{"modelo": k, "f1": v[0], "desvio": v[1]} for k, v in comparacion.items()])
+def grafico_evolucion(pasos):
+    """El camino de la Entrega 3: cada paso que se probó, en orden, con su f1 macro en validación (media ± desvío).
+    Lo que se adoptó va en azul verdoso y unido por una línea; lo que se probó y se dejó, en rosa y hueco."""
+    t = pasos.copy()
     t["bajo"], t["alto"] = t["f1"] - t["desvio"], t["f1"] + t["desvio"]
-    t["elegido"] = t["modelo"].str.startswith("Poisson elegido")
-    piso = float(t.loc[t["modelo"].str.startswith("piso"), "f1"].iloc[0])
-    orden = t.sort_values("f1", ascending=False)["modelo"].tolist()
-    base = alt.Chart(t).encode(
-        y=alt.Y("modelo:N", sort=orden, title=None, axis=alt.Axis(labelLimit=300)),
-        color=alt.condition("datum.elegido", alt.value(COLOR_ELEGIDO), alt.value(COLOR_NEUTRO)))
-    rango = base.mark_rule(strokeWidth=3).encode(
-        x=alt.X("bajo:Q", title="f1 macro en validación temporal (media ± desvío, 5 folds)",
-                scale=alt.Scale(domain=[0, 0.6], zero=True)), x2="alto:Q")
-    punto = base.mark_point(filled=True, size=90, opacity=1).encode(
-        x="f1:Q", tooltip=[alt.Tooltip("modelo:N", title="Modelo"), alt.Tooltip("f1:Q", title="f1 macro", format=".3f"),
-                           alt.Tooltip("desvio:Q", title="Desvío", format=".3f")])
-    etiqueta = base.mark_text(align="left", dx=10, fontSize=11).encode(
-        x="alto:Q", text=alt.Text("f1:Q", format=".2f"), color=alt.value(TEXTO_GRAFICO))
+    orden = t.drop_duplicates("paso").sort_values("orden")["paso"].tolist()
+    piso = float(t.loc[t["estado"] == "piso", "f1"].iloc[0])
+    y = alt.Y("paso:N", sort=orden, title=None, axis=alt.Axis(labelLimit=330, grid=False, labelPadding=8))
+    x = alt.Scale(domain=[0.2, 0.56], nice=False)
+    tooltip = [alt.Tooltip("modelo:N", title="Modelo"), alt.Tooltip("f1:Q", title="f1 macro", format=".3f"),
+               alt.Tooltip("desvio:Q", title="Desvío", format=".3f"), alt.Tooltip("nota:N", title="Qué pasó")]
+    color = alt.Color("estado:N", scale=alt.Scale(domain=["piso", "se adoptó", "se probó y se dejó", "test"],
+                                                  range=[TEXTO_GRAFICO, COLOR_ELEGIDO, COLOR_DESCARTE, COLOR_ELEGIDO]),
+                      legend=None)
+    base = alt.Chart(t).encode(y=y, color=color)
+    camino = (alt.Chart(t).transform_filter("datum.estado != 'se probó y se dejó'")
+              .mark_line(color=COLOR_ELEGIDO, strokeWidth=2, opacity=0.55)
+              .encode(x=alt.X("f1:Q", scale=x), y=y, order="orden:Q"))
+    rango = base.transform_filter("isValid(datum.desvio)").mark_rule(strokeWidth=2.5).encode(
+        x=alt.X("bajo:Q", scale=x, title="f1 macro en validación temporal (media ± desvío, 5 folds)"), x2="alto:Q")
+    adoptado = base.transform_filter("datum.estado != 'se probó y se dejó'").mark_point(
+        filled=True, size=110, opacity=1).encode(
+        x=alt.X("f1:Q", scale=x), tooltip=tooltip,
+        shape=alt.Shape("estado:N", scale=alt.Scale(domain=["piso", "se adoptó", "se probó y se dejó", "test"],
+                                                    range=["circle", "circle", "circle", "diamond"]),
+                        legend=None))
+    dejado = base.transform_filter("datum.estado == 'se probó y se dejó'").mark_point(
+        filled=False, size=80, strokeWidth=1.8, opacity=1).encode(x=alt.X("f1:Q", scale=x), tooltip=tooltip)
+    valor = base.transform_filter("datum.estado != 'se probó y se dejó'").mark_text(
+        align="left", dx=10, dy=-10, fontSize=12, fontWeight=600).encode(
+        x=alt.X("f1:Q", scale=x), text=alt.Text("f1:Q", format=".3f"))
     linea_piso = alt.Chart(pd.DataFrame({"piso": [piso]})).mark_rule(
-        strokeDash=[5, 4], color=TEXTO_FUERTE, strokeWidth=1.5).encode(x="piso:Q")
-    return (linea_piso + rango + punto + etiqueta).properties(width=520, height=330)
+        strokeDash=[5, 4], color=TEXTO_GRAFICO, strokeWidth=1.2).encode(x=alt.X("piso:Q", scale=x))
+    return (linea_piso + camino + rango + dejado + adoptado + valor).properties(width=420, height=400)
+
+
+def grafico_variables(grilla, densidad, profundidades):
+    """Qué contesta el modelo para cada combinación de magnitud sobre el umbral y profundidad (el fondo), con los
+    sismos de entrenamiento encima (círculos, por cantidad). Lo que cambia la respuesta se lee en cuánto se corren
+    los colores al moverse en cada eje, dentro de la zona donde hay sismos."""
+    x = alt.Scale(domain=[0, 4.5], nice=False)
+    y = alt.Scale(domain=[0, 660], reverse=True, nice=False)
+    fondo = alt.Chart(grilla).mark_rect(opacity=0.6).encode(
+        x=alt.X("msm:Q", scale=x, title="Magnitud sobre el umbral de su región (puntos)"), x2="msm2:Q",
+        y=alt.Y("prof:Q", scale=y, title="Profundidad (km)"), y2="prof2:Q",
+        color=alt.Color("clase:N", scale=ESCALA_CLASE,
+                        legend=alt.Legend(title="Lo que contesta el modelo", orient="right")),
+        tooltip=[alt.Tooltip("rotulo_msm:N", title="Magnitud sobre el umbral"),
+                 alt.Tooltip("rotulo_prof:N", title="Profundidad"), alt.Tooltip("clase:N", title="Contesta")])
+    sismos = alt.Chart(densidad).mark_circle(color=COLOR_DATOS, opacity=0.85, stroke=FONDO_GRAFICO, strokeWidth=0.4).encode(
+        x=alt.X("msm:Q", scale=x), y=alt.Y("prof:Q", scale=y),
+        size=alt.Size("n:Q", scale=alt.Scale(type="sqrt", range=[3, 170]),
+                      legend=alt.Legend(title="Sismos de entrenamiento", values=[1, 10, 100, 1000], orient="right")),
+        tooltip=[alt.Tooltip("rotulo_msm:N", title="Magnitud sobre el umbral"),
+                 alt.Tooltip("rotulo_prof:N", title="Profundidad"), alt.Tooltip("n:Q", title="Sismos", format=",")])
+    franja = alt.Chart(profundidades).mark_rule(strokeDash=[4, 3], color=TEXTO_FUERTE, strokeWidth=1.2).encode(
+        y=alt.Y("prof:Q", scale=y))
+    rotulo = alt.Chart(profundidades).transform_filter("datum.rotulo != ''").mark_text(
+        align="right", baseline="middle", fontSize=12, fontWeight=600, color=TEXTO_FUERTE).encode(
+        x=alt.value(552), y=alt.Y("medio:Q", scale=y), text="rotulo:N")
+    return (fondo + sismos + franja + rotulo).properties(width=560, height=360)
+
+
+# ---- los pasos de la historia del modelo (en el orden del notebook de la Entrega 3)
+TRAMO_EXPR = "datum.mag < 5 ? '4–5' : datum.mag < 6 ? '5–6' : datum.mag < 7 ? '6–7' : '7 o más'"
+
+
+def grafico_intervalos(datos, intervalos):
+    """Paso 1: las réplicas de cada sismo por tramo de magnitud (un punto por secuencia, desparramado a lo ancho),
+    con la media de cada tramo. Muestra por qué no se predice el número exacto."""
+    orden = list(intervalos)
+    y = alt.Y("replicas:Q", title="Réplicas de la secuencia (escala logarítmica, con el 0)",
+              scale=alt.Scale(type="symlog", constant=1, domain=[0, 5000]),
+              axis=alt.Axis(values=[0, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000], format=",.0f"))
+    x = alt.X("tramo:N", sort=orden, title="Magnitud del sismo principal", axis=alt.Axis(labelAngle=0, grid=False))
+    puntos = (alt.Chart(datos)
+              .transform_calculate(tramo=TRAMO_EXPR, desparramo="random()")
+              .mark_circle(size=16, opacity=0.55)
+              .encode(x=x, xOffset=alt.XOffset("desparramo:Q", scale=alt.Scale(domain=[-0.4, 1.4])), y=y,
+                      color=alt.Color("real:N", scale=ESCALA_CLASE, legend=alt.Legend(title="Réplicas", orient="right")),
+                      tooltip=[alt.Tooltip("lugar:N", title="Lugar"), alt.Tooltip("mag:Q", title="Magnitud"),
+                               alt.Tooltip("replicas:Q", title="Réplicas")]))
+    t = pd.DataFrame([{"tramo": k, **v} for k, v in intervalos.items()])
+    t["rotulo_media"] = [f"media {es(m, 1)}" for m in t["media"]]
+    t["rotulo_arriba"] = [f"{es(n)} sismos|varianza = {es(v)} × media" for n, v in zip(t["sismos"], t["var_media"])]
+    t["arriba"] = 5000
+    media = alt.Chart(t).mark_tick(color=TEXTO_FUERTE, thickness=3, size=90).encode(
+        x=x, y=alt.Y("media:Q"),
+        tooltip=[alt.Tooltip("tramo:N", title="Magnitud"), alt.Tooltip("sismos:Q", title="Sismos", format=","),
+                 alt.Tooltip("media:Q", title="Media", format=".2f"), alt.Tooltip("var_media:Q", title="Varianza / media", format=".1f"),
+                 alt.Tooltip("minimo:Q", title="Mínimo"), alt.Tooltip("maximo:Q", title="Máximo", format=",")])
+    texto_media = alt.Chart(t).mark_text(align="left", dx=48, fontSize=12, fontWeight=600, color=TEXTO_FUERTE).encode(
+        x=x, y="media:Q", text="rotulo_media:N")
+    texto_arriba = alt.Chart(t).mark_text(fontSize=11, color=TEXTO_GRAFICO, baseline="top", lineBreak="|", lineHeight=14).encode(
+        x=x, y="arriba:Q", text="rotulo_arriba:N")
+    return alt.layer(puntos, media, texto_media, texto_arriba).properties(width=600, height=330)
+
+
+def grafico_ejemplo_poisson(ejemplo):
+    """Paso 2: qué contesta la primera Poisson para tres sismos inventados a 30 km: la probabilidad de cada
+    intervalo (sale de la distribución de Poisson con las réplicas esperadas) y la respuesta."""
+    filas = []
+    for sismo, d in ejemplo.items():
+        for i, c in enumerate(CLASES):
+            filas.append({"sismo": f"{sismo}, 30 km", "clase": c, "orden": i, "prob": d["probs"][i] / 100})
+    t = pd.DataFrame(filas)
+    orden = [f"{k}, 30 km" for k in ejemplo]
+    r = pd.DataFrame([{"sismo": f"{k}, 30 km", "rotulo": f"{es(d['mu'], 1)} réplicas esperadas → {d['respuesta']}"}
+                      for k, d in ejemplo.items()])
+    y = alt.Y("sismo:N", sort=orden, title=None, axis=alt.Axis(grid=False))
+    barras = alt.Chart(t).mark_bar(height=26).encode(
+        y=y, x=alt.X("prob:Q", stack="zero", title="Probabilidad de cada intervalo", scale=alt.Scale(domain=[0, 1]),
+                     axis=alt.Axis(format="%")),
+        color=alt.Color("clase:N", scale=ESCALA_CLASE, legend=alt.Legend(title=None, orient="bottom", direction="horizontal")),
+        order=alt.Order("orden:Q"),
+        tooltip=[alt.Tooltip("sismo:N", title="Sismo"), alt.Tooltip("clase:N", title="Intervalo"),
+                 alt.Tooltip("prob:Q", title="Probabilidad", format=".1%")])
+    texto = alt.Chart(r).mark_text(align="left", dx=10, fontSize=12, fontWeight=600, color=TEXTO_FUERTE).encode(
+        y=y, x=alt.value(380), text="rotulo:N")
+    return (barras + texto).properties(width=370, height=140)
+
+
+def grafico_sesgo_region(cociente, mc, nombres):
+    """Paso 3: réplicas reales / esperadas por región, en validación (sin sismos de M6,5 o más), con la magnitud
+    cruda y con la magnitud sobre el umbral. 1 es que el modelo acierta el total de la región."""
+    versiones = {"crudo": "con la magnitud cruda", "mag_sobre_mc": "con la magnitud sobre el umbral"}
+    regiones = sorted(cociente["crudo"], key=lambda r: (mc[r], r))
+    rotulo = {r: f"{nombres[r]} (Mc {es(mc[r], 1)})" for r in regiones}
+    t = pd.DataFrame([{"region": rotulo[r], "version": versiones[v], "valor": cociente[v][r]} for v in versiones for r in regiones])
+    ancho = pd.DataFrame([{"region": rotulo[r], "desde": cociente["crudo"][r], "hasta": cociente["mag_sobre_mc"][r]} for r in regiones])
+    y = alt.Y("region:N", sort=[rotulo[r] for r in regiones], title=None, axis=alt.Axis(grid=False, labelLimit=260))
+    x = alt.Scale(domain=[0, 1.5])
+    une = alt.Chart(ancho).mark_rule(color=TEXTO_GRAFICO, strokeWidth=2).encode(y=y, x=alt.X("desde:Q", scale=x), x2="hasta:Q")
+    puntos = alt.Chart(t).mark_point(size=130, strokeWidth=2, opacity=1).encode(
+        y=y, x=alt.X("valor:Q", scale=x, title="Réplicas reales / esperadas en validación"),
+        color=alt.Color("version:N", scale=alt.Scale(domain=list(versiones.values()), range=[COLOR_DESCARTE, COLOR_ELEGIDO]),
+                        legend=alt.Legend(title=None, orient="bottom", direction="horizontal", labelLimit=320)),
+        # el relleno comparte la leyenda del color (mismo campo y mismos parámetros): queda una sola, con el hueco y el lleno
+        fill=alt.Fill("version:N", scale=alt.Scale(domain=list(versiones.values()), range=["transparent", COLOR_ELEGIDO]),
+                      legend=alt.Legend(title=None, orient="bottom", direction="horizontal", labelLimit=320)),
+        tooltip=[alt.Tooltip("region:N", title="Región"), alt.Tooltip("version:N", title="Modelo"),
+                 alt.Tooltip("valor:Q", title="Reales / esperadas", format=".2f")])
+    # la magnitud cruda rotulada abajo y la corregida arriba: en los Andes los dos puntos casi se tocan
+    texto = [alt.Chart(t).transform_filter(f"datum.version == '{v}'").mark_text(dy=d, fontSize=11, color=TEXTO_FUERTE).encode(
+        y=y, x=alt.X("valor:Q", scale=x), text=alt.Text("valor:Q", format=".2f"))
+        for v, d in ((versiones["crudo"], 16), (versiones["mag_sobre_mc"], -14))]
+    uno = alt.Chart(pd.DataFrame({"x": [1], "rotulo": ["1 = acierta el total"]}))
+    linea = uno.mark_rule(strokeDash=[5, 4], color=TEXTO_FUERTE).encode(x=alt.X("x:Q", scale=x))
+    rotulo_uno = uno.mark_text(align="left", dx=6, dy=-6, fontSize=11, color=TEXTO_FUERTE, baseline="bottom").encode(
+        x=alt.X("x:Q", scale=x), y=alt.value(0), text="rotulo:N")
+    return alt.layer(linea, rotulo_uno, une, puntos, *texto).properties(width=440, height=250)
+
+
+def grafico_columnas_folds(por_fold, resumen):
+    """Paso 4: el f1 de cada fold con y sin las dos columnas nuevas. La diferencia entre folds es más grande que la
+    diferencia entre las versiones."""
+    nombres = {"base": "sin agregar nada", "region": "+ región", "previos": "+ sismos de los 30 días previos"}
+    rotulo = {k: f"{v}: {es(resumen[k][0], 3)} ± {es(resumen[k][1], 3)}" for k, v in nombres.items()}
+    t = pd.DataFrame([{"fold": i + 1, "version": rotulo[k], "f1": v} for k in nombres for i, v in enumerate(por_fold[k])])
+    dominio = [rotulo[k] for k in nombres]
+    return alt.Chart(t).mark_line(point=alt.OverlayMarkDef(size=60, filled=True), strokeWidth=2.2).encode(
+        x=alt.X("fold:O", title="Fold de validación (de más viejo a más nuevo)", axis=alt.Axis(labelAngle=0)),
+        y=alt.Y("f1:Q", title="f1 macro", scale=alt.Scale(domain=[0.38, 0.54])),
+        color=alt.Color("version:N", scale=alt.Scale(domain=dominio, range=[COLOR_ELEGIDO, COLOR_DESCARTE, COLOR_DESCARTE]),
+                        legend=alt.Legend(title="Media ± desvío de los 5 folds", orient="right", labelLimit=320, symbolType="stroke", symbolStrokeWidth=2.5, symbolSize=500)),
+        # el trazo comparte la leyenda del color (mismo campo y mismos parámetros): la leyenda muestra también la línea
+        strokeDash=alt.StrokeDash("version:N", scale=alt.Scale(domain=dominio, range=[[1, 0], [6, 3], [2, 3]]),
+                                  legend=alt.Legend(title="Media ± desvío de los 5 folds", orient="right", labelLimit=320, symbolType="stroke", symbolStrokeWidth=2.5, symbolSize=500)),
+        tooltip=[alt.Tooltip("version:N", title="Versión"), alt.Tooltip("fold:O", title="Fold"),
+                 alt.Tooltip("f1:Q", title="f1 macro", format=".3f")]).properties(width=360, height=230)
+
+
+def grafico_cortes(cortes):
+    """Paso 6: el f1 macro del piso, la logística balanceada y Poisson con otros cortes de los intervalos."""
+    modelos = ["piso", "logística (balanced)", "Poisson"]
+    filas = []
+    for esquema, d in cortes.items():
+        for m in modelos:
+            filas.append({"esquema": esquema, "intervalos": d["intervalos"], "modelo": m, "f1": d[m]})
+    t = pd.DataFrame(filas)
+    orden = sorted(cortes, key=lambda k: (cortes[k]["intervalos"], k))
+    ancho = t.groupby("esquema")["f1"].agg(["min", "max"]).reset_index()
+    y = alt.Y("esquema:N", sort=orden, title="Cortes de los intervalos", axis=alt.Axis(grid=False, labelLimit=280))
+    x = alt.Scale(domain=[0.15, 0.6])
+    une = alt.Chart(ancho).mark_rule(color=GRILLA, strokeWidth=6).encode(y=y, x=alt.X("min:Q", scale=x), x2="max:Q")
+    puntos = alt.Chart(t).mark_point(filled=True, size=110, opacity=1).encode(
+        y=y, x=alt.X("f1:Q", scale=x, title="f1 macro en validación"),
+        color=alt.Color("modelo:N", scale=alt.Scale(domain=modelos, range=[TEXTO_GRAFICO, COLOR_DESCARTE, COLOR_ELEGIDO]),
+                        legend=alt.Legend(title=None, orient="bottom", direction="horizontal")),
+        shape=alt.Shape("modelo:N", scale=alt.Scale(domain=modelos, range=["circle", "square", "diamond"])),
+        tooltip=[alt.Tooltip("esquema:N", title="Cortes"), alt.Tooltip("modelo:N", title="Modelo"),
+                 alt.Tooltip("f1:Q", title="f1 macro", format=".3f")])
+    texto = alt.Chart(t[t["modelo"] == "Poisson"]).mark_text(align="left", dx=10, fontSize=12, fontWeight=600,
+                                                             color=COLOR_ELEGIDO).encode(
+        y=y, x=alt.X("f1:Q", scale=x), text=alt.Text("f1:Q", format=".3f"))
+    return (une + puntos + texto).properties(width=420, height=210)
+
+
+# ---- los gráficos del «Cómo lo sabemos» del modelo (reemplazan a las tablas, salvo la de comparación)
+def grafico_folds(folds, desde):
+    """Validación temporal: con qué tramo entrena y con cuál valida cada fold, y el f1 del modelo elegido en cada uno."""
+    filas = []
+    for i, f in enumerate(folds, start=1):
+        nombre = f"Fold {i}"
+        filas.append({"fold": nombre, "parte": "entrena", "inicio": desde, "fin": f["entrena_hasta"], "n": f["filas_entrenamiento"]})
+        filas.append({"fold": nombre, "parte": "valida", "inicio": f["valida_desde"], "fin": f["valida_hasta"], "n": f["filas_validacion"]})
+    t = pd.DataFrame(filas)
+    notas = pd.DataFrame([{"fold": f"Fold {i}", "fin": f["valida_hasta"], "f1": f["f1"]} for i, f in enumerate(folds, start=1)])
+    y = alt.Y("fold:N", title=None, axis=alt.Axis(grid=False))
+    barras = alt.Chart(t).mark_bar(height=16, cornerRadius=2).encode(
+        x=alt.X("inicio:T", title=None, axis=alt.Axis(format="%Y")), x2="fin:T", y=y,
+        color=alt.Color("parte:N", scale=alt.Scale(domain=["entrena", "valida"], range=[COLOR_PARTICION["entrenamiento"], COLOR_DATOS]),
+                        legend=alt.Legend(title=None, orient="bottom", direction="horizontal")),
+        tooltip=[alt.Tooltip("fold:N", title="Fold"), alt.Tooltip("parte:N", title="Parte"),
+                 alt.Tooltip("inicio:T", title="Desde", format="%d/%m/%Y"), alt.Tooltip("fin:T", title="Hasta", format="%d/%m/%Y"),
+                 alt.Tooltip("n:Q", title="Secuencias", format=",")])
+    texto = alt.Chart(notas).mark_text(align="left", dx=8, fontSize=12, color=TEXTO_FUERTE).encode(
+        x="fin:T", y=y, text=alt.Text("rotulo:N")).transform_calculate(rotulo="'f1 ' + format(datum.f1, '.3f')")
+    return (barras + texto).properties(width=520, height=170)
+
+
+def grafico_alpha(ajuste_alpha, elegido):
+    """f1 macro (media ± desvío) según la regularización alpha, con empuje 0."""
+    t = pd.DataFrame([{"alpha": float(a), "f1": v[0], "desvio": v[1]} for a, v in ajuste_alpha.items()])
+    t["bajo"], t["alto"] = t["f1"] - t["desvio"], t["f1"] + t["desvio"]
+    t["elegido"] = np.isclose(t["alpha"], elegido)
+    x = alt.X("alpha:Q", title="alpha (regularización, escala logarítmica)", scale=alt.Scale(type="log"),
+              axis=alt.Axis(values=list(t["alpha"]), format="~g"))
+    color = alt.condition("datum.elegido", alt.value(COLOR_ELEGIDO), alt.value(COLOR_DESCARTE))
+    rango = alt.Chart(t).mark_rule(strokeWidth=2.5).encode(
+        x=x, y=alt.Y("bajo:Q", title="f1 macro en validación", scale=alt.Scale(domain=[0.3, 0.5])), y2="alto:Q", color=color)
+    punto = alt.Chart(t).mark_point(filled=True, size=90, opacity=1).encode(
+        x=x, y="f1:Q", color=color, tooltip=[alt.Tooltip("alpha:Q", title="alpha", format="~g"),
+                                            alt.Tooltip("f1:Q", title="f1 macro", format=".3f"),
+                                            alt.Tooltip("desvio:Q", title="Desvío", format=".3f")])
+    texto = alt.Chart(t).mark_text(dx=14, align="left", fontSize=12, color=TEXTO_FUERTE).encode(
+        x=x, y="f1:Q", text=alt.Text("f1:Q", format=".3f"))
+    return (rango + punto + texto).properties(width=440, height=200)
+
+
+def grafico_empuje(trade_off, elegido):
+    """Recall de cada clase y f1 macro según el empuje: más empuje, más avisos de réplicas y más falsas alarmas."""
+    filas = []
+    for e, v in trade_off.items():
+        for i, c in enumerate(CLASES):
+            filas.append({"empuje": float(e), "medida": f"recall {c}", "clase": c, "valor": v[2 + i]})
+    t = pd.DataFrame(filas)
+    f1 = pd.DataFrame([{"empuje": float(e), "valor": v[0]} for e, v in trade_off.items()])
+    x = alt.X("empuje:Q", title="empuje (más alto = se anima más a decir que hay réplicas)",
+              axis=alt.Axis(values=sorted(f1["empuje"]), format=".1f"))
+    y = alt.Y("valor:Q", title="En validación", scale=alt.Scale(domain=[0, 1]))
+    recall = alt.Chart(t).mark_line(point=True, strokeWidth=2).encode(
+        x=x, y=y, color=alt.Color("clase:N", scale=ESCALA_CLASE, legend=alt.Legend(title="Recall de la clase", orient="right")),
+        tooltip=[alt.Tooltip("medida:N", title="Medida"), alt.Tooltip("empuje:Q", title="Empuje"),
+                 alt.Tooltip("valor:Q", title="Valor", format=".3f")])
+    macro = alt.Chart(f1).mark_line(point=alt.OverlayMarkDef(shape="square", size=60, filled=True, color=TEXTO_FUERTE), strokeWidth=3,
+                                    color=TEXTO_FUERTE).encode(
+        x=x, y=y, tooltip=[alt.Tooltip("empuje:Q", title="Empuje"), alt.Tooltip("valor:Q", title="f1 macro", format=".3f")])
+    rotulo = alt.Chart(f1.tail(1)).mark_text(align="left", dx=8, fontSize=12, color=TEXTO_FUERTE).encode(
+        x=x, y=y, text=alt.value("f1 macro"))
+    marca = alt.Chart(pd.DataFrame({"empuje": [elegido]})).mark_rule(strokeDash=[5, 4], color=COLOR_ELEGIDO).encode(x="empuje:Q")
+    return (marca + recall + macro + rotulo).properties(width=440, height=240)
+
+
+def grafico_reporte(reporte):
+    """Precisión, recall y f1 de cada clase en el test."""
+    filas = [{"clase": c, "medida": m, "valor": d[k], "casos": d["support"]}
+             for c, d in reporte.items() for m, k in (("precisión", "precision"), ("recall", "recall"), ("f1", "f1"))]
+    t = pd.DataFrame(filas)
+    base = alt.Chart(t).encode(
+        y=alt.Y("clase:N", sort=CLASES, title=None, axis=alt.Axis(labelLimit=160)),
+        x=alt.X("valor:Q", title=None, scale=alt.Scale(domain=[0, 1]), axis=alt.Axis(values=[0, 0.5, 1], format=".1f")))
+    barras = base.mark_bar().encode(
+        color=alt.Color("clase:N", scale=ESCALA_CLASE, legend=None),
+        tooltip=[alt.Tooltip("clase:N", title="Clase"), alt.Tooltip("medida:N", title="Medida"),
+                 alt.Tooltip("valor:Q", title="Valor", format=".3f"), alt.Tooltip("casos:Q", title="Casos en el test", format=",")])
+    texto = base.mark_text(align="left", dx=4, fontSize=11, color=TEXTO_FUERTE).encode(text=alt.Text("valor:Q", format=".2f"))
+    return (barras + texto).properties(width=150, height=130).facet(
+        column=alt.Column("medida:N", sort=["precisión", "recall", "f1"], title=None))
+
+
+def grafico_confusion(matriz):
+    """Matriz de confusión en el test: filas = lo que pasó, columnas = lo que dijo el modelo. La intensidad es la
+    proporción de la fila (el recall está en la diagonal) y el número, la cantidad de secuencias."""
+    filas = []
+    for i, real in enumerate(CLASES):
+        total = sum(matriz[i])
+        for j, pred in enumerate(CLASES):
+            filas.append({"real": real, "pred": pred, "n": matriz[i][j], "proporcion": matriz[i][j] / total if total else 0})
+    t = pd.DataFrame(filas)
+    base = alt.Chart(t).encode(
+        x=alt.X("pred:N", sort=CLASES, title="Lo que dijo el modelo", axis=alt.Axis(labelAngle=0, orient="top", grid=False)),
+        y=alt.Y("real:N", sort=CLASES, title="Lo que pasó", axis=alt.Axis(grid=False)))
+    celdas = base.mark_rect(color=COLOR_ELEGIDO, stroke=FONDO_GRAFICO, strokeWidth=2).encode(
+        opacity=alt.Opacity("proporcion:Q", scale=alt.Scale(domain=[0, 1], range=[0.04, 0.9]), legend=None),
+        tooltip=[alt.Tooltip("real:N", title="Pasó"), alt.Tooltip("pred:N", title="Dijo el modelo"),
+                 alt.Tooltip("n:Q", title="Secuencias", format=","), alt.Tooltip("proporcion:Q", title="% de la fila", format=".1%")])
+    texto = base.mark_text(fontSize=13, fontWeight=600).encode(
+        text=alt.Text("n:Q", format=","),
+        color=alt.condition("datum.proporcion > 0.5", alt.value(FONDO_GRAFICO), alt.value(TEXTO_FUERTE)))
+    return (celdas + texto).properties(width=460, height=200)
+
+
+def grafico_tramos_test(acierto, n_por_tramo):
+    """Qué proporción del test acierta el intervalo, por tramo de magnitud."""
+    t = pd.DataFrame([{"tramo": k, "acierto": v / 100, "n": n_por_tramo[k]} for k, v in acierto.items()])
+    orden = list(acierto)
+    base = alt.Chart(t).encode(
+        y=alt.Y("tramo:N", sort=orden, title="Magnitud", axis=alt.Axis(grid=False)),
+        x=alt.X("acierto:Q", title="Acierta el intervalo (test)", scale=alt.Scale(domain=[0, 1]), axis=alt.Axis(format="%")))
+    barras = base.mark_bar(color=COLOR_ELEGIDO).encode(
+        tooltip=[alt.Tooltip("tramo:N", title="Magnitud"), alt.Tooltip("acierto:Q", title="Acierta", format=".1%"),
+                 alt.Tooltip("n:Q", title="Secuencias", format=",")])
+    texto = base.mark_text(align="left", dx=6, fontSize=12, color=TEXTO_FUERTE).encode(
+        text="rotulo:N").transform_calculate(rotulo="format(datum.acierto, '.1%') + '  de ' + format(datum.n, ',')")
+    return (barras + texto).properties(width=420, height=150)
+
+
+def grafico_permutacion(importancia, nombres):
+    """Cuánto baja el f1 macro del test al desordenar cada columna (media ± desvío de 20 repeticiones)."""
+    t = pd.DataFrame([{"columna": nombres[c], "media": v["media"], "desvio": v["desvio"]} for c, v in importancia.items()])
+    t["bajo"], t["alto"] = t["media"] - t["desvio"], t["media"] + t["desvio"]
+    orden = t.sort_values("media", ascending=False)["columna"].tolist()
+    y = alt.Y("columna:N", sort=orden, title=None, axis=alt.Axis(labelLimit=260, grid=False))
+    barras = alt.Chart(t).mark_bar(color=COLOR_ELEGIDO).encode(
+        y=y, x=alt.X("media:Q", title="Cuánto baja el f1 macro del test al desordenarla", scale=alt.Scale(domain=[0, 0.3])),
+        tooltip=[alt.Tooltip("columna:N", title="Columna"), alt.Tooltip("media:Q", title="Baja el f1 en", format=".3f"),
+                 alt.Tooltip("desvio:Q", title="Desvío", format=".3f")])
+    rango = alt.Chart(t).mark_rule(color=TEXTO_FUERTE).encode(y=y, x="bajo:Q", x2="alto:Q")
+    texto = alt.Chart(t).mark_text(align="left", dx=8, fontSize=12, color=TEXTO_FUERTE).encode(
+        y=y, x="alto:Q", text=alt.Text("media:Q", format=".3f"))
+    return (barras + rango + texto).properties(width=380, height=120)
 
 
 # =================================================================== 4. EXPLORÁ (la copa)
@@ -132,11 +545,11 @@ OPC_COLOR = ["clase real", "clase que dijo el modelo"]
 
 
 def filas_explora(secuencias):
-    """Una fila por secuencia con sólo las columnas que usan los gráficos."""
+    """Una fila por secuencia con sólo las columnas que usan los gráficos y el globo."""
     s = secuencias["columnas"]
     cl = secuencias["clases"]
     d = pd.DataFrame({"id": s["id"], "lugar": s["lugar"], "region": s["region"], "fecha": s["fecha"],
-                      "lat": s["lat"], "lon": s["lon"], "mag": s["mag"], "prof": s["prof"],
+                      "lat": s["lat"], "lon": s["lon"], "mag": s["mag"], "mag_max": s["mag_max"], "prof": s["prof"],
                       "replicas": s["replicas"], "mu": np.round(s["mu"], 3), "test": s["test"]})
     d["real_i"], d["pred_i"] = s["real"], s["pred"]
     d["real"], d["pred"] = d["real_i"].map(lambda i: cl[i]), d["pred_i"].map(lambda i: cl[i])
@@ -145,120 +558,34 @@ def filas_explora(secuencias):
     return d.drop(columns=["id"])
 
 
-def costas(caja=(-125, 165, -62, 52)):
-    """Costas del mundo (Natural Earth 110m, vía world-atlas) como anillos en longitud/latitud, para dibujarlas
-    detrás de los puntos con las mismas escalas del mapa. Sólo anillos que tocan la caja visible."""
-    t = json.loads((Path(__file__).parent / "data" / "mapa" / "land-110m.json").read_text(encoding="utf-8"))
-    (sx, sy), (tx, ty) = t["transform"]["scale"], t["transform"]["translate"]
-    arcos = []
-    for arco in t["arcs"]:
-        x = y = 0
-        pts = []
-        for dx, dy in arco:
-            x, y = x + dx, y + dy
-            pts.append((x * sx + tx, y * sy + ty))
-        arcos.append(pts)
-
-    def anillo(indices):
-        out = []
-        for i in indices:
-            pts = arcos[i] if i >= 0 else arcos[~i][::-1]
-            out.extend(pts if not out else pts[1:])
-        return out
-
-    oeste, este, sur, norte = caja
-    filas, n = [], 0
-    for geo in t["objects"]["land"]["geometries"]:
-        poligonos = geo["arcs"] if geo["type"] == "MultiPolygon" else [geo["arcs"]]
-        for poligono in poligonos:
-            for indices in poligono:
-                pts = anillo(indices)
-                if not any(oeste <= lon <= este and sur <= lat <= norte for lon, lat in pts):
-                    continue
-                for orden, (lon, lat) in enumerate(pts):
-                    filas.append({"anillo": n, "orden": orden, "lon": round(lon, 2), "lat": round(lat, 2)})
-                n += 1
-    return pd.DataFrame(filas)
-
-
-def grafico_explora(datos, regiones, nombres_region):
-    """Panorama + detalle a pedido + resultado del modelo. Los controles son parámetros con nombre:
-         region    -> filtra por región           (transform_filter de todas las capas)
-         mag_min   -> magnitud mínima             (transform_filter)
-         ver       -> sólo test / todas           (transform_filter)
-         color_por -> qué clase pinta el punto    (transform_calculate -> canal color)
-         zona      -> rectángulo dibujado en el mapa (selección de intervalo): filtra las barras
+def grafico_resultado(datos):
+    """Qué dijo el modelo para lo que realmente fue cada clase, con los mismos filtros del globo.
+    Los filtros son parámetros con nombre sin control propio: los mueve la página (los controles están en el globo).
+         region  -> filtra por región      (transform_filter)
+         mag_min -> magnitud mínima        (transform_filter)
+         ver     -> sólo test / todas      (transform_filter)
     """
-    p_region = alt.param(name="region", value="todas", bind=alt.binding_select(
-        options=OPC_REGION + nombres_region, name="Región: "))
-    p_mag = alt.param(name="mag_min", value=4.0, bind=alt.binding_range(min=4.0, max=8.0, step=0.1,
-                                                                        name="Magnitud mínima: "))
-    p_ver = alt.param(name="ver", value=OPC_VER[0], bind=alt.binding_select(options=OPC_VER, name="Secuencias: "))
-    p_color = alt.param(name="color_por", value=OPC_COLOR[0], bind=alt.binding_select(
-        options=OPC_COLOR, name="Pintar según: "))
-    zona = alt.selection_interval(name="zona", encodings=["x", "y"])
-
+    p_region = alt.param(name="region", value="todas")
+    p_mag = alt.param(name="mag_min", value=4.0)
+    p_ver = alt.param(name="ver", value=OPC_VER[0])
     filtro = ("(region == 'todas' || datum.region == region) && datum.mag >= mag_min"
               " && (ver == '" + OPC_VER[1] + "' || datum.test == 1)")
-
-    cajas = alt.Chart(regiones).mark_rect(fill=None, stroke=TRAZO_CAJAS, strokeDash=[4, 3], strokeWidth=1.2).encode(
-        x="oeste:Q", x2="este:Q", y="sur:Q", y2="norte:Q")
-    nombres = alt.Chart(regiones).mark_text(align="left", baseline="top", dx=4, dy=3, fontSize=11, color=TEXTO_GRAFICO).encode(
-        x="oeste:Q", y="norte:Q", text="nombre:N")
-
-    # el mundo de fondo: mismas escalas que los puntos, así que cada sismo cae sobre su lugar real
-    esc_x = alt.Scale(zero=False, domain=[-112, 150])
-    esc_y = alt.Scale(zero=False, domain=[-57, 48])
-    fondo = (alt.Chart(costas()).mark_line(clip=True, color=COLOR_COSTA, strokeWidth=0.9, opacity=0.45)
-             .encode(x=alt.X("lon:Q", title="Longitud", scale=esc_x), y=alt.Y("lat:Q", title="Latitud", scale=esc_y),
-                     detail="anillo:N", order="orden:Q"))
-
-    mapa = (alt.Chart(datos)
-            .transform_filter(filtro)
-            .transform_calculate(clase_mostrada="color_por == '" + OPC_COLOR[0] + "' ? datum.real : datum.pred",
-                                 orden="color_por == '" + OPC_COLOR[0] + "' ? datum.real_i : datum.pred_i",
-                                 particion="datum.test == 1 ? 'test' : 'entrenamiento'")
-            .mark_circle(stroke=FONDO_GRAFICO, strokeWidth=0.3)
-            .encode(x=alt.X("lon:Q", title="Longitud", scale=alt.Scale(zero=False, domain=[-112, 150])),
-                    y=alt.Y("lat:Q", title="Latitud", scale=alt.Scale(zero=False, domain=[-57, 48])),
-                    size=alt.Size("mag:Q", scale=alt.Scale(type="sqrt", domain=[4, 9], range=[10, 320]),
-                                  legend=alt.Legend(title="Magnitud")),
-                    color=alt.Color("clase_mostrada:N", scale=ESCALA_CLASE, legend=alt.Legend(title="Réplicas")),
-                    order=alt.Order("orden:Q", sort="ascending"),
-                    opacity=alt.condition(zona, alt.value(0.75), alt.value(0.12)),
-                    tooltip=[alt.Tooltip("lugar:N", title="Lugar"), alt.Tooltip("fecha:T", title="Fecha", format="%d/%m/%Y"),
-                             alt.Tooltip("mag:Q", title="Magnitud"), alt.Tooltip("prof:Q", title="Profundidad (km)"),
-                             alt.Tooltip("replicas:Q", title="Réplicas reales"), alt.Tooltip("real:N", title="Clase real"),
-                             alt.Tooltip("pred:N", title="Dijo el modelo"), alt.Tooltip("mu:Q", title="Réplicas esperadas", format=".2f"),
-                             alt.Tooltip("p_ninguna:Q", title="P(ninguna)", format=".0%"),
-                             alt.Tooltip("p_pocas:Q", title="P(pocas)", format=".0%"),
-                             alt.Tooltip("p_moderadas:Q", title="P(moderadas)", format=".0%"),
-                             alt.Tooltip("p_muchas:Q", title="P(muchas)", format=".0%"),
-                             alt.Tooltip("particion:N", title="Partición")])
-            .add_params(zona))
-    panorama = alt.layer(fondo, cajas, nombres, mapa).properties(width=680, height=380)
-
-    # qué dijo el modelo para lo que realmente fue cada clase (se mueve con todos los controles y con la zona dibujada)
     # se cuenta por (real, dijo el modelo) y se divide por el total de la barra para tener el % del tramo
-    resultado = (alt.Chart(datos)
-                 .transform_filter(filtro).transform_filter(zona)
-                 .transform_aggregate(n="count()", groupby=["real", "pred", "pred_i"])
-                 .transform_joinaggregate(total="sum(n)", groupby=["real"])
-                 .transform_calculate(proporcion="datum.n / datum.total")
-                 .mark_bar()
-                 .encode(x=alt.X("real:N", sort=CLASES, title="Lo que realmente pasó", axis=alt.Axis(labelAngle=0)),
-                         y=alt.Y("n:Q", stack="normalize", title="Lo que dijo el modelo",
-                                 axis=alt.Axis(format="%")),
-                         color=alt.Color("pred:N", scale=ESCALA_CLASE, legend=None),
-                         order=alt.Order("pred_i:Q", sort="ascending"),
-                         tooltip=[alt.Tooltip("real:N", title="Real"), alt.Tooltip("pred:N", title="Dijo el modelo"),
-                                  alt.Tooltip("n:Q", title="Secuencias"),
-                                  alt.Tooltip("proporcion:Q", title="% de la barra", format=".1%")])
-                 .properties(width=680, height=170))
-
-    # la escala de color de las barras es independiente (la leyenda ya está en el mapa); es la misma escala de clases
-    return alt.vconcat(panorama, resultado, spacing=22).resolve_scale(color="independent").add_params(
-        p_region, p_mag, p_ver, p_color)
+    return (alt.Chart(datos)
+            .transform_filter(filtro)
+            .transform_aggregate(n="count()", groupby=["real", "pred", "pred_i"])
+            .transform_joinaggregate(total="sum(n)", groupby=["real"])
+            .transform_calculate(proporcion="datum.n / datum.total")
+            .mark_bar()
+            .encode(x=alt.X("real:N", sort=CLASES, title="Lo que realmente pasó", axis=alt.Axis(labelAngle=0)),
+                    y=alt.Y("n:Q", stack="normalize", title="Lo que dijo el modelo", axis=alt.Axis(format="%")),
+                    color=alt.Color("pred:N", scale=ESCALA_CLASE, legend=alt.Legend(title="Dijo el modelo")),
+                    order=alt.Order("pred_i:Q", sort="ascending"),
+                    tooltip=[alt.Tooltip("real:N", title="Real"), alt.Tooltip("pred:N", title="Dijo el modelo"),
+                             alt.Tooltip("n:Q", title="Secuencias"),
+                             alt.Tooltip("proporcion:Q", title="% de la barra", format=".1%")])
+            .add_params(p_region, p_mag, p_ver)
+            .properties(width=640, height=220))
 
 
 # =================================================================== textos que dependen de números
@@ -294,7 +621,7 @@ def textos(df, medidas, comparacion):
         "titulo_modelo": (f"El modelo {'más que duplica' if veces >= 2 else 'supera'} al piso: f1 de {es(f_test, 2)} "
                           f"contra {es(f_piso, 2)} en sismos que no vio"),
         "multiplicador_h1": mult,
-        # opciones de los controles de Explorá: una sola fuente para el gráfico y para el globo
+        # opciones de los controles de Explorá (están en el globo y mueven también las barras de Altair)
         "opciones": {"region_inicial": "todas", "mag_min_inicial": 4.0, "ver": OPC_VER, "color": OPC_COLOR},
     }
 
