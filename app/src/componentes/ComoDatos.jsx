@@ -112,15 +112,13 @@ export default function ComoDatos({ pasos, metricas, regiones }) {
         ahí eran fuga: un premonitor se reconoce recién cuando llega el sismo mayor.
       </p>
       <p>
-        De las {metricas.columnas.slice(4).reduce((a, g) => a + g.n, 0)} columnas que sí existen en el momento del sismo, en el modelo probamos cinco (
-        <code>mainshock_mag</code>, <code>mainshock_depth</code>, <code>region_mc</code>, <code>region</code>, <code>n_prior_30d</code>). El modelo final usa
-        tres, combinadas en dos entradas: la magnitud sobre el umbral (<code>mainshock_mag − region_mc</code>) y la profundidad. Región y sismos previos se
-        probaron y se descartaron (ver «El modelo»). La latitud y la longitud se descartaron antes, al explorar los datos: su correlación con
-        las réplicas es casi nula (Pearson −0,034 y −0,063 en el primer análisis, sólo con los Andes; Spearman 0,039 y −0,053 con el dataset final). Las otras ocho (<code>n_prior_2d</code>,{" "}
+        De las {metricas.columnas.slice(4).reduce((a, g) => a + g.n, 0)} columnas que sí existen en el momento del sismo, el modelo final usa tres,
+        combinadas en dos entradas: la magnitud sobre el umbral (<code>mainshock_mag − region_mc</code>) y la profundidad. Las otras doce se probaron
+        agregándolas al modelo de a una, y ninguna mejora el f1 por más que el desvío (paso 4 de «El modelo»). Ocho de ellas (<code>n_prior_2d</code>,{" "}
         <code>n_prior_365d</code>, <code>prior_max_mag_365d</code>, <code>days_since_prior</code>, <code>prior_window_truncated</code>,{" "}
-        <code>region_log10_eta0</code>, <code>dist_to_border_km</code>, <code>near_border</code>) <strong>no se probaron</strong> en el modelo. Con el dataset final, ninguna tiene
-        una correlación con las réplicas mayor que 0,1 en valor absoluto (Spearman), y las que son categorías explican menos del 0,1 % de su variación
-        (η² menor que 0,001).
+        <code>region_log10_eta0</code>, <code>dist_to_border_km</code> y <code>near_border</code>) no estaban en el dataset con el que empezamos a armar el
+        modelo, así que se probaron después, con el dataset final y el mismo método. La latitud y la longitud sí estaban, pero se habían descartado al
+        explorar los datos, por su correlación casi nula con las réplicas (Spearman 0,039 y −0,053); también se probaron después.
       </p>
       <p className="nota">
         Partición: las {n(metricas.particion.entrenamiento)} secuencias más antiguas ({fecha(metricas.particion.entrena_desde)} a{" "}

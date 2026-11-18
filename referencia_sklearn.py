@@ -252,3 +252,59 @@ def tabla_cortes(alpha, empuje, X_train, y_train, cv):
                                      X_train, y_train, cv),
         }
     return filas
+
+
+# ---------------------------------------------------------------- las columnas que la Entrega 3 no probó
+# (notebook «Análisis Exploratorio (dataset final)», sección «¿Ayudan al modelo las columnas que no se probaron?»).
+# Se copian sin cambiar la lógica.
+COLUMNAS_NUEVAS = ["n_prior_2d", "n_prior_365d", "prior_max_mag_365d", "days_since_prior", "prior_window_truncated",
+                   "region_log10_eta0", "dist_to_border_km", "near_border", "mainshock_lat", "mainshock_lon"]
+
+
+def candidatas(X):
+    """Cada columna, transformada como tiene sentido en una regresión con enlace log."""
+    sobre_mc = X["prior_max_mag_365d"] - X["region_mc"]
+    dias = X["days_since_prior"]
+    return {
+        "n_prior_30d": pd.DataFrame({"log_n_prior_30d": np.log1p(X["n_prior_30d"])}),
+        "n_prior_2d": pd.DataFrame({"log_n_prior_2d": np.log1p(X["n_prior_2d"])}),
+        "n_prior_365d": pd.DataFrame({"log_n_prior_365d": np.log1p(X["n_prior_365d"])}),
+        "prior_max_mag_365d": pd.DataFrame({"prior_max_sobre_mc": sobre_mc.fillna(-0.5),
+                                            "sin_previos_365d": sobre_mc.isna().astype(float)}),
+        "days_since_prior": pd.DataFrame({"log_dias": np.log1p(dias.fillna(dias.max())),
+                                          "sin_previo": dias.isna().astype(float)}),
+        "prior_window_truncated": pd.DataFrame({"ventana_truncada": X["prior_window_truncated"].astype(float)}),
+        "region_log10_eta0": pd.DataFrame({"eta0": X["region_log10_eta0"]}),
+        "dist_to_border_km": pd.DataFrame({"log_dist_borde": np.log1p(X["dist_to_border_km"])}),
+        "near_border": pd.DataFrame({"cerca_del_borde": X["near_border"].astype(float)}),
+        "mainshock_lat": pd.DataFrame({"lat": X["mainshock_lat"]}),
+        "mainshock_lon": pd.DataFrame({"lon": X["mainshock_lon"]}),
+    }
+
+
+class ConExtras(BaseEstimator, TransformerMixin):
+    """mag_sobre_mc + profundidad, más las columnas candidatas que se pidan."""
+    def __init__(self, extras=()):
+        self.extras = extras
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        base = pd.DataFrame({"mag_sobre_mc": X["mainshock_mag"] - X["region_mc"],
+                             "profundidad": X["mainshock_depth"]}, index=X.index)
+        t = candidatas(X)
+        return pd.concat([base] + [t[c].set_index(X.index) for c in self.extras], axis=1)
+
+
+def validar_extras(extras, alpha, empuje, X_train, y_train, cv):
+    """f1 macro y deviance de Poisson de cada fold."""
+    from sklearn.metrics import f1_score, mean_poisson_deviance
+    f1s, devs = [], []
+    for e, v in cv:
+        m = Pipeline([("columnas", ConExtras(tuple(extras))), ("escalar", StandardScaler()),
+                      ("modelo", PoissonIntervalos(alpha=alpha, empuje=empuje))]).fit(X_train.iloc[e], y_train.iloc[e])
+        f1s.append(f1_score(a_intervalo(y_train.iloc[v]), m.predict(X_train.iloc[v]), average="macro", labels=CLASES))
+        mu = m[-1].replicas_esperadas(m[:-1].transform(X_train.iloc[v]))
+        devs.append(mean_poisson_deviance(y_train.iloc[v], np.maximum(mu, 1e-9)))
+    return np.array(f1s), np.array(devs)

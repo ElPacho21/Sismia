@@ -9,7 +9,7 @@ COLOR_PARTICION = {"entrenamiento": "#5d6d8a", "test": "#e8edf5"}
 # visualización sobre el fondo de los gráficos: entre sí se distinguen también con daltonismo). No comparten gráfico
 # con los colores de las clases, así que no se confunden con ellas.
 #   azul verdoso = lo que se adoptó, lo que usa el modelo, el modelo elegido
-#   rosa         = lo que se descartó, lo que no puede entrar, lo que se probó y no se eligió
+#   rosa         = lo que se probó y se descartó (lo que no puede entrar al modelo va en gris)
 COLOR_ELEGIDO = "#19a4b7"
 COLOR_DESCARTE = "#d15d7d"
 COLOR_NEUTRO = "#8593ab"
