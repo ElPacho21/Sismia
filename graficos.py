@@ -8,7 +8,7 @@ Regla de color (una sola paleta, en palette.py):
   * el color de las cuatro clases SIEMPRE es la clase de réplicas (ninguna / pocas / moderadas / muchas): donde el
     gráfico muestra secuencias o cantidades de réplicas, se pintan por su clase;
   * lo que no es una clase usa dos acentos fijos: azul verdoso = lo adoptado / lo que usa el modelo; rosa = lo
-    descartado / lo que no puede entrar. Lo demás, en grises; los grupos de casos, con la forma.
+    descartado tras probarlo. Lo demás (también lo que no puede entrar al modelo), en grises; los grupos de casos, con la forma.
 """
 import json
 
@@ -68,8 +68,7 @@ def grafico_datos(df):
 
 # los grupos, en el orden en que se lee el gráfico: de lo que sale primero a lo que llega al modelo
 GRUPOS_COLUMNAS = ["Identifican la secuencia", "Son la respuesta", "Fuga: se saben cuando la secuencia terminó",
-                   "Constantes en este dataset", "Correlación casi nula en el análisis exploratorio",
-                   "Existen al predecir, no se probaron", "Se probaron y no mejoraron", "Usa el modelo"]
+                   "Constantes en este dataset", "Se probaron en el modelo y no mejoraron", "Usa el modelo"]
 
 
 def grafico_columnas(inventario):
@@ -78,13 +77,12 @@ def grafico_columnas(inventario):
     t["fila"] = t["grupo"].map({g: i for i, g in enumerate(GRUPOS_COLUMNAS)})
     t = t.sort_values(["fila", "columna"], kind="stable")
     t["posicion"] = t.groupby("grupo").cumcount()
-    t["estado"] = np.select([t["grupo"] == GRUPOS_COLUMNAS[-1], t["grupo"].isin(GRUPOS_COLUMNAS[4:7])],
-                            ["las usa el modelo", "existen al predecir"], "no pueden entrar")
+    t["estado"] = np.select([t["grupo"] == GRUPOS_COLUMNAS[-1], t["grupo"] == GRUPOS_COLUMNAS[4]],
+                            ["las usa el modelo", "se probaron y no mejoraron"], "no pueden entrar")
     # a la derecha de cada fila, cuántas son (y cuáles, en las dos filas que importan para el modelo)
     r = t.groupby("grupo", sort=False).agg(n=("columna", "size"), fila=("fila", "first")).reset_index()
-    nombres = {GRUPOS_COLUMNAS[4]: "latitud y longitud",
-               GRUPOS_COLUMNAS[6]: "región y sismos de los 30 días previos",
-               GRUPOS_COLUMNAS[7]: "magnitud, umbral de la región y profundidad"}
+    nombres = {GRUPOS_COLUMNAS[4]: "ver el paso 4 de «El modelo»",
+               GRUPOS_COLUMNAS[5]: "magnitud, umbral de la región y profundidad"}
     r["rotulo"] = [f"{n}: {nombres[g]}" if g in nombres else str(n) for g, n in zip(r["grupo"], r["n"])]
     r["x"] = r["n"] - 0.45
     y = alt.Y("grupo:N", sort=GRUPOS_COLUMNAS, title=None,
@@ -92,14 +90,14 @@ def grafico_columnas(inventario):
     x = alt.Scale(domain=[-0.6, 16.5])
     cuadros = alt.Chart(t).mark_square(size=250, opacity=1).encode(
         x=alt.X("posicion:Q", scale=x, axis=None), y=y,
-        color=alt.Color("estado:N", scale=alt.Scale(domain=["no pueden entrar", "existen al predecir", "las usa el modelo"],
-                                                    range=[COLOR_DESCARTE, COLOR_NEUTRO, COLOR_ELEGIDO]),
-                        legend=alt.Legend(title=None, orient="bottom", direction="horizontal")),
+        color=alt.Color("estado:N", scale=alt.Scale(domain=["no pueden entrar", "se probaron y no mejoraron", "las usa el modelo"],
+                                                    range=[COLOR_NEUTRO, COLOR_DESCARTE, COLOR_ELEGIDO]),
+                        legend=alt.Legend(title=None, orient="bottom", direction="horizontal", labelLimit=320)),
         tooltip=[alt.Tooltip("columna:N", title="Columna"), alt.Tooltip("grupo:N", title="Grupo"),
                  alt.Tooltip("motivo:N", title="Por qué")])
     rotulos = alt.Chart(r).mark_text(align="left", baseline="middle", fontSize=13, color=TEXTO_FUERTE).encode(
         x=alt.X("x:Q", scale=x, axis=None), y=y, text="rotulo:N")
-    return (cuadros + rotulos).properties(width=480, height=280)
+    return (cuadros + rotulos).properties(width=480, height=220)
 
 
 # =================================================================== 2. LO QUE ENCONTRAMOS (H1)
@@ -357,23 +355,56 @@ def grafico_sesgo_region(cociente, mc, nombres):
     return alt.layer(linea, rotulo_uno, une, puntos, *texto).properties(width=440, height=250)
 
 
-def grafico_columnas_folds(por_fold, resumen):
-    """Paso 4: el f1 de cada fold con y sin las dos columnas nuevas. La diferencia entre folds es más grande que la
-    diferencia entre las versiones."""
-    nombres = {"base": "sin agregar nada", "region": "+ región", "previos": "+ sismos de los 30 días previos"}
-    rotulo = {k: f"{v}: {es(resumen[k][0], 3)} ± {es(resumen[k][1], 3)}" for k, v in nombres.items()}
-    t = pd.DataFrame([{"fold": i + 1, "version": rotulo[k], "f1": v} for k in nombres for i, v in enumerate(por_fold[k])])
-    dominio = [rotulo[k] for k in nombres]
-    return alt.Chart(t).mark_line(point=alt.OverlayMarkDef(size=60, filled=True), strokeWidth=2.2).encode(
-        x=alt.X("fold:O", title="Fold de validación (de más viejo a más nuevo)", axis=alt.Axis(labelAngle=0)),
-        y=alt.Y("f1:Q", title="f1 macro", scale=alt.Scale(domain=[0.38, 0.54])),
-        color=alt.Color("version:N", scale=alt.Scale(domain=dominio, range=[COLOR_ELEGIDO, COLOR_DESCARTE, COLOR_DESCARTE]),
-                        legend=alt.Legend(title="Media ± desvío de los 5 folds", orient="right", labelLimit=320, symbolType="stroke", symbolStrokeWidth=2.5, symbolSize=500)),
-        # el trazo comparte la leyenda del color (mismo campo y mismos parámetros): la leyenda muestra también la línea
-        strokeDash=alt.StrokeDash("version:N", scale=alt.Scale(domain=dominio, range=[[1, 0], [6, 3], [2, 3]]),
-                                  legend=alt.Legend(title="Media ± desvío de los 5 folds", orient="right", labelLimit=320, symbolType="stroke", symbolStrokeWidth=2.5, symbolSize=500)),
-        tooltip=[alt.Tooltip("version:N", title="Versión"), alt.Tooltip("fold:O", title="Fold"),
-                 alt.Tooltip("f1:Q", title="f1 macro", format=".3f")]).properties(width=360, height=230)
+NOMBRE_COLUMNA = {"region": "región", "n_prior_30d": "sismos de los 30 días previos", "n_prior_2d": "sismos de los 2 días previos",
+                  "n_prior_365d": "sismos del año previo", "prior_max_mag_365d": "magnitud mayor del año previo",
+                  "days_since_prior": "días desde el sismo previo", "prior_window_truncated": "ventana del año incompleta",
+                  "region_log10_eta0": "umbral η₀ de la región", "dist_to_border_km": "distancia al borde de la región",
+                  "near_border": "cerca del borde de la región", "mainshock_lat": "latitud", "mainshock_lon": "longitud"}
+CUANDO = ["al armar el modelo", "después, con el dataset final"]
+
+
+def grafico_columnas_probadas(probadas, nuevas):
+    """Paso 4: el f1 macro (media ± desvío) del modelo agregando cada columna, de a una, contra la banda de un desvío
+    del modelo sin agregar nada. Una columna sirve si su punto sale de la banda por la derecha."""
+    base_f1, base_sd = probadas["base"]
+    filas = [{"columna": "sin agregar nada", "cuando": "base", "f1": base_f1, "desvio": base_sd, "folds": ""},
+             {"columna": "+ " + NOMBRE_COLUMNA["region"], "cuando": CUANDO[0], "f1": probadas["region"][0],
+              "desvio": probadas["region"][1], "folds": ""},
+             {"columna": "+ " + NOMBRE_COLUMNA["n_prior_30d"], "cuando": CUANDO[0], "f1": probadas["previos"][0],
+              "desvio": probadas["previos"][1], "folds": ""}]
+    for c, d in nuevas["columnas"].items():
+        if c != "n_prior_30d":
+            filas.append({"columna": "+ " + NOMBRE_COLUMNA[c], "cuando": CUANDO[1], "f1": d["f1"], "desvio": d["desvio"],
+                          "folds": f"{d['folds_mejor']} de 5"})
+    t = pd.DataFrame(filas)
+    t["bajo"], t["alto"] = t["f1"] - t["desvio"], t["f1"] + t["desvio"]
+    orden = ["sin agregar nada"] + t[t["cuando"] != "base"].sort_values("f1", ascending=False)["columna"].tolist()
+    x = alt.Scale(domain=[0.38, 0.52], nice=False)
+    y = alt.Y("columna:N", sort=orden, title=None, axis=alt.Axis(grid=False, labelLimit=300))
+    banda = alt.Chart(pd.DataFrame({"bajo": [base_f1 - base_sd], "alto": [base_f1 + base_sd]})).mark_rect(
+        color=COLOR_ELEGIDO, opacity=0.13).encode(x=alt.X("bajo:Q", scale=x), x2="alto:Q")
+    linea = alt.Chart(pd.DataFrame({"f1": [base_f1]})).mark_rule(color=COLOR_ELEGIDO, strokeDash=[5, 4]).encode(
+        x=alt.X("f1:Q", scale=x))
+    # color, forma y relleno comparten una sola leyenda (mismo campo y mismos parámetros)
+    leyenda = alt.Legend(title="Se probó", orient="bottom", direction="horizontal", values=CUANDO, labelLimit=320)
+    color = alt.Color("cuando:N", scale=alt.Scale(domain=["base"] + CUANDO, range=[COLOR_ELEGIDO, COLOR_DESCARTE, COLOR_DESCARTE]),
+                      legend=leyenda)
+    rango = alt.Chart(t).mark_rule(strokeWidth=2.5).encode(y=y, x=alt.X("bajo:Q", scale=x), x2="alto:Q", color=color)
+    puntos = alt.Chart(t).mark_point(size=110, strokeWidth=2, opacity=1).encode(
+        y=y, x=alt.X("f1:Q", scale=x, title="f1 macro en validación (media ± desvío, 5 folds)"), color=color,
+        shape=alt.Shape("cuando:N", scale=alt.Scale(domain=["base"] + CUANDO, range=["circle", "square", "circle"]),
+                        legend=leyenda),
+        fill=alt.Fill("cuando:N", scale=alt.Scale(domain=["base"] + CUANDO, range=[COLOR_ELEGIDO, COLOR_DESCARTE, "transparent"]),
+                      legend=leyenda),
+        tooltip=[alt.Tooltip("columna:N", title="Columna"), alt.Tooltip("cuando:N", title="Se probó"),
+                 alt.Tooltip("f1:Q", title="f1 macro", format=".3f"), alt.Tooltip("desvio:Q", title="Desvío", format=".3f"),
+                 alt.Tooltip("folds:N", title="Folds en que mejora")])
+    texto = alt.Chart(t).mark_text(align="left", dx=10, dy=-9, fontSize=11, color=TEXTO_FUERTE).encode(
+        y=y, x=alt.X("f1:Q", scale=x), text=alt.Text("f1:Q", format=".3f"))
+    rotulo = alt.Chart(pd.DataFrame({"x": [base_f1 + base_sd], "t": ["un desvío del modelo sin agregar nada"]})).mark_text(
+        align="left", baseline="top", dx=4, dy=2, fontSize=11, color=COLOR_ELEGIDO).encode(
+        x=alt.X("x:Q", scale=x), y=alt.value(0), text="t:N")
+    return alt.layer(banda, linea, rotulo, rango, puntos, texto).properties(width=440, height=380)
 
 
 def grafico_cortes(cortes):

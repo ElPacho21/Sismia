@@ -7,7 +7,7 @@ Vega-Lite en `app/public/specs/`. **Regla de color** (una sola paleta, en `palet
   secuencias o cantidades de réplicas, se pintan por su clase: los puntos del paso 1, los de los casos atípicos y los
   promedios del hallazgo.
 - Lo que no es una clase usa dos acentos con significado fijo: **azul verdoso** `#19a4b7` = lo que se adoptó o usa el
-  modelo; **rosa** `#d15d7d` = lo que se descartó o no puede entrar. Lo demás va en grises, y los grupos de casos, con la forma.
+  modelo; **rosa** `#d15d7d` = lo que se probó y se descartó. Lo demás va en grises (también lo que no puede entrar al modelo), y los grupos de casos, con la forma.
 - Los dos acentos se validaron con `validate_palette.js` (guía de visualización) sobre el fondo de los gráficos (`#111a2b`):
   entre sí se distinguen también con daltonismo (ΔE 9,0 deutan; 25,5 con visión normal). Con los colores de las clases no
   pasan (el azul verdoso se parece al verde de «muchas»), por eso **nunca comparten un gráfico** con ellos.
@@ -35,9 +35,9 @@ Los del «Cómo lo sabemos» del modelo reemplazan a las tablas (salvo la de com
 | Componente | Qué es | Por qué |
 |---|---|---|
 | Datos | Una fila por columna del dataset (27): nombre, grupo y motivo. El inventario está en `build_app.py` (`COLUMNAS`) y el build falla si el dataset trae una columna que no está ahí | Cuenta de dónde salen las 3 columnas del modelo sin mostrar la tabla técnica de fuga (que queda en «Cómo lo sabemos»). |
-| Mapeo | `y` = grupo (N, en orden de lectura: de lo que no puede entrar a lo que usa el modelo; latitud y longitud van aparte porque se descartaron en el análisis exploratorio de la Entrega 2 por su correlación casi nula); `x` = posición dentro del grupo (Q, sin eje); `color` = estado (no pueden entrar / existen al predecir / las usa el modelo) | Una fila por motivo: la cantidad de cuadrados es la cantidad de columnas, se cuenta sin leer números. |
+| Mapeo | `y` = grupo (N, en orden de lectura: de lo que no puede entrar a lo que usa el modelo); `x` = posición dentro del grupo (Q, sin eje); `color` = estado (no pueden entrar / se probaron y no mejoraron / las usa el modelo) | Una fila por motivo: la cantidad de cuadrados es la cantidad de columnas, se cuenta sin leer números. Las 12 que se probaron van juntas; el tooltip de cada una dice su resultado. |
 | Marca | un cuadrado por columna + texto a la derecha (la cantidad y, en las dos últimas filas, cuáles son) | |
-| Escala | color: rosa = no pueden entrar, gris = existen al predecir, azul verdoso = las 3 que usa el modelo | No son clases de réplicas, así que usan los dos acentos y no los colores de las clases. |
+| Escala | color: gris = no pueden entrar, rosa = se probaron y no mejoraron, azul verdoso = las 3 que usa el modelo | No son clases de réplicas, así que usan los dos acentos y no los colores de las clases. |
 | Detalle | tooltip: columna, grupo y por qué está ahí | |
 
 ## 2. Lo que encontramos
@@ -76,7 +76,7 @@ camino completo. Los números salen de `pasos_entrega3` en `build_app.py` y se v
 | 1 · Un intervalo, no un número | `grafico_intervalos` → `intervalos.json` | las 21.292 secuencias por URL; media, varianza / media, mínimo y máximo por tramo (celda 9) | un punto por secuencia, `x` = tramo de magnitud y `xOffset` = desparramo al azar (`random()`) para que no se tapen; una raya con la media; texto con sismos y varianza / media | `y` symlog (incluye el 0) |
 | 2 · De la logística a Poisson | `grafico_ejemplo_poisson` → `ejemplo_poisson.json` | probabilidades y réplicas esperadas de la primera Poisson para M4,5, M6,0 y M7,5 a 30 km (celda 39) | barras apiladas, `color` = clase; texto con las réplicas esperadas y la respuesta | `x` de 0 a 100 % |
 | 3 · El error tenía un patrón | `grafico_sesgo_region` → `sesgo_region.json` | réplicas reales / esperadas por región, con la magnitud cruda y sobre el umbral (celdas 43 y 50) | dos puntos por región (hueco rosa = cruda, la que se dejó; lleno azul verdoso = la que se adoptó) unidos por una línea; regla punteada en 1 | `x` lineal 0–1,5; regiones ordenadas por Mc |
-| 4 · Dos columnas más | `grafico_columnas_folds` → `columnas_folds.json` | f1 de cada fold sin agregar nada, con región y con sismos previos (celda 54) | líneas con puntos, una por versión (azul verdoso la que se quedó, rosa las descartadas; el trazo las distingue); la leyenda tiene media ± desvío | `y` 0,38–0,54 |
+| 4 · Más columnas, de a una | `grafico_columnas_probadas` → `columnas_probadas.json` | f1 medio y desvío agregando cada columna: región y sismos de 30 días (celda 54 de la Entrega 3) y las otras diez, probadas después con el mismo método (notebook del dataset final) | un punto por columna con su desvío; una banda azul verdosa de un desvío alrededor del modelo sin agregar nada; cuadrado = se probó al armar el modelo, círculo hueco = después | `x` 0,38–0,52; una columna sirve si su punto sale de la banda por la derecha |
 | 5 · Familias, alpha y empuje | `grafico_empuje` → `empuje.json` | recall de cada clase y f1 macro según el empuje (celda 65) | ver más abajo | |
 | 6 · Otros cortes | `grafico_cortes` → `cortes.json` | f1 del piso, la logística balanceada y Poisson con cinco esquemas de cortes (celda 70) | tres puntos por esquema (forma y color por modelo: gris el piso, rosa la logística, azul verdoso Poisson) sobre una barra que va del menor al mayor | `x` 0,15–0,60 |
 

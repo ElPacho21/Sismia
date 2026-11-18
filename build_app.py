@@ -29,7 +29,8 @@ import modelo_core
 from palette import CLASES, COLOR_CLASE, COLOR_PARTICION
 import graficos
 from referencia_sklearn import (a_intervalo, candidatos, con_columnas, con_mc, crudas, esperadas_de_validacion,
-                                modelo_final, PoissonIntervalos, real_sobre_predicho, tabla_cortes)
+                                modelo_final, PoissonIntervalos, real_sobre_predicho, tabla_cortes, validar_extras,
+                                COLUMNAS_NUEVAS)
 
 RAIZ = Path(__file__).resolve().parent
 DATOS = RAIZ / "data"
@@ -55,20 +56,17 @@ COLUMNAS = {
            "max_generation": "Réplicas de réplicas: se sabe al final."},
     G[3]: {"n_foreshocks": "Siempre 0: con mainshock = root el principal es el primer evento.",
            "root_is_mainshock": "Siempre verdadera por construcción con mainshock = root."},
-    G[4]: {"mainshock_lat": "Latitud del epicentro: correlación casi nula con las réplicas (Pearson −0,034 en el primer análisis, "
-                            "sólo con los Andes; Spearman 0,039 con el dataset final).",
-           "mainshock_lon": "Longitud del epicentro: correlación casi nula con las réplicas (Pearson −0,063 en el primer análisis, "
-                            "sólo con los Andes; Spearman −0,053 con el dataset final)."},
-    G[5]: {"region_log10_eta0": "Umbral del método de agrupamiento de la región.",
+    G[4]: {"mainshock_lat": "Latitud del epicentro.", "mainshock_lon": "Longitud del epicentro.",
+           "region_log10_eta0": "Umbral del método de agrupamiento de la región.",
            "n_prior_2d": "Sismos cercanos en los 2 días previos.", "n_prior_365d": "Sismos cercanos en el año previo.",
            "prior_max_mag_365d": "Mayor magnitud de esos sismos del año previo.",
            "days_since_prior": "Días desde el sismo previo más reciente.",
            "prior_window_truncated": "La ventana de un año empieza antes que el catálogo.",
            "dist_to_border_km": "Distancia al borde del rectángulo de la región.",
-           "near_border": "Cerca del borde del rectángulo."},
-    G[6]: {"region": "Una columna 0/1 por región: f1 0,444 ± 0,015, igual que sin ella.",
-           "n_prior_30d": "Sismos de los 30 días previos: f1 0,460 ± 0,033, dentro del desvío."},
-    G[7]: {"mainshock_mag": "Magnitud del principal: entra como mag_sobre_mc = magnitud − Mc de la región.",
+           "near_border": "Cerca del borde del rectángulo.",
+           "region": "Una columna 0/1 por región.",
+           "n_prior_30d": "Sismos de los 30 días previos."},
+    G[5]: {"mainshock_mag": "Magnitud del principal: entra como mag_sobre_mc = magnitud − Mc de la región.",
            "region_mc": "Mc de la región: entra dentro de mag_sobre_mc.",
            "mainshock_depth": "Profundidad del principal."},
 }
@@ -252,7 +250,41 @@ def pasos_entrega3(df, corte):
         r = real_sobre_predicho(esperadas_de_validacion(pipeline, X_tr, y_tr, cv), X_tr, y_tr)
         cociente[nombre] = {k: float(v) for k, v in r["real / esperadas"].items()}
     return {"columnas_probadas": probadas, "columnas_probadas_folds": por_fold, "real_sobre_esperadas": cociente,
-            "intervalos_por_tramo": intervalos, "ejemplo_poisson": ejemplo_poisson, "cortes": cortes}
+            "intervalos_por_tramo": intervalos, "ejemplo_poisson": ejemplo_poisson, "cortes": cortes,
+            "columnas_nuevas": columnas_nuevas(df, corte)}
+
+
+def columnas_nuevas(df, corte):
+    """Las diez columnas que la Entrega 3 no probó (el dataset con el que se empezó no las tenía), de a una y juntas,
+    con el método de la celda 54 (notebook «Análisis Exploratorio (dataset final)»)."""
+    tr = df.iloc[:corte].reset_index(drop=True)
+    y_tr = tr["n_aftershocks"]
+    cv = list(TimeSeriesSplit(n_splits=5).split(tr))
+    salida = {}
+    for nombre, (alpha, empuje) in {"celda54": (1.0, 0.0), "elegido": (ALPHA, EMPUJE)}.items():
+        f1_base, dev_base = validar_extras([], alpha, empuje, tr, y_tr, cv)
+        cols = {}
+        for c in ["n_prior_30d"] + COLUMNAS_NUEVAS:
+            f1, dev = validar_extras([c], alpha, empuje, tr, y_tr, cv)
+            cols[c] = {"f1": float(f1.mean()), "desvio": float(f1.std()), "dif": float((f1 - f1_base).mean()),
+                       "folds_mejor": int((f1 > f1_base).sum()), "dev_pct": float(((dev - dev_base) / dev_base).mean() * 100)}
+        juntas = {}
+        for g, extras in {"actividad_previa": ["n_prior_2d", "n_prior_365d", "days_since_prior", "prior_max_mag_365d"],
+                          "las_diez": COLUMNAS_NUEVAS}.items():
+            f1, dev = validar_extras(extras, alpha, empuje, tr, y_tr, cv)
+            juntas[g] = {"f1": float(f1.mean()), "desvio": float(f1.std()), "dif": float((f1 - f1_base).mean()),
+                         "dev_pct": float(((dev - dev_base) / dev_base).mean() * 100)}
+        salida[nombre] = {"base": [float(f1_base.mean()), float(f1_base.std())], "columnas": cols, "juntas": juntas}
+    # la señal de n_prior_2d, directo en los datos de entrenamiento
+    tramo = pd.cut(tr["mainshock_mag"], TRAMOS[0], labels=TRAMOS[1], right=False)
+    previos = pd.cut(tr["n_prior_2d"], [-1, 0, 4, 10**6], labels=["0", "1–4", "5 o más"])
+    tasas = (tr.assign(tramo=tramo, previos=previos, con=tr["n_aftershocks"] > 0)
+             .groupby(["tramo", "previos"], observed=True)["con"].mean() * 100)
+    salida["n_prior_2d"] = {"pct_con_previos": float((tr["n_prior_2d"] > 0).mean() * 100),
+                            "spearman_magnitud": float(tr["n_prior_2d"].corr(tr["mainshock_mag"], method="spearman")),
+                            "con_replicas_pct": {t: {p: float(tasas[(t, p)]) for p in ["0", "1–4", "5 o más"] if (t, p) in tasas.index}
+                                                 for t in ["4–5", "5–6"]}}
+    return salida
 
 
 def inventario_columnas(df, pasos):
@@ -262,12 +294,14 @@ def inventario_columnas(df, pasos):
     if sorted(t["columna"]) != sorted(c for c in df.columns if c not in ("particion", "mag_max")):
         sys.exit("LAS COLUMNAS DEL DATASET NO COINCIDEN CON EL INVENTARIO DE build_app.py (COLUMNAS)")
     p = pasos["columnas_probadas"]
-    t.loc[t["columna"] == "region", "motivo"] = (
-        f"Una columna 0/1 por región: f1 {graficos.es(p['region'][0], 3)} ± {graficos.es(p['region'][1], 3)}, "
-        f"igual que sin ella ({graficos.es(p['base'][0], 3)}).")
-    t.loc[t["columna"] == "n_prior_30d", "motivo"] = (
-        f"Sismos de los 30 días previos: f1 {graficos.es(p['previos'][0], 3)} ± {graficos.es(p['previos'][1], 3)}, "
-        f"dentro del desvío de {graficos.es(p['base'][0], 3)}.")
+    nuevas = pasos["columnas_nuevas"]["celda54"]
+    es = graficos.es
+    resultado = {c: (d["f1"], d["desvio"]) for c, d in nuevas["columnas"].items()}
+    resultado["region"] = tuple(p["region"])
+    base = f"sin ella: {es(p['base'][0], 3)} ± {es(p['base'][1], 3)}"
+    for c, (f1, sd) in resultado.items():
+        fila = t["columna"] == c
+        t.loc[fila, "motivo"] = t.loc[fila, "motivo"] + f" Agregándola, f1 {es(f1, 3)} ± {es(sd, 3)} ({base})."
     return t
 
 
@@ -403,6 +437,17 @@ def verificar_contra_notebook(medidas, comparacion, ajuste, pasos):
     for esquema, d in ((k, v) for k, v in ref["cortes"].items() if not k.startswith("_")):
         for k, v in d.items():
             comparar(f"cortes {esquema} {k}", v, pasos["cortes"][esquema][k])
+    nuevas_ref = ref["columnas_nuevas"]
+    for config in ("celda54", "elegido"):
+        d, r = pasos["columnas_nuevas"][config], nuevas_ref[config]
+        comparar(f"columnas nuevas {config} base f1", r["base"][0], d["base"][0])
+        comparar(f"columnas nuevas {config} base desvío", r["base"][1], d["base"][1])
+        for c, (f1, sd) in r["columnas"].items():
+            comparar(f"columnas nuevas {config} {c} f1", f1, d["columnas"][c]["f1"])
+            comparar(f"columnas nuevas {config} {c} desvío", sd, d["columnas"][c]["desvio"])
+        for g, dif in r["juntas_dif"].items():
+            comparar(f"columnas nuevas {config} juntas {g}", dif, d["juntas"][g]["dif"])
+    comparar("n_prior_2d con previos (%)", nuevas_ref["n_prior_2d_pct"], pasos["columnas_nuevas"]["n_prior_2d"]["pct_con_previos"], 0.06)
     for version, regiones in ((k, v) for k, v in ref["real_sobre_esperadas"].items() if not k.startswith("_")):
         for r, v in regiones.items():
             comparar(f"real / esperadas {version} {r}", v, pasos["real_sobre_esperadas"][version][r], 0.006)
@@ -579,7 +624,7 @@ def exportar_graficos(df, modelo, medidas, comparacion, ajuste, pasos, corte):
     guardar("explora_filas.json", filas.to_dict(orient="records"))
     datos_url = alt.UrlData(url="data/explora_filas.json", format=alt.DataFormat(type="json"))
     carpeta = RAIZ / "app" / "public" / "specs"
-    for viejo in ("modelo.json", "explora.json"):            # los reemplazan evolucion.json y resultado.json
+    for viejo in ("modelo.json", "explora.json", "columnas_folds.json"):   # reemplazados por otros gráficos
         (carpeta / viejo).unlink(missing_ok=True)
     anotaciones, resumen_atipicos = atipicos(df)
     grilla, densidad, lineas, resumen_variables = mapa_del_modelo(modelo, df, corte, medidas)
@@ -595,7 +640,7 @@ def exportar_graficos(df, modelo, medidas, comparacion, ajuste, pasos, corte):
         "ejemplo_poisson.json": graficos.grafico_ejemplo_poisson(pasos["ejemplo_poisson"]),
         "sesgo_region.json": graficos.grafico_sesgo_region(
             pasos["real_sobre_esperadas"], df.groupby("region")["region_mc"].first().round(1).to_dict(), NOMBRE_REGION),
-        "columnas_folds.json": graficos.grafico_columnas_folds(pasos["columnas_probadas_folds"], pasos["columnas_probadas"]),
+        "columnas_probadas.json": graficos.grafico_columnas_probadas(pasos["columnas_probadas"], pasos["columnas_nuevas"]["celda54"]),
         "cortes.json": graficos.grafico_cortes(pasos["cortes"]),
         "folds.json": graficos.grafico_folds(folds, medidas["particion"]["entrena_desde"]),
         "alpha.json": graficos.grafico_alpha(ajuste["alpha"], ALPHA),

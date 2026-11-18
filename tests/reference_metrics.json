@@ -327,5 +327,121 @@
       "logística (balanced)": 0.279,
       "Poisson": 0.404
     }
+  },
+  "columnas_nuevas": {
+    "_fuente": "Notebook «Análisis Exploratorio (dataset final)», sección «¿Ayudan al modelo las columnas que no se probaron?»: f1 macro medio y desvío en validación agregando cada columna, y diferencia de f1 de las columnas juntas.",
+    "celda54": {
+      "base": [
+        0.444,
+        0.021
+      ],
+      "columnas": {
+        "n_prior_30d": [
+          0.46,
+          0.033
+        ],
+        "n_prior_2d": [
+          0.443,
+          0.018
+        ],
+        "n_prior_365d": [
+          0.446,
+          0.022
+        ],
+        "prior_max_mag_365d": [
+          0.444,
+          0.019
+        ],
+        "days_since_prior": [
+          0.445,
+          0.023
+        ],
+        "prior_window_truncated": [
+          0.443,
+          0.024
+        ],
+        "region_log10_eta0": [
+          0.449,
+          0.014
+        ],
+        "dist_to_border_km": [
+          0.441,
+          0.016
+        ],
+        "near_border": [
+          0.445,
+          0.024
+        ],
+        "mainshock_lat": [
+          0.459,
+          0.02
+        ],
+        "mainshock_lon": [
+          0.448,
+          0.017
+        ]
+      },
+      "juntas_dif": {
+        "actividad_previa": 0.003,
+        "las_diez": 0.003
+      }
+    },
+    "elegido": {
+      "base": [
+        0.44,
+        0.024
+      ],
+      "columnas": {
+        "n_prior_30d": [
+          0.447,
+          0.049
+        ],
+        "n_prior_2d": [
+          0.442,
+          0.028
+        ],
+        "n_prior_365d": [
+          0.438,
+          0.032
+        ],
+        "prior_max_mag_365d": [
+          0.43,
+          0.023
+        ],
+        "days_since_prior": [
+          0.436,
+          0.04
+        ],
+        "prior_window_truncated": [
+          0.429,
+          0.023
+        ],
+        "region_log10_eta0": [
+          0.429,
+          0.022
+        ],
+        "dist_to_border_km": [
+          0.437,
+          0.024
+        ],
+        "near_border": [
+          0.441,
+          0.02
+        ],
+        "mainshock_lat": [
+          0.434,
+          0.02
+        ],
+        "mainshock_lon": [
+          0.432,
+          0.018
+        ]
+      },
+      "juntas_dif": {
+        "actividad_previa": -0.018,
+        "las_diez": -0.031
+      }
+    },
+    "n_prior_2d_pct": 10.3
   }
 }

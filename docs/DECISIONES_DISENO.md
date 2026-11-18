@@ -104,3 +104,9 @@ Cambios pedidos por el docente después de la Entrega 4. El hilo: que cada secci
   atípicos, promedios del hallazgo), y lo que no es una clase usa dos acentos fijos (azul verdoso = adoptado / lo usa el
   modelo; rosa = descartado / no puede entrar). Se probó también un violeta y un amarillo como acentos, y se descartaron
   con el validador: el violeta se confunde con el azul de «pocas» y el amarillo con el naranja de «moderadas».
+- **El modelo, paso 4: todas las columnas probadas (rama `columnas-probadas`).** Ocho columnas que existen en el momento del sismo no
+  se habían probado porque el dataset con el que se empezó no las tenía, y la latitud y la longitud se habían descartado sólo por su
+  correlación. Se probaron después con el método de la celda 54 (notebook del dataset final) y ninguna mejora el f1 por más que el
+  desvío. El gráfico del paso 4 pasa de las tres líneas por fold (que no entraban con doce columnas) a un punto por columna contra la
+  banda de un desvío del modelo sin agregar nada: se lee de un vistazo que ninguna sale de la banda. En el gráfico de las columnas, las
+  12 probadas pasan a un solo grupo, en rosa (se probaron y se descartaron), y lo que no puede entrar pasa a gris.

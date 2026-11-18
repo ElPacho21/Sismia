@@ -47,7 +47,8 @@ export default function ComoModelo({ metricas, modelo }) {
         simple (dos coeficientes y una fórmula cerrada) y se puede escribir dentro de la página. La binomial negativa terminó contestando siempre «ninguna»
         (la dispersión la dominan los megasismos de hasta 2.544 réplicas). Además de la tabla, con Poisson se probaron dos columnas más, de a una: la región
         ({n(probadas.region[0], 3)} ± {n(probadas.region[1], 3)}) y los sismos de los 30 días previos ({n(probadas.previos[0], 3)} ±{" "}
-        {n(probadas.previos[1], 3)}), contra {n(probadas.base[0], 3)} ± {n(probadas.base[1], 3)} sin ellas: ninguna mejora por más que el desvío.
+        {n(probadas.previos[1], 3)}), contra {n(probadas.base[0], 3)} ± {n(probadas.base[1], 3)} sin ellas: ninguna mejora por más que el desvío. Después, con el dataset final y el
+        mismo método, se probaron las otras diez columnas que existen en el momento del sismo: tampoco mejora ninguna, ni sola ni todas juntas (paso 4).
       </p>
       <p className="nota">
         Al recalcular la tabla para esta página, dos filas no dan exactamente lo mismo que en el análisis original: random forest balanceado (

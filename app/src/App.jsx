@@ -71,7 +71,9 @@ export default function App() {
   const total = metricas.particion.entrenamiento + metricas.particion.test;
   const columnas = metricas.columnas;
   const totalColumnas = columnas.reduce((a, g) => a + g.n, 0);
-  const [identifican, respuesta, fuga, constantes, sinCorrelacion, noProbadas, probadas, usadas] = columnas.map((g) => g.n);
+  const [identifican, respuesta, fuga, constantes, probadas, usadas] = columnas.map((g) => g.n);
+  const nuevas = metricas.columnas_nuevas;
+  const previos2d = nuevas.n_prior_2d;
   const at = metricas.atipicos;
   const va = metricas.variables;
   const cociente = metricas.real_sobre_esperadas;
@@ -151,10 +153,9 @@ export default function App() {
                   <p>
                     Cada cuadrado es una columna; pasá el mouse para ver cuál es y por qué está en esa fila. Las {identifican + respuesta + fuga + constantes} de
                     arriba no pueden entrar: identifican la secuencia, son la respuesta, son <strong>fuga</strong> ({fuga}: se saben recién cuando la secuencia
-                    terminó) o valen siempre lo mismo. Quedan {sinCorrelacion + noProbadas + probadas + usadas} que existen en el momento del sismo. La latitud y
-                    la longitud las descartamos en el análisis exploratorio, porque su correlación con las réplicas es casi nula. Probamos{" "}
-                    {probadas + usadas} en el modelo —la región y los sismos de los 30 días previos no mejoraron— y nos quedamos con {usadas}: la magnitud y el
-                    umbral de detección de la región, que entran juntos como <em>magnitud sobre el umbral</em>, y la profundidad.
+                    terminó) o valen siempre lo mismo. Quedan {probadas + usadas} que existen en el momento del sismo. Nos quedamos con {usadas}: la magnitud y el
+                    umbral de detección de la región, que entran juntos como <em>magnitud sobre el umbral</em>, y la profundidad. Las otras {probadas} las
+                    probamos agregándolas al modelo de a una, y ninguna lo mejora (paso 4 de «El modelo»).
                   </p>
                   <p>
                     <strong>Por qué cinco regiones y no el mundo entero.</strong> Elegimos cinco zonas de subducción con mucha actividad sísmica. El método que
@@ -268,16 +269,27 @@ export default function App() {
                 </Paso>
                 <Paso
                   numero="4"
-                  titulo="Dos columnas más, probadas de a una"
-                  spec="specs/columnas_folds.json"
-                  descripcion="f1 macro de cada fold con y sin la región y los sismos de los 30 días previos."
+                  titulo="Más columnas, probadas de a una"
+                  spec="specs/columnas_probadas.json"
+                  descripcion="f1 macro del modelo agregando cada columna, de a una, contra la banda de un desvío del modelo sin agregar nada."
                 >
                   <p>
                     Con la pista de los Andes probamos agregar la región (una columna por región) y los sismos de los 30 días previos. Ninguna mejoró por más que
                     el desvío: con la región, {n(colProbadas.region[0], 3)} ± {n(colProbadas.region[1], 3)}, igual que sin ella; con los sismos previos,{" "}
-                    {n(colProbadas.previos[0], 3)} ± {n(colProbadas.previos[1], 3)}, que se superpone con {n(colProbadas.base[0], 3)} ± {n(colProbadas.base[1], 3)}. En el
-                    gráfico se ve: las diferencias de un fold a otro son más grandes que las diferencias entre los promedios de las tres versiones. Las dejamos
-                    afuera.
+                    {n(colProbadas.previos[0], 3)} ± {n(colProbadas.previos[1], 3)}, que se superpone con {n(colProbadas.base[0], 3)} ± {n(colProbadas.base[1], 3)}.
+                  </p>
+                  <p>
+                    Las otras diez columnas que existen en el momento del sismo no las habíamos probado: ocho no estaban en el dataset con el que empezamos, y la
+                    latitud y la longitud las habíamos descartado al explorar los datos. Las probamos después, con el dataset final y el mismo método, y tampoco:
+                    ninguna sale de la banda de un desvío, ni sola ni todas juntas. La única
+                    con algo de información propia es la cantidad de sismos en los 2 días previos: entre los sismos de M5–6, dejan réplicas el{" "}
+                    {pct(previos2d.con_replicas_pct["5–6"]["0"], 1)} de los que no tuvieron actividad previa y el {pct(previos2d.con_replicas_pct["5–6"]["1–4"], 1)}{" "}
+                    de los que tuvieron de 1 a 4 sismos. Pero sólo el {pct(previos2d.pct_con_previos, 0)} de las secuencias tuvo actividad previa, y el f1 casi no se
+                    mueve ({n(nuevas.celda54.columnas.n_prior_2d.f1, 3)}).
+                  </p>
+                  <p className="nota">
+                    Un agregado sirve si su punto sale de la banda azul verdosa por la derecha. Los cuadrados se probaron al armar el modelo; los círculos
+                    huecos, después.
                   </p>
                 </Paso>
                 <Paso
