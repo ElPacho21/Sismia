@@ -5,7 +5,7 @@ import Tabla from "./Tabla.jsx";
 const FUGA = [
   ["n_aftershocks", "Es la respuesta: la cantidad de réplicas."],
   ["has_aftershock", "Es la respuesta en versión sí/no."],
-  ["n_events", "Es n_aftershocks + 1: la respuesta disfrazada (en la hipótesis 2 de la Entrega 2 dio una correlación de 0,978; con mainshock = root es exacta)."],
+  ["n_events", "Es n_aftershocks + 1: la respuesta disfrazada (en este dataset coinciden en todas las filas)."],
   ["duration_days", "Cuánto duró la secuencia: se sabe recién cuando terminó."],
   ["extent_km", "Qué tan lejos llegaron las réplicas: se sabe al final."],
   ["max_generation", "Réplicas de réplicas: se sabe al final."],
@@ -21,10 +21,34 @@ export default function ComoDatos({ pasos, metricas, regiones }) {
     <>
       <h4>De dónde salen y cómo se obtienen</h4>
       <p>
-        Del catálogo sísmico de <strong>USGS</strong> (servicio FDSN), descargado con un pipeline de <strong>Airflow</strong> (capas bronze, silver y
-        gold, en <code>pipeline/</code>). La corrida de las cinco regiones es del <strong>29 de octubre de 2026</strong>; el catálogo llega hasta el{" "}
+        Del catálogo sísmico de <strong>USGS</strong> (servicio FDSN), descargado con un pipeline de <strong>Airflow</strong>. La corrida de las cinco regiones es del <strong>29 de octubre de 2026</strong>; el catálogo llega hasta el{" "}
         <strong>31 de diciembre de 2025</strong>. Las ventanas arrancan en 2003, salvo los Andes, que arrancan en 2008 porque antes tienen un régimen
         de magnitudes distinto.
+      </p>
+      <h4>Por qué cinco regiones y no el mundo entero</h4>
+      <p>
+        Elegimos cinco zonas de subducción con mucha actividad sísmica: Andes, Japón, Filipinas, Sumatra–Java y México–Centroamérica. No usamos el mundo
+        entero por tres motivos:
+      </p>
+      <ol className="razones">
+        <li>
+          <strong>El método supone un catálogo homogéneo.</strong> Las réplicas se asignan con la distancia η = T · R<sup>d</sup> · 10<sup>−b·m</sup>. La
+          distancia entre sismos se mide igual en todo el planeta (haversine); lo que falla es <code>d</code>, la dimensión fractal de los epicentros (1,5),
+          que supone una ley de potencias: en el mundo entero los epicentros siguen los bordes de placa. Además, cada zona detecta desde una magnitud distinta
+          (Mc), y mezclarlas hace que el umbral que separa réplicas de sismos de fondo deje de ser confiable.
+        </li>
+        <li>
+          <strong>Encadena sismos sin relación.</strong> Con regiones muy grandes, el árbol de réplicas une zonas lejanas hasta armar clusters de miles de
+          kilómetros. En un primer análisis, sólo con los Andes, ya aparecían dos de más de 1.500 km.
+        </li>
+        <li>
+          <strong>El servicio tiene un tope.</strong> USGS rechaza las consultas de más de 20.000 eventos.
+        </li>
+      </ol>
+      <p>
+        Y no una sola región, como hicimos al principio (sólo los Andes), porque no alcanzaba: había 19 sismos grandes someros contra 22 profundos, muy pocos
+        para comparar. Cada región se
+        procesa por separado, con su propio Mc y su propio umbral, y después se juntan.
       </p>
       <h4>Qué es una fila</h4>
       <p>
@@ -39,7 +63,7 @@ export default function ComoDatos({ pasos, metricas, regiones }) {
           { titulo: "Región", ver: (p) => p.region },
           { titulo: "Desde", ver: (p) => (porRegion[p.region] ? fecha(porRegion[p.region].desde) : ""), alinear: "num" },
           { titulo: "1. Descargados de USGS", ver: (p) => n(p.descargados_usgs), alinear: "num" },
-          { titulo: "2. Limpios (silver)", ver: (p) => n(p.silver_limpios), alinear: "num" },
+          { titulo: "2. Limpios", ver: (p) => n(p.silver_limpios), alinear: "num" },
           { titulo: "3. Con magnitud ≥ Mc", ver: (p) => (p.mc ? `${n(p.sobre_mc)} (Mc ${n(p.mc, 1)})` : n(p.sobre_mc)), alinear: "num" },
           { titulo: "4. Secuencias", ver: (p) => n(p.secuencias), alinear: "num" },
         ]}
@@ -75,7 +99,7 @@ export default function ComoDatos({ pasos, metricas, regiones }) {
         </li>
       </ol>
       <h4>Qué columnas se descartaron por fuga</h4>
-      <p>Fuga es usar para predecir algo que sólo se sabe después. Ninguna de estas columnas entra al modelo (Entrega 3, «Las columnas que no pueden estar»):</p>
+      <p>Fuga es usar para predecir algo que sólo se sabe después. Ninguna de estas columnas entra al modelo:</p>
       <Tabla
         columnas={[
           { titulo: "Columna", ver: (f) => <code>{f[0]}</code> },
@@ -84,11 +108,19 @@ export default function ComoDatos({ pasos, metricas, regiones }) {
         filas={FUGA}
       />
       <p>
-        De las columnas que sí existen en el momento del sismo, la Entrega 3 probó cinco candidatas (<code>mainshock_mag</code>,{" "}
-        <code>mainshock_depth</code>, <code>region_mc</code>, <code>region</code>, <code>n_prior_30d</code>). El modelo final usa la magnitud sobre el
-        umbral (<code>mainshock_mag − region_mc</code>) y la profundidad. Región y sismos previos se probaron y se descartaron (ver «El modelo»). Las
-        otras columnas disponibles al predecir (<code>n_prior_2d</code>, <code>n_prior_365d</code>, <code>days_since_prior</code>, etc.){" "}
-        <strong>no se probaron</strong> en el notebook.
+        Las columnas que valen siempre lo mismo en este dataset (<code>n_foreshocks</code> y <code>root_is_mainshock</code>) también salen. En el primer análisis, donde el principal era el sismo más grande de la secuencia (<code>mainshock = largest</code>), variaban, y
+        ahí eran fuga: un premonitor se reconoce recién cuando llega el sismo mayor.
+      </p>
+      <p>
+        De las {metricas.columnas.slice(4).reduce((a, g) => a + g.n, 0)} columnas que sí existen en el momento del sismo, en el modelo probamos cinco (
+        <code>mainshock_mag</code>, <code>mainshock_depth</code>, <code>region_mc</code>, <code>region</code>, <code>n_prior_30d</code>). El modelo final usa
+        tres, combinadas en dos entradas: la magnitud sobre el umbral (<code>mainshock_mag − region_mc</code>) y la profundidad. Región y sismos previos se
+        probaron y se descartaron (ver «El modelo»). La latitud y la longitud se descartaron antes, al explorar los datos: su correlación con
+        las réplicas es casi nula (Pearson −0,034 y −0,063 en el primer análisis, sólo con los Andes; Spearman 0,039 y −0,053 con el dataset final). Las otras ocho (<code>n_prior_2d</code>,{" "}
+        <code>n_prior_365d</code>, <code>prior_max_mag_365d</code>, <code>days_since_prior</code>, <code>prior_window_truncated</code>,{" "}
+        <code>region_log10_eta0</code>, <code>dist_to_border_km</code>, <code>near_border</code>) <strong>no se probaron</strong> en el modelo. Con el dataset final, ninguna tiene
+        una correlación con las réplicas mayor que 0,1 en valor absoluto (Spearman), y las que son categorías explican menos del 0,1 % de su variación
+        (η² menor que 0,001).
       </p>
       <p className="nota">
         Partición: las {n(metricas.particion.entrenamiento)} secuencias más antiguas ({fecha(metricas.particion.entrena_desde)} a{" "}

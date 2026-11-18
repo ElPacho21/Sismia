@@ -39,7 +39,7 @@ USGS ──► pipeline/ (Airflow) ──► data/*.csv ──► notebooks/ (an
 |---|---|
 | `pipeline/` | **Entrega 1.** Pipeline de Airflow que baja el catálogo de USGS y arma el dataset. Se levanta con [`pipeline/README.md`](pipeline/README.md). |
 | `docs/PIPELINE_METODO.md` | Qué hace cada paso del pipeline y por qué (método de Zaliapin y Ben-Zion). |
-| `notebooks/` | **Entregas 2 y 3.** El análisis exploratorio y el modelado. `Entrega 3-Definitivo.ipynb` (en la raíz) es el notebook final del modelo. |
+| `notebooks/` | **Entregas 2 y 3.** `Análisis Exploratorio de Sismos (clusters).ipynb` es el de la Entrega 2 (otro dataset: sólo los Andes, `largest`). `Análisis Exploratorio (dataset final).ipynb` repite ese análisis sobre el dataset final y es de donde salen los números de los casos atípicos, de la profundidad y de las columnas. `Entrega 3-Definitivo.ipynb` es el notebook final del modelo. |
 | `data/` | Los CSV que produce el pipeline y que consume el build (ver «Datos»). |
 | `build_app.py` | **Entrega 4.** Toma los datos, entrena el modelo con la misma semilla, **verifica que da lo del notebook** y genera todo lo que consume la aplicación. |
 | `referencia_sklearn.py` | El modelo del notebook tal cual (scikit-learn). Es la referencia contra la que se verifican la API y el JS. |
@@ -59,7 +59,7 @@ USGS ──► pipeline/ (Airflow) ──► data/*.csv ──► notebooks/ (an
 La consigna lista dos formas (página HTML en GitHub Pages o Streamlit). Este proyecto usa una tercera, que se apoya en la primera:
 
 - **El sitio es estático** (React compilado). Las predicciones para explorar se calculan **antes** (`build_app.py`) y viajan con los datos.
-  Lo que muestran el tallo, Explorá y el globo **no depende de ningún servidor**.
+  Lo que muestran el tallo y Explorá (el globo y sus barras) **no depende de ningún servidor**.
 - **«Probá el modelo»** llama a una API de FastAPI en el mismo dominio (`/api/predict`). Si no responde en 4 segundos, o devuelve
   un error, **la página calcula lo mismo en el navegador** con los coeficientes de `model.json` (`app/src/modelo.js`) y lo avisa
   («Calculado en tu navegador»). Esa es la condición de la consigna para el HTML: la fórmula tiene que poder escribirse dentro de la página.
@@ -93,7 +93,7 @@ El build lee de `data/`:
 | Archivo | De dónde sale |
 |---|---|
 | `clusters_combined_5regions_rmax=gk3_mainshock=root_seed=1.csv` | Salida del pipeline: `pipeline/include/output/detector_replicas_api/delivery/clusters_combined_5regions-<hash>_rmax=gk3_mainshock=root_seed=1.csv`, **sin el `-<hash>`** en el nombre. |
-| `events_*_rmax=gk3_mainshock=root_seed=1.csv` (cinco, una por región) | La misma carpeta `delivery/`, copiados tal cual. Alimentan la animación de secuencias del globo. |
+| `events_*_rmax=gk3_mainshock=root_seed=1.csv` (cinco, una por región) | La misma carpeta `delivery/`, copiados tal cual. Alimentan la animación de secuencias del globo y dan la magnitud mayor de cada secuencia (gráfico de casos atípicos). |
 | `filter_steps.json` | Filas que quedan en cada paso del pipeline. Se genera con `python scripts/count_filter_steps.py <carpeta detector_replicas_api>` (necesita las salidas `bronze/` y `silver/` del pipeline, que no se versionan por su peso). |
 
 Regenerar desde una copia limpia del repositorio, con un entorno virgen, da **archivos idénticos** a los versionados. Los datos que están en el repositorio son los de la corrida del **29 de octubre de 2026** (catálogo hasta el 31/12/2025).
@@ -167,7 +167,7 @@ compara contra los números del notebook de la Entrega 3, y con datos nuevos eso
 - **Un único modelo para las cinco regiones.** La región entra sólo a través de `mag_sobre_mc = magnitud − Mc de la región`. El resultado «por región» es el del test de ese modelo en esa región.
 - **Casos fuera de lo que el modelo vio:** se calculan y **se avisa** (magnitud menor al Mc de la región, magnitud o profundidad fuera del rango de entrenamiento).
   Sólo se rechaza lo que no tiene sentido: texto, NaN, magnitud fuera de 0–10, profundidad fuera de 0–800 km, región inexistente.
-- **El globo es un extra.** No reemplaza nada de lo obligatorio y, si el navegador no tiene WebGL, se avisa y el resto sigue funcionando. Los gráficos obligatorios son todos de Altair; el globo es three.
+- **Explorá es el globo.** Es el panorama (three, no Altair): el mapa de Altair que mostraba lo mismo se sacó por pedido del docente. Sus filtros mueven también las barras de Altair con el resultado del modelo, que están debajo. Si el navegador no tiene WebGL, se avisa, los filtros siguen visibles y las barras siguen respondiendo. Todos los demás gráficos son de Altair.
 - **Probado sólo en Edge** (Chromium) y desde una sola computadora; Firefox y otras máquinas quedan por verificar antes de la exposición.
 - Algunos nombres de lugar traen un `?` donde iba una letra con acento (por ejemplo «?funato»): viene del pipeline, no de la aplicación.
-- Los notebooks y el pipeline de las Entregas 1 a 3 no se modificaron para esta entrega.
+- Los notebooks de las Entregas 2 y 3 y el pipeline no se modificaron. El análisis exploratorio con el dataset final es un notebook nuevo; para volver a ejecutarlo hace falta Jupyter (`pip install nbclient ipykernel matplotlib`, no está en `requirements-build.txt` porque el build no lo usa).

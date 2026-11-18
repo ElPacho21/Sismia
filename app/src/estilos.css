@@ -240,19 +240,25 @@ h2 {
     clip-path: inset(0 0 0 0);
   }
 }
+/* la pregunta es lo más grande de la portada; la respuesta (la idea central) va debajo, más chica */
 .portada .pregunta {
-  margin: 0 0 0.9rem;
-  color: var(--suave);
-  font-size: 1.15rem;
-}
-.portada h1 {
-  margin: 0 0 1.1rem;
+  margin: 0 0 1.3rem;
   font-family: var(--titulos);
-  font-size: clamp(1.9rem, 4vw, 3.15rem);
-  line-height: 1.1;
+  font-size: clamp(2.2rem, 5vw, 3.7rem);
+  line-height: 1.06;
   font-weight: 700;
-  letter-spacing: -0.025em;
-  max-width: 21em;
+  letter-spacing: -0.028em;
+  max-width: 17em;
+  text-wrap: balance;
+}
+.portada .respuesta {
+  margin: 0 0 0.7rem;
+  font-family: var(--titulos);
+  font-size: clamp(1.15rem, 1.8vw, 1.4rem);
+  line-height: 1.35;
+  font-weight: 600;
+  color: var(--texto);
+  max-width: 34em;
   text-wrap: balance;
 }
 .portada .aclaracion {
@@ -310,37 +316,59 @@ h2 {
   border-bottom: 1px solid var(--trazo);
   padding-bottom: 3.5rem;
 }
-.tallo > .etiqueta {
+/* el título queda fijo a la izquierda mientras se lee la historia de la derecha */
+.tallo-lado {
   grid-column: 1;
-  grid-row: 1;
-}
-.tallo > h2 {
-  grid-column: 1;
-  grid-row: 2 / span 3;
   align-self: start;
   position: sticky;
   top: 88px;
+}
+.tallo-lado h2 {
   font-size: clamp(1.45rem, 2.2vw, 1.8rem);
   max-width: none;
   margin: 0;
 }
-.tallo > .grafico {
+.tallo-cuerpo {
   grid-column: 2;
-  grid-row: 1 / span 2;
+  min-width: 0;
 }
-.tallo > .que-mirar {
-  grid-column: 2;
-  grid-row: 3;
+.tallo-cuerpo > .extra {
+  margin-top: 1.6rem;
 }
-.tallo > .como {
-  grid-column: 2;
-  grid-row: 4;
+/* los pasos que llevan al gráfico principal: separados por un filete, con el número como marca */
+.paso {
+  padding-bottom: 1.6rem;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid var(--trazo);
+}
+.paso-numero {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-family: var(--cuerpo);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--hielo);
+}
+/* el segundo gráfico de una sección sigue la historia del primero: subtítulo más chico que el título que afirma */
+.subtitulo {
+  margin: 0 0 0.9rem;
+  font-family: var(--titulos);
+  font-size: clamp(1.1rem, 1.6vw, 1.3rem);
+  font-weight: 650;
+  line-height: 1.3;
+  max-width: 36em;
+  text-wrap: balance;
+}
+.resultado-explora {
+  margin-top: 2.2rem;
 }
 @media (max-width: 960px) {
   .tallo {
     display: block;
   }
-  .tallo > h2 {
+  .tallo-lado {
     position: static;
     margin-bottom: 1.4rem;
   }

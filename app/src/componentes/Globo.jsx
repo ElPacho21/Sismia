@@ -6,7 +6,7 @@ import { centroRegion, eventosHasta, horasATexto, horasDeTiempoLog, tiempoLog } 
 import { fecha, n } from "../lib/formato.js";
 import { NOMBRE_REGION } from "./ProbaModelo.jsx";
 
-// El globo (extra de la copa): los mismos datos de Explorá en 3D, con la animación de una secuencia.
+// El globo: el panorama de Explorá, con los filtros, el detalle de cada secuencia y su animación.
 // Se carga recién cuando el usuario llega hasta acá (ver GloboPuerta).
 const DURACION_S = 14; // lo que tarda en correr toda la secuencia
 const escapar = (t) => String(t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -36,7 +36,7 @@ export default function Globo({ d, filtros, setFiltros }) {
   const datosRef = useRef(null);
   datosRef.current = datos;
 
-  // datos del globo y, aparte, las filas con el detalle de cada secuencia (el mismo archivo de Explorá)
+  // datos del globo y, aparte, las filas con el detalle de cada secuencia (el mismo archivo que usan las barras)
   useEffect(() => {
     Promise.all([pedirJson("data/globo.json"), pedirJson("data/explora_filas.json")])
       .then(([g, filas]) => {
@@ -88,7 +88,7 @@ export default function Globo({ d, filtros, setFiltros }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [datos, sinWebgl]);
 
-  // filtros compartidos con Explorá -> el globo; si cambió la región, la cámara vuela hasta ella
+  // filtros (compartidos con las barras) -> el globo; si cambió la región, la cámara vuela hasta ella
   useEffect(() => {
     const escena = escenaRef.current;
     if (!escena) return;
@@ -119,6 +119,9 @@ export default function Globo({ d, filtros, setFiltros }) {
       <span>${fecha(fila.fecha)} · M${n(fila.mag, 1)} · ${n(fila.prof, 0)} km · ${escapar(NOMBRE_REGION[fila.region] ?? fila.region)}</span>
       <span>Réplicas reales: <b>${n(fila.replicas)}</b> · <i style="background:${color(fila.real_i)}"></i>${escapar(fila.real)}</span>
       <span>El modelo dijo: <i style="background:${color(fila.pred_i)}"></i>${escapar(fila.pred)} (${fila.real_i === fila.pred_i ? "acertó" : "no acertó"})</span>
+      <span>Réplicas esperadas: ${n(fila.mu, 2)} · probabilidades: ${[fila.p_ninguna, fila.p_pocas, fila.p_moderadas, fila.p_muchas]
+        .map((p, k) => `<i style="background:${color(k)}"></i>${n(p * 100, 0)} %`)
+        .join(" ")}</span>
       <span class="${fila.test ? "" : "ojo"}">${fila.test ? "Sismo de test: el modelo no lo vio al entrenar" : "De entrenamiento: el modelo ya lo vio"}</span>
       <em>${animable ? "Click para animar su secuencia" : "Sin réplicas registradas: no hay secuencia para animar"}</em>`;
     el.style.display = "block";
@@ -194,48 +197,58 @@ export default function Globo({ d, filtros, setFiltros }) {
   const region = regiones.find((r) => r.nombre === filtros.region);
   const destacadas = datos?.destacadas ?? [];
 
+  // los filtros (también mueven las barras de abajo): se muestran aunque el globo no pueda dibujarse
+  const filtrosUi = (
+    <div className="globo-filtros" role="group" aria-labelledby="globo-filtros-titulo">
+      <span id="globo-filtros-titulo" className="titulo-filtros">Filtros</span>
+      <label>
+        Región
+        <select name="region" autoComplete="off" value={filtros.region} onChange={(e) => setFiltros((f) => ({ ...f, region: e.target.value }))}>
+          <option value="todas">todas</option>
+          {regiones.map((r) => (
+            <option key={r.nombre} value={r.nombre}>
+              {NOMBRE_REGION[r.nombre] ?? r.nombre}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="rango">
+        Magnitud mínima: {n(filtros.magMin, 1)}
+        <input name="magnitud-minima" type="range" min="4" max="8" step="0.1" value={filtros.magMin} onChange={(e) => setFiltros((f) => ({ ...f, magMin: Number(e.target.value) }))} />
+      </label>
+      <label>
+        Secuencias
+        <select name="ver" autoComplete="off" value={filtros.ver} onChange={(e) => setFiltros((f) => ({ ...f, ver: e.target.value }))}>
+          {opciones.ver.map((o) => (
+            <option key={o}>{o}</option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Pintar según
+        <select name="pintar-segun" autoComplete="off" value={filtros.colorPor} onChange={(e) => setFiltros((f) => ({ ...f, colorPor: e.target.value }))}>
+          {opciones.color.map((o) => (
+            <option key={o}>{o}</option>
+          ))}
+        </select>
+      </label>
+    </div>
+  );
+
   if (sinWebgl)
-    return <p className="globo-aviso">Tu navegador no tiene WebGL activado, así que el globo no puede dibujarse. Explorá muestra los mismos datos en 2D.</p>;
+    return (
+      <>
+        {filtrosUi}
+        <p className="globo-aviso">Tu navegador no tiene WebGL activado, así que el globo no puede dibujarse. Las barras de abajo siguen respondiendo a los filtros.</p>
+      </>
+    );
   if (error) return <p className="error">No se pudo cargar el globo: {error}</p>;
 
   return (
     <div className="globo-grilla">
       <div className="globo-escena">
-        {/* los filtros, justo arriba del globo para ver el efecto sin desplazarse (son los mismos de Explorá) */}
-        <div className="globo-filtros" role="group" aria-labelledby="globo-filtros-titulo">
-          <span id="globo-filtros-titulo" className="titulo-filtros">Filtros</span>
-          <label>
-            Región
-            <select name="region" autoComplete="off" value={filtros.region} onChange={(e) => setFiltros((f) => ({ ...f, region: e.target.value }))}>
-              <option value="todas">todas</option>
-              {regiones.map((r) => (
-                <option key={r.nombre} value={r.nombre}>
-                  {NOMBRE_REGION[r.nombre] ?? r.nombre}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="rango">
-            Magnitud mínima: {n(filtros.magMin, 1)}
-            <input name="magnitud-minima" type="range" min="4" max="8" step="0.1" value={filtros.magMin} onChange={(e) => setFiltros((f) => ({ ...f, magMin: Number(e.target.value) }))} />
-          </label>
-          <label>
-            Secuencias
-            <select name="ver" autoComplete="off" value={filtros.ver} onChange={(e) => setFiltros((f) => ({ ...f, ver: e.target.value }))}>
-              {opciones.ver.map((o) => (
-                <option key={o}>{o}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Pintar según
-            <select name="pintar-segun" autoComplete="off" value={filtros.colorPor} onChange={(e) => setFiltros((f) => ({ ...f, colorPor: e.target.value }))}>
-              {opciones.color.map((o) => (
-                <option key={o}>{o}</option>
-              ))}
-            </select>
-          </label>
-        </div>
+        {/* los filtros, justo arriba del globo para ver el efecto sin desplazarse (mueven también las barras de abajo) */}
+        {filtrosUi}
         {/* el resultado de la región elegida, pegado al filtro que la cambia */}
         <p className="globo-region" aria-live="polite">
           {region ? (

@@ -135,3 +135,120 @@ def candidatos(alpha, empuje):
         "Binomial Negativa (mag_sobre_mc + prof)": con_mc(BinomialNegativaIntervalos()),
         "Poisson elegido (alpha=0,001, empuje=0,4)": modelo_final(alpha, empuje),
     }
+
+
+# ---------------------------------------------------------------- columnas nuevas y sesgo por región
+# (celdas 43, 50 y 54 del notebook). Se copian sin cambiar la lógica.
+class ColumnasCandidatas(BaseEstimator, TransformerMixin):
+    """mag_sobre_mc + profundidad (siempre), con interruptores para probar columnas nuevas."""
+    def __init__(self, con_region=False, con_previos=False):
+        self.con_region = con_region
+        self.con_previos = con_previos
+
+    def fit(self, X, y=None):
+        self.regiones_ = sorted(X["region"].unique())          # se aprende sólo del train
+        return self
+
+    def transform(self, X):
+        salida = pd.DataFrame({"mag_sobre_mc": X["mainshock_mag"] - X["region_mc"],
+                               "profundidad": X["mainshock_depth"]}, index=X.index)
+        if self.con_region:
+            for r in self.regiones_[1:]:                          # una columna 0/1 por región
+                salida[f"region_{r}"] = (X["region"] == r).astype(float)
+        if self.con_previos:
+            salida["log_previos_30d"] = np.log1p(X["n_prior_30d"])  # sismos en los 30 días anteriores
+        return salida
+
+
+def con_columnas(**interruptores):
+    return Pipeline([("columnas", ColumnasCandidatas(**interruptores)), ("escalar", StandardScaler()),
+                     ("modelo", PoissonIntervalos())])
+
+
+def esperadas_de_validacion(pipeline, X_train, y_train, cv):
+    """Réplicas esperadas para cada sismo, calculadas cuando ese sismo estaba en validación."""
+    esperadas = pd.Series(np.nan, index=X_train.index)
+    for entrena, valida in cv.split(X_train):
+        pipeline.fit(X_train.iloc[entrena], y_train.iloc[entrena])
+        columnas = pipeline[:-1].transform(X_train.iloc[valida])          # todo menos el modelo
+        esperadas.iloc[valida] = pipeline[-1].replicas_esperadas(columnas)
+    return esperadas.dropna()
+
+
+def real_sobre_predicho(esperadas, X_train, y_train):
+    t = pd.DataFrame({"real": y_train.loc[esperadas.index], "esperadas": esperadas,
+                      "region": X_train.loc[esperadas.index, "region"],
+                      "Mc": X_train.loc[esperadas.index, "region_mc"],
+                      "mag": X_train.loc[esperadas.index, "mainshock_mag"]})
+    t = t[t["mag"] < 6.5]          # sin los megasismos, que en una suma tapan todo lo demás
+    r = t.groupby("region").agg(Mc=("Mc", "first"), real=("real", "sum"), esperadas=("esperadas", "sum"))
+    r["real / esperadas"] = r["real"] / r["esperadas"]
+    return r.sort_values("Mc")
+
+
+# ---------------------------------------------------------------- otros cortes de los intervalos
+# (celda 70 del notebook). Se copian sin cambiar la lógica.
+ESQUEMAS = {"0 | 1–5 | 6+": [0, 5],
+            "0 | 1–10 | 11+": [0, 10],
+            "0 | 1–2 | 3–10 | 11+ (el elegido)": [0, 2, 10],
+            "0 | 1 | 2–5 | 6+": [0, 1, 5],
+            "0 | 1 | 2–5 | 6–20 | 21+": [0, 1, 5, 20]}
+
+
+class PoissonCortes(PoissonIntervalos):
+    """La misma PoissonIntervalos, pero con otros cortes."""
+    def __init__(self, alpha=1.0, empuje=0.0, cortes=(0, 2, 10), clases=None):
+        super().__init__(alpha, empuje)
+        self.cortes = cortes
+        self.clases = clases
+
+    def fit(self, X, y):
+        self.regresion_ = PoissonRegressor(alpha=self.alpha, max_iter=1000).fit(X, y)
+        self.classes_ = np.array(self.clases)
+        inter = np.array(self.clases)[np.searchsorted(self.cortes, np.asarray(y), side="left")]
+        self.frecuencia_ = np.array([(inter == c).mean() for c in self.clases])
+        return self
+
+    def predict_proba(self, X):
+        mu = self.replicas_esperadas(X)
+        acum = [poisson.cdf(k, mu) for k in self.cortes]
+        return np.column_stack([acum[0]] + [acum[i] - acum[i - 1] for i in range(1, len(self.cortes))] + [1 - acum[-1]])
+
+
+class ClasificadorCortes(BaseEstimator, ClassifierMixin):
+    def __init__(self, modelo=None, intervalo=None):
+        self.modelo = modelo
+        self.intervalo = intervalo
+
+    def fit(self, X, y):
+        self.modelo_ = clone(self.modelo).fit(X, self.intervalo(y))
+        return self
+
+    def predict(self, X):
+        return self.modelo_.predict(X)
+
+
+def f1_con_cortes(cortes, pipeline_de, X_train, y_train, cv):
+    from sklearn.metrics import f1_score
+    clases = [str(i) for i in range(len(cortes) + 1)]
+    intervalo = lambda n: np.array(clases)[np.searchsorted(cortes, np.asarray(n), side="left")]  # noqa: E731
+    notas = []
+    for e, v in cv.split(X_train):
+        pred = pipeline_de(cortes, clases, intervalo).fit(X_train.iloc[e], y_train.iloc[e]).predict(X_train.iloc[v])
+        notas.append(f1_score(intervalo(y_train.iloc[v]), pred, average="macro", labels=clases))
+    return np.mean(notas)
+
+
+def tabla_cortes(alpha, empuje, X_train, y_train, cv):
+    filas = {}
+    for nombre, cortes in ESQUEMAS.items():
+        filas[nombre] = {
+            "intervalos": len(cortes) + 1,
+            "piso": f1_con_cortes(cortes, lambda c, cl, it: con_mc(ClasificadorCortes(DummyClassifier(strategy="most_frequent"), it)),
+                                  X_train, y_train, cv),
+            "logística (balanced)": f1_con_cortes(cortes, lambda c, cl, it: con_mc(ClasificadorCortes(
+                LogisticRegression(max_iter=3000, class_weight="balanced"), it)), X_train, y_train, cv),
+            "Poisson": f1_con_cortes(cortes, lambda c, cl, it: con_mc(PoissonCortes(alpha=alpha, empuje=empuje, cortes=c, clases=cl)),
+                                     X_train, y_train, cv),
+        }
+    return filas
