@@ -43,8 +43,10 @@ export default function ComoModelo({ metricas, modelo }) {
         resaltar={(f) => f[0].startsWith("Poisson elegido")}
       />
       <p>
-        Los tres Poisson caen dentro de un desvío entre sí. Se eligió <strong>Poisson con mag_sobre_mc y profundidad</strong> porque es de los mejores, es el más
-        simple (dos coeficientes y una fórmula cerrada) y se puede escribir dentro de la página. La binomial negativa terminó contestando siempre «ninguna»
+        Los tres Poisson caen dentro de un desvío entre sí, y todos le ganan al resto por más de un desvío. El tercero es el elegido: el segundo con
+        alpha y empuje ajustados. Entre los dos primeros, se eligió <strong>Poisson con mag_sobre_mc y profundidad</strong> no por el f1, que empata con el de
+        magnitud cruda, sino porque corrige el sesgo entre regiones (paso 3 de «El modelo»). Los dos tienen dos coeficientes y son una fórmula cerrada que se
+        puede escribir dentro de la página, cosa que no pasa con random forest ni gradient boosting. La binomial negativa terminó contestando siempre «ninguna»
         (la dispersión la dominan los megasismos de hasta 2.544 réplicas). Además de la tabla, con Poisson se probaron dos columnas más, de a una: la región
         ({n(probadas.region[0], 3)} ± {n(probadas.region[1], 3)}) y los sismos de los 30 días previos ({n(probadas.previos[0], 3)} ±{" "}
         {n(probadas.previos[1], 3)}), contra {n(probadas.base[0], 3)} ± {n(probadas.base[1], 3)} sin ellas: ninguna mejora por más que el desvío. Después, con el dataset final y el
