@@ -331,6 +331,15 @@ export default function App() {
                   hueco. La barra es el desvío entre los 5 folds de validación y la línea punteada, el piso. Pasá el mouse por un punto para ver qué pasó en ese paso.
                 </p>
                 <p>
+                  <strong>¿Por qué este modelo, si varios dan parecido?</strong> Fueron tres decisiones distintas. <em>Poisson y no otra familia:</em> los Poisson le
+                  ganan a todo lo demás por más de un desvío ({n(comp["Poisson (mag_sobre_mc + prof)"][0], 3)} contra {n(otraMejorF1, 3)} de la mejor de las otras
+                  familias), y además son una fórmula que se puede escribir dentro de la página. <em>Magnitud sobre el umbral y no magnitud cruda:</em> en f1
+                  empatan ({n(comp["Poisson (mag_sobre_mc + prof)"][0], 3)} contra {n(comp["Poisson (mag + prof)"][0], 3)}); la elegimos porque corrige el sesgo
+                  entre regiones (paso 3), no por el f1. <em>Regularización y empuje:</em> la regularización casi no importa (entre alpha 0,001 y 1 el f1 queda
+                  dentro del desvío; nos quedamos con el promedio más alto), y el empuje sale de una regla: el más alto con el f1 a un desvío del mejor, porque
+                  preferimos avisar de más antes que perder un sismo con réplicas.
+                </p>
+                <p>
                   En el test, que no vio nunca, el elegido llega a {n(metricas.final.f1_test, 2)} contra {n(metricas.piso.f1_test, 2)} del piso. Sirve para
                   priorizar qué vigilar, no para emitir alertas: por cada {n(metricas.avisos_test.avisos_correctos)} avisos correctos hay{" "}
                   {n(metricas.avisos_test.falsas_alarmas)} falsas alarmas.
