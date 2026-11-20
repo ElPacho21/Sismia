@@ -508,34 +508,6 @@ def grafico_evolucion(pasos):
     return (linea_piso + camino + rango + dejado + adoptado + valor).properties(width=420, height=400)
 
 
-def grafico_variables(grilla, densidad, profundidades):
-    """Qué contesta el modelo para cada combinación de magnitud sobre el umbral y profundidad (el fondo), con los
-    sismos de entrenamiento encima (círculos, por cantidad). Lo que cambia la respuesta se lee en cuánto se corren
-    los colores al moverse en cada eje, dentro de la zona donde hay sismos."""
-    x = alt.Scale(domain=[0, 4.5], nice=False)
-    y = alt.Scale(domain=[0, 660], reverse=True, nice=False)
-    fondo = alt.Chart(grilla).mark_rect(opacity=0.6).encode(
-        x=alt.X("msm:Q", scale=x, title="Magnitud sobre el umbral de su región (puntos)"), x2="msm2:Q",
-        y=alt.Y("prof:Q", scale=y, title="Profundidad (km)"), y2="prof2:Q",
-        color=alt.Color("clase:N", scale=ESCALA_CLASE,
-                        legend=alt.Legend(title="Lo que contesta el modelo", orient="right")),
-        tooltip=[alt.Tooltip("rotulo_msm:N", title="Magnitud sobre el umbral"),
-                 alt.Tooltip("rotulo_prof:N", title="Profundidad"), alt.Tooltip("clase:N", title="Contesta")])
-    sismos = alt.Chart(densidad).mark_circle(color=COLOR_DATOS, opacity=0.85, stroke=FONDO_GRAFICO, strokeWidth=0.4).encode(
-        x=alt.X("msm:Q", scale=x), y=alt.Y("prof:Q", scale=y),
-        size=alt.Size("n:Q", scale=alt.Scale(type="sqrt", range=[3, 170]),
-                      legend=alt.Legend(title="Sismos de entrenamiento", values=[1, 10, 100, 1000], orient="right")),
-        tooltip=[alt.Tooltip("rotulo_msm:N", title="Magnitud sobre el umbral"),
-                 alt.Tooltip("rotulo_prof:N", title="Profundidad"), alt.Tooltip("n:Q", title="Sismos", format=",")])
-    franja = alt.Chart(profundidades).mark_rule(strokeDash=[4, 3], color=TEXTO_FUERTE, strokeWidth=1.2).encode(
-        y=alt.Y("prof:Q", scale=y))
-    rotulo = alt.Chart(profundidades).transform_filter("datum.rotulo != ''").mark_text(
-        align="right", baseline="middle", fontSize=12, fontWeight=600, color=TEXTO_FUERTE).encode(
-        x=alt.value(552), y=alt.Y("medio:Q", scale=y), text="rotulo:N")
-    return (fondo + sismos + franja + rotulo).properties(width=560, height=360)
-
-
-# ---- los pasos de la historia del modelo (en el orden del notebook de la Entrega 3)
 TRAMO_EXPR = "datum.mag < 5 ? '4–5' : datum.mag < 6 ? '5–6' : datum.mag < 7 ? '6–7' : '7 o más'"
 
 
@@ -570,28 +542,29 @@ def grafico_intervalos(datos, intervalos):
     return alt.layer(puntos, media, texto_media, texto_arriba).properties(width=600, height=330)
 
 
-def grafico_ejemplo_poisson(ejemplo):
-    """Paso 2: qué contesta la primera Poisson para tres sismos inventados a 30 km: la probabilidad de cada
-    intervalo (sale de la distribución de Poisson con las réplicas esperadas) y la respuesta."""
-    filas = []
-    for sismo, d in ejemplo.items():
-        for i, c in enumerate(CLASES):
-            filas.append({"sismo": f"{sismo}, 30 km", "clase": c, "orden": i, "prob": d["probs"][i] / 100})
-    t = pd.DataFrame(filas)
-    orden = [f"{k}, 30 km" for k in ejemplo]
-    r = pd.DataFrame([{"sismo": f"{k}, 30 km", "rotulo": f"{es(d['mu'], 1)} réplicas esperadas → {d['respuesta']}"}
-                      for k, d in ejemplo.items()])
-    y = alt.Y("sismo:N", sort=orden, title=None, axis=alt.Axis(grid=False))
-    barras = alt.Chart(t).mark_bar(height=26).encode(
-        y=y, x=alt.X("prob:Q", stack="zero", title="Probabilidad de cada intervalo", scale=alt.Scale(domain=[0, 1]),
-                     axis=alt.Axis(format="%")),
-        color=alt.Color("clase:N", scale=ESCALA_CLASE, legend=alt.Legend(title=None, orient="bottom", direction="horizontal")),
-        order=alt.Order("orden:Q"),
-        tooltip=[alt.Tooltip("sismo:N", title="Sismo"), alt.Tooltip("clase:N", title="Intervalo"),
-                 alt.Tooltip("prob:Q", title="Probabilidad", format=".1%")])
-    texto = alt.Chart(r).mark_text(align="left", dx=10, fontSize=12, fontWeight=600, color=TEXTO_FUERTE).encode(
-        y=y, x=alt.value(380), text="rotulo:N")
-    return (barras + texto).properties(width=370, height=140)
+def grafico_logistica_poisson(comparacion, f1_piso):
+    """Paso 2: el f1 macro en validación de la regresión logística (y balanceada) contra la primera regresión de Poisson,
+    con las mismas dos entradas (magnitud y profundidad), y la línea del piso."""
+    filas = [("regresión logística", "regresión logística", "descartada"),
+             ("regresión logística (balanced)", "logística, clases balanceadas", "descartada"),
+             ("Poisson (mag + prof)", "regresión de Poisson", "adoptada")]
+    t = pd.DataFrame([{"fila": nombre, "f1": comparacion[k][0], "desvio": comparacion[k][1], "tipo": tipo}
+                      for k, nombre, tipo in filas])
+    x = alt.Scale(domain=[0, 0.55], nice=False)
+    y = alt.Y("fila:N", sort=t["fila"].tolist(), title=None,
+              axis=alt.Axis(grid=False, domain=False, ticks=False, labelLimit=260, labelFontSize=13, labelColor=TEXTO_FUERTE))
+    barras = alt.Chart(t).mark_bar(height=24, cornerRadiusEnd=3).encode(
+        y=y, x=alt.X("f1:Q", scale=x, title="f1 macro en validación", axis=alt.Axis(values=[0, 0.1, 0.2, 0.3, 0.4, 0.5], format=".1f")),
+        color=alt.Color("tipo:N", scale=alt.Scale(domain=["adoptada", "descartada"], range=[COLOR_ELEGIDO, COLOR_DESCARTE]), legend=None),
+        tooltip=[alt.Tooltip("fila:N", title="Modelo"), alt.Tooltip("f1:Q", title="f1 macro", format=".3f"),
+                 alt.Tooltip("desvio:Q", title="Desvío (5 folds)", format=".3f")])
+    texto = alt.Chart(t).mark_text(align="left", dx=8, fontSize=13, fontWeight=700, color=TEXTO_FUERTE).encode(
+        y=y, x=alt.X("f1:Q", scale=x), text=alt.Text("f1:Q", format=".3f"))
+    piso = pd.DataFrame({"x": [f1_piso], "t": [f"piso: contestar siempre «ninguna» ({es(f1_piso, 3)})"]})
+    linea = alt.Chart(piso).mark_rule(strokeDash=[5, 4], color=TEXTO_GRAFICO, strokeWidth=2).encode(x=alt.X("x:Q", scale=x))
+    rotulo = alt.Chart(piso).mark_text(align="left", baseline="bottom", dx=4, dy=-4, fontSize=12, fontWeight=600,
+                                       color=TEXTO_GRAFICO).encode(x=alt.X("x:Q", scale=x), y=alt.value(0), text="t:N")
+    return (linea + barras + texto + rotulo).properties(width=420, height=130)
 
 
 def grafico_sesgo_region(cociente, mc, nombres):
@@ -678,32 +651,39 @@ def grafico_columnas_probadas(probadas, nuevas):
 
 
 def grafico_cortes(cortes):
-    """Paso 6: el f1 macro del piso, la logística balanceada y Poisson con otros cortes de los intervalos."""
-    modelos = ["piso", "logística (balanced)", "Poisson"]
+    """Paso 6: con cada forma de cortar los intervalos, el f1 macro (validación) de la logística balanceada y de
+    Poisson, unidos por una línea. Los f1 no se comparan entre filas (con menos intervalos todo sube): lo que importa es
+    que en todas el punto de Poisson queda a la derecha."""
+    # de menos a más intervalos: se ve que con más intervalos el f1 baja para los dos modelos
+    orden_k = sorted(cortes, key=lambda k: (cortes[k]["intervalos"], "(el elegido)" not in k, k))
+    nombre = {k: f"{int(cortes[k]['intervalos'])} intervalos:  " + " ".join(f"[{t.strip()}]" for t in k.replace(" (el elegido)", "").split("|"))
+              + ("  (los nuestros)" if "(el elegido)" in k else "") for k in orden_k}
+    orden = [nombre[k] for k in orden_k]
     filas = []
-    for esquema, d in cortes.items():
-        for m in modelos:
-            filas.append({"esquema": esquema, "intervalos": d["intervalos"], "modelo": m, "f1": d[m]})
+    for k in orden_k:
+        d = cortes[k]
+        for modelo, clave in (("logística", "logística (balanced)"), ("Poisson", "Poisson")):
+            filas.append({"cortes": nombre[k], "modelo": modelo, "f1": d[clave], "piso": d["piso"]})
     t = pd.DataFrame(filas)
-    orden = sorted(cortes, key=lambda k: (cortes[k]["intervalos"], k))
-    ancho = t.groupby("esquema")["f1"].agg(["min", "max"]).reset_index()
-    y = alt.Y("esquema:N", sort=orden, title="Cortes de los intervalos", axis=alt.Axis(grid=False, labelLimit=280))
-    x = alt.Scale(domain=[0.15, 0.6])
-    une = alt.Chart(ancho).mark_rule(color=GRILLA, strokeWidth=6).encode(y=y, x=alt.X("min:Q", scale=x), x2="max:Q")
-    puntos = alt.Chart(t).mark_point(filled=True, size=110, opacity=1).encode(
-        y=y, x=alt.X("f1:Q", scale=x, title="f1 macro en validación"),
-        color=alt.Color("modelo:N", scale=alt.Scale(domain=modelos, range=[TEXTO_GRAFICO, COLOR_DESCARTE, COLOR_ELEGIDO]),
-                        legend=alt.Legend(title=None, orient="bottom", direction="horizontal")),
-        shape=alt.Shape("modelo:N", scale=alt.Scale(domain=modelos, range=["circle", "square", "diamond"])),
-        tooltip=[alt.Tooltip("esquema:N", title="Cortes"), alt.Tooltip("modelo:N", title="Modelo"),
-                 alt.Tooltip("f1:Q", title="f1 macro", format=".3f")])
-    texto = alt.Chart(t[t["modelo"] == "Poisson"]).mark_text(align="left", dx=10, fontSize=12, fontWeight=600,
-                                                             color=COLOR_ELEGIDO).encode(
-        y=y, x=alt.X("f1:Q", scale=x), text=alt.Text("f1:Q", format=".3f"))
-    return (une + puntos + texto).properties(width=420, height=210)
+    une = t.pivot(index="cortes", columns="modelo", values="f1").reset_index()
+    x = alt.Scale(domain=[0.2, 0.6], nice=False)
+    y = alt.Y("cortes:N", sort=orden, title=None, axis=alt.Axis(
+        grid=False, domain=False, ticks=False, labelFontSize=13, labelLimit=320, labelPadding=10,
+        labelColor={"condition": {"test": "indexof(datum.value, 'nuestros') >= 0", "value": COLOR_ELEGIDO}, "value": TEXTO_FUERTE}))
+    linea = alt.Chart(une).mark_rule(strokeWidth=4, color=EJE).encode(
+        y=y, x=alt.X("logística:Q", scale=x), x2="Poisson:Q")
+    color = alt.Color("modelo:N", scale=alt.Scale(domain=["Poisson", "logística"], range=[COLOR_ELEGIDO, COLOR_DESCARTE]),
+                      legend=alt.Legend(title=None, orient="bottom", direction="horizontal", labelFontSize=13))
+    puntos = alt.Chart(t).mark_circle(size=220, opacity=1).encode(
+        y=y, x=alt.X("f1:Q", scale=x, title="f1 macro en validación", axis=alt.Axis(values=[0.2, 0.3, 0.4, 0.5, 0.6], format=".1f")),
+        color=color, tooltip=[alt.Tooltip("cortes:N", title="Cortes"), alt.Tooltip("modelo:N", title="Modelo"),
+                              alt.Tooltip("f1:Q", title="f1 macro", format=".3f"),
+                              alt.Tooltip("piso:Q", title="f1 del piso con estos cortes", format=".3f")])
+    texto = alt.Chart(t).mark_text(fontSize=12, fontWeight=700, dy=-15).encode(
+        y=y, x=alt.X("f1:Q", scale=x), text=alt.Text("f1:Q", format=".2f"), color=color)
+    return (linea + puntos + texto).properties(width=360, height=50 * len(orden))
 
 
-# ---- los gráficos del «Cómo lo sabemos» del modelo (reemplazan a las tablas, salvo la de comparación)
 def grafico_folds(folds, desde):
     """Validación temporal: con qué tramo entrena y con cuál valida cada fold, y el f1 del modelo elegido en cada uno."""
     filas = []
@@ -823,20 +803,33 @@ def grafico_tramos_test(acierto, n_por_tramo):
     return (barras + texto).properties(width=420, height=150)
 
 
-def grafico_permutacion(importancia, nombres):
-    """Cuánto baja el f1 macro del test al desordenar cada columna (media ± desvío de 20 repeticiones)."""
-    t = pd.DataFrame([{"columna": nombres[c], "media": v["media"], "desvio": v["desvio"]} for c, v in importancia.items()])
-    t["bajo"], t["alto"] = t["media"] - t["desvio"], t["media"] + t["desvio"]
-    orden = t.sort_values("media", ascending=False)["columna"].tolist()
-    y = alt.Y("columna:N", sort=orden, title=None, axis=alt.Axis(labelLimit=260, grid=False))
-    barras = alt.Chart(t).mark_bar(color=COLOR_ELEGIDO).encode(
-        y=y, x=alt.X("media:Q", title="Cuánto baja el f1 macro del test al desordenarla", scale=alt.Scale(domain=[0, 0.3])),
-        tooltip=[alt.Tooltip("columna:N", title="Columna"), alt.Tooltip("media:Q", title="Baja el f1 en", format=".3f"),
-                 alt.Tooltip("desvio:Q", title="Desvío", format=".3f")])
-    rango = alt.Chart(t).mark_rule(color=TEXTO_FUERTE).encode(y=y, x="bajo:Q", x2="alto:Q")
-    texto = alt.Chart(t).mark_text(align="left", dx=8, fontSize=12, color=TEXTO_FUERTE).encode(
-        y=y, x="alto:Q", text=alt.Text("media:Q", format=".3f"))
-    return (barras + rango + texto).properties(width=380, height=120)
+def grafico_permutacion(importancia, f1_test, f1_piso):
+    """En qué se apoya el modelo: el f1 macro del test con todas sus columnas y desordenando cada una (importancia por
+    permutación, media de 20 repeticiones), contra el piso. Si al desordenar una columna el f1 cae al piso, el modelo
+    depende de ella."""
+    nombres = {"mainshock_mag": "desordenando la magnitud", "mainshock_depth": "desordenando la profundidad",
+               "region_mc": "desordenando el umbral de la región"}
+    filas = [{"fila": "el modelo, con todo", "f1": f1_test, "baja": 0.0, "desvio": 0.0, "tipo": "modelo"}]
+    for c, v in sorted(importancia.items(), key=lambda kv: kv[1]["media"]):
+        filas.append({"fila": nombres[c], "f1": f1_test - v["media"], "baja": v["media"], "desvio": v["desvio"], "tipo": "desordenada"})
+    t = pd.DataFrame(filas)
+    t["rotulo"] = [es(f, 2) if tipo == "modelo" else f"{es(f, 2)}  (baja {es(b, 2)})" for f, b, tipo in zip(t["f1"], t["baja"], t["tipo"])]
+    x = alt.Scale(domain=[0, 0.6], nice=False)
+    y = alt.Y("fila:N", sort=t["fila"].tolist(), title=None,
+              axis=alt.Axis(grid=False, domain=False, ticks=False, labelLimit=280, labelFontSize=13, labelColor=TEXTO_FUERTE))
+    barras = alt.Chart(t).mark_bar(height=24, cornerRadiusEnd=3).encode(
+        y=y, x=alt.X("f1:Q", scale=x, title="f1 macro en el test", axis=alt.Axis(values=[0, 0.1, 0.2, 0.3, 0.4, 0.5], format=".1f")),
+        color=alt.Color("tipo:N", scale=alt.Scale(domain=["modelo", "desordenada"], range=[COLOR_ELEGIDO, COLOR_NEUTRO]), legend=None),
+        tooltip=[alt.Tooltip("fila:N", title="Versión"), alt.Tooltip("f1:Q", title="f1 macro en el test", format=".3f"),
+                 alt.Tooltip("baja:Q", title="Cuánto baja", format=".3f"),
+                 alt.Tooltip("desvio:Q", title="Desvío (20 repeticiones)", format=".3f")])
+    texto = alt.Chart(t).mark_text(align="left", dx=8, fontSize=13, fontWeight=700, color=TEXTO_FUERTE).encode(
+        y=y, x=alt.X("f1:Q", scale=x), text="rotulo:N")
+    piso = pd.DataFrame({"x": [f1_piso], "t": [f"piso: contestar siempre «ninguna» ({es(f1_piso, 2)})"]})
+    linea = alt.Chart(piso).mark_rule(strokeDash=[5, 4], color=COLOR_DESCARTE, strokeWidth=2).encode(x=alt.X("x:Q", scale=x))
+    rotulo = alt.Chart(piso).mark_text(align="left", baseline="bottom", dx=4, dy=-4, fontSize=12, fontWeight=600,
+                                       color=COLOR_DESCARTE).encode(x=alt.X("x:Q", scale=x), y=alt.value(0), text="t:N")
+    return (linea + barras + texto + rotulo).properties(width=420, height=170)
 
 
 # =================================================================== 4. EXPLORÁ (la copa)

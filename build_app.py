@@ -214,6 +214,10 @@ def hipotesis(df):
                "someros_n": int(len(someros)),
                "someros_pearson": float(pearsonr(someros["mainshock_mag"], someros["n_aftershocks"])[0]),
                "someros_spearman": float(spearmanr(someros["mainshock_mag"], someros["n_aftershocks"])[0])},
+        # la variabilidad, con sismos de la misma magnitud: los de M6,0 exactos
+        "m6_exactos": {"n": int(len(m60 := df.loc[df["mainshock_mag"].round(1) == 6.0, "n_aftershocks"])),
+                       "pct_cero": float((m60 == 0).mean() * 100), "maximo": int(m60.max()),
+                       "por_clase": [int((pd.Series(a_intervalo(m60)) == c).sum()) for c in CLASES]},
     }
 
 
@@ -468,38 +472,6 @@ def atipicos(df):
     return pd.DataFrame(filas), resumen
 
 
-def mapa_del_modelo(modelo, df, corte, medidas):
-    """Lo que contesta el modelo en una grilla de magnitud sobre el umbral × profundidad, y dónde están los sismos de
-    entrenamiento. La región no cambia nada: el modelo sólo ve mag − Mc y la profundidad."""
-    msm = np.round(np.arange(0, 4.51, 0.1), 2)
-    prof = np.arange(5, 660, 10)
-    g = pd.DataFrame([(m, p) for m in msm for p in prof], columns=["msm", "prof"])
-    entrada = pd.DataFrame({"mainshock_mag": 4.0 + g["msm"], "region_mc": 4.0, "mainshock_depth": g["prof"].astype(float)})
-    g["clase"] = modelo.predict(entrada)
-    g["rotulo_msm"] = [f"+{graficos.es(m, 1)}" for m in g["msm"]]
-    g["rotulo_prof"] = [f"{graficos.es(p - 5)} a {graficos.es(p + 5)} km" for p in g["prof"]]
-    g["msm2"], g["prof2"] = g["msm"] + 0.05, g["prof"] + 5
-    g["msm"], g["prof"] = g["msm"] - 0.05, g["prof"] - 5
-
-    tr = df.iloc[:corte]
-    d = pd.DataFrame({"msm": (tr["mainshock_mag"] - tr["region_mc"]).round(1).clip(lower=0),
-                      "prof": np.floor(tr["mainshock_depth"] / 10) * 10 + 5})
-    d = d.groupby(["msm", "prof"]).size().reset_index(name="n")
-    d = d[d["msm"] <= 4.5]
-    d["rotulo_msm"] = [f"+{graficos.es(m, 1)}" for m in d["msm"]]
-    d["rotulo_prof"] = [f"{graficos.es(p - 5)} a {graficos.es(p + 5)} km" for p in d["prof"]]
-
-    p25, p75 = tr["mainshock_depth"].quantile([0.25, 0.75])
-    lineas = pd.DataFrame({"prof": [p25, p75], "medio": (p25 + p75) / 2, "rotulo": [
-        "", f"entre las dos líneas, la mitad de los sismos ({graficos.es(p25)} a {graficos.es(p75)} km)"]})
-    c = medidas["coeficientes"]
-    equivalencia = -c["profundidad_por_km"] * 100 / c["mag_sobre_mc_por_punto"]    # 100 km ≈ cuántos puntos de magnitud
-    resumen = {"prof_p25": float(p25), "prof_p75": float(p75),
-               "pct_bajo_70km": float((tr["mainshock_depth"] < 70).mean() * 100),
-               "puntos_por_100km": float(equivalencia), "corrimiento_entre_cuartiles": float(equivalencia * (p75 - p25) / 100)}
-    return g, d, lineas, resumen
-
-
 def verificar_contra_notebook(medidas, comparacion, ajuste, pasos):
     """Compara contra los números del notebook; si algo se corre más que la tolerancia, el build falla."""
     ref = json.loads((RAIZ / "tests" / "reference_metrics.json").read_text(encoding="utf8"))
@@ -733,8 +705,6 @@ def pasos_del_modelo(comparacion, ajuste, pasos, medidas):
 
 NOMBRE_REGION = {"andes": "Andes", "japan": "Japón", "mexico_ca": "México y Centroamérica", "philippines": "Filipinas",
                  "sumatra_java": "Sumatra y Java"}               # los mismos de app/src/componentes/ProbaModelo.jsx
-NOMBRE_PERMUTACION = {"mainshock_mag": "Magnitud del principal", "mainshock_depth": "Profundidad",
-                      "region_mc": "Umbral Mc de la región (parte de mag − Mc)"}
 
 
 def exportar_graficos(df, modelo, medidas, comparacion, ajuste, pasos, corte, sem):
@@ -747,10 +717,9 @@ def exportar_graficos(df, modelo, medidas, comparacion, ajuste, pasos, corte, se
     guardar("explora_filas.json", filas.to_dict(orient="records"))
     datos_url = alt.UrlData(url="data/explora_filas.json", format=alt.DataFormat(type="json"))
     carpeta = RAIZ / "app" / "public" / "specs"
-    for viejo in ("modelo.json", "explora.json", "columnas_folds.json"):   # reemplazados por otros gráficos
+    for viejo in ("modelo.json", "explora.json", "columnas_folds.json", "ejemplo_poisson.json", "variables.json"):   # reemplazados por otros gráficos
         (carpeta / viejo).unlink(missing_ok=True)
     anotaciones, resumen_atipicos = atipicos(df)
-    grilla, densidad, lineas, resumen_variables = mapa_del_modelo(modelo, df, corte, medidas)
     folds = [{**f, "f1": medidas["final"]["f1_por_fold"][i]} for i, f in enumerate(ajuste["folds"])]
     specs = {
         "datos.json": graficos.grafico_datos(df),
@@ -762,9 +731,8 @@ def exportar_graficos(df, modelo, medidas, comparacion, ajuste, pasos, corte, se
         "hallazgo.json": graficos.grafico_hallazgo(df, medidas["coeficientes"]["multiplicador_por_punto"]),
         "atipicos.json": graficos.grafico_atipicos(datos_url, anotaciones),
         "evolucion.json": graficos.grafico_evolucion(pasos_del_modelo(comparacion, ajuste, pasos, medidas)),
-        "variables.json": graficos.grafico_variables(grilla, densidad, lineas),
         "intervalos.json": graficos.grafico_intervalos(datos_url, pasos["intervalos_por_tramo"]),
-        "ejemplo_poisson.json": graficos.grafico_ejemplo_poisson(pasos["ejemplo_poisson"]),
+        "logistica_poisson.json": graficos.grafico_logistica_poisson(comparacion, medidas["piso"]["f1_validacion"]),
         "sesgo_region.json": graficos.grafico_sesgo_region(
             pasos["real_sobre_esperadas"], df.groupby("region")["region_mc"].first().round(1).to_dict(), NOMBRE_REGION),
         "columnas_probadas.json": graficos.grafico_columnas_probadas(pasos["columnas_probadas"], pasos["columnas_nuevas"]["celda54"]),
@@ -775,7 +743,8 @@ def exportar_graficos(df, modelo, medidas, comparacion, ajuste, pasos, corte, se
         "reporte.json": graficos.grafico_reporte(medidas["reporte_test"]),
         "confusion.json": graficos.grafico_confusion(medidas["matriz_confusion_test"]),
         "tramos.json": graficos.grafico_tramos_test(medidas["acierto_por_tramo_test"], medidas["tramo_n_test"]),
-        "permutacion.json": graficos.grafico_permutacion(medidas["importancia_permutacion"], NOMBRE_PERMUTACION),
+        "permutacion.json": graficos.grafico_permutacion(medidas["importancia_permutacion"], medidas["final"]["f1_test"],
+                                                          medidas["piso"]["f1_test"]),
         "resultado.json": graficos.grafico_resultado(datos_url),
     }
     for nombre, chart in specs.items():

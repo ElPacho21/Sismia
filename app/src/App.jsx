@@ -73,18 +73,9 @@ export default function App() {
   const columnas = metricas.columnas;
   const totalColumnas = columnas.reduce((a, g) => a + g.n, 0);
   const [identifican, respuesta, fuga, constantes, probadas, usadas] = columnas.map((g) => g.n);
-  const nuevas = metricas.columnas_nuevas;
-  const previos2d = nuevas.n_prior_2d;
   const at = metricas.atipicos;
-  const va = metricas.variables;
-  const cociente = metricas.real_sobre_esperadas;
   const perm = metricas.importancia_permutacion;
-  const empuje0 = metricas.ajuste.trade_off_empuje["0"];
-  const empujeElegido = metricas.ajuste.trade_off_empuje[String(modelo.empuje)];
   const comp = metricas.comparacion_validacion;
-  const tramos = Object.values(metricas.intervalos_por_tramo);
-  const tramoMayor = metricas.intervalos_por_tramo["7 o más"];
-  const varMedia = tramos.map((t) => t.var_media);
   const colProbadas = metricas.columnas_probadas;
   const sem = hipotesis.semaforo;
   const colRojas = sem.columnas.length - sem.usa_el_modelo.length;
@@ -94,7 +85,7 @@ export default function App() {
     return decimales ? v : Math.round(v);
   };
   // la mejor de las otras familias probadas con las mismas dos entradas (celda 57 del notebook)
-  const [otraMejor, otraMejorF1] = [
+  const [, otraMejorF1] = [
     "regresión logística (mag_sobre_mc)",
     "regresión logística balanced (mag_sobre_mc)",
     "random forest",
@@ -282,20 +273,30 @@ export default function App() {
             numero="3"
             etiqueta="El modelo"
             titulo={textos.titulo_modelo}
+            puente={
+              <>
+                Ya sabemos que las réplicas se multiplican con la magnitud, que la profundidad marca diferencia en los sismos grandes y que hay casos que se salen de la regla.
+                Con eso armamos el modelo. Estos son los pasos, en el orden en que los dimos: cada título dice la decisión que tomamos.
+              </>
+            }
             antes={
               <>
                 <Paso
                   numero="1"
-                  titulo="La respuesta: un intervalo, no un número exacto"
+                  problema={
+                    <>
+                      Sismos de la misma magnitud dejan cantidades muy distintas. De los {hipotesis.m6_exactos.n} sismos de M6,0,{" "}
+                      {hipotesis.m6_exactos.por_clase[0]} no dejaron ninguna réplica, {hipotesis.m6_exactos.por_clase[1]} dejaron 1 o 2,{" "}
+                      {hipotesis.m6_exactos.por_clase[2]} entre 3 y 10, y {hipotesis.m6_exactos.por_clase[3]} más de 10.
+                    </>
+                  }
+                  titulo="Predecimos un intervalo, no un número exacto"
                   spec="specs/intervalos.json"
                   descripcion="Réplicas de cada secuencia por tramo de magnitud, con la media de cada tramo."
                 >
                   <p>
-                    Antes de elegir un modelo nos preguntamos si se podía predecir el número exacto de réplicas. No: sismos de magnitud parecida dejan cantidades
-                    muy distintas. Entre los de M7 o más hay de {tramoMayor.minimo} a {n(tramoMayor.maximo)} réplicas, y en cada tramo la varianza es entre{" "}
-                    {n(Math.min(...varMedia))} y {n(Math.max(...varMedia))} veces la media (en un conteo de Poisson sería 1). Por eso la respuesta pasó a ser un
-                    intervalo: ninguna (0), pocas (1–2), moderadas (3–10) o muchas (11+). Como el 88 % es «ninguna», medimos con el f1 macro, y el número a superar
-                    es el piso: contestar siempre «ninguna» da {n(metricas.piso.f1_validacion, 3)}.
+                    En vez del número exacto, predecimos un intervalo: ninguna (0), pocas (1–2), moderadas (3–10) o muchas (11+). En el gráfico, cada
+                    tramo de magnitud tiene secuencias desde cero hasta cientos de réplicas.
                   </p>
                   <p className="nota">
                     Cada punto es una secuencia, pintada según su clase y desparramada a lo ancho para que no se tapen; la raya blanca es la media del tramo.
@@ -303,85 +304,73 @@ export default function App() {
                 </Paso>
                 <Paso
                   numero="2"
-                  titulo="De la regresión logística a Poisson"
-                  spec="specs/ejemplo_poisson.json"
-                  descripcion="Probabilidad de cada intervalo que da la primera regresión de Poisson para tres sismos inventados a 30 km."
+                  titulo="Pasamos de la regresión logística a Poisson"
+                  spec="specs/logistica_poisson.json"
+                  descripcion="f1 macro en validación de la regresión logística, la logística con clases balanceadas y la regresión de Poisson, contra el piso."
                 >
                   <p>
-                    Cada modelo se entrena y se valida en 5 tramos de tiempo del entrenamiento (2003 a {metricas.particion.entrena_hasta.slice(0, 4)}); el test,
-                    de {metricas.particion.test_desde.slice(0, 4)} a {metricas.particion.test_hasta.slice(0, 4)}, se guarda para el final. La primera prueba fue una
-                    regresión logística con magnitud y profundidad: {n(comp["regresión logística"][0], 3)} contra {n(metricas.piso.f1_validacion, 3)} del piso
-                    (balanceando las clases bajó a {n(comp["regresión logística (balanced)"][0], 3)}). Después, una regresión de Poisson, pensada para conteos:
-                    estima cuántas réplicas espera y, con la distribución de Poisson, saca la probabilidad de cada intervalo. Subió a{" "}
-                    {n(comp["Poisson (mag + prof)"][0], 3)}. El gráfico muestra qué contesta esa primera versión para tres sismos inventados.
+                    Con las mismas dos entradas (magnitud y profundidad), la regresión de Poisson le ganó a la logística. Poisson está pensada para contar:
+                    primero estima cuántas réplicas espera cada sismo, y de ahí saca la probabilidad de cada intervalo.
                   </p>
                 </Paso>
                 <Paso
                   numero="3"
-                  titulo="El error tenía un patrón: la región"
+                  problema={
+                    <>
+                      El modelo se equivocaba según la región: en México <strong>subestimaba</strong> las réplicas (hubo{" "}
+                      {n(metricas.real_sobre_esperadas.crudo.mexico_ca, 2)} veces las que esperaba) y en Filipinas las <strong>sobreestimaba</strong> (hubo{" "}
+                      {n(metricas.real_sobre_esperadas.crudo.philippines, 2)}).
+                    </>
+                  }
+                  titulo="Cambiamos la magnitud por la magnitud sobre el umbral de cada región"
                   spec="specs/sesgo_region.json"
                   descripcion="Réplicas reales sobre esperadas por región, con la magnitud cruda y con la magnitud sobre el umbral."
                 >
                   <p>
-                    Antes de seguir buscamos si el error tenía un patrón. Comparamos, región por región, las réplicas reales con las que esperaba el modelo (en
-                    validación y sin los sismos de M6,5 o más, que en una suma tapan todo lo demás). México tenía más de las esperadas (
-                    {n(cociente.crudo.mexico_ca, 2)}) y Filipinas menos ({n(cociente.crudo.philippines, 2)}). México registra desde M4,2 y Filipinas desde M4,7: para
-                    la misma magnitud, en México se ven más réplicas. Por eso cambiamos la magnitud por la <strong>magnitud sobre el umbral de la región</strong>{" "}
-                    (mag − Mc). El f1 casi no cambió ({n(comp["Poisson (mag + prof)"][0], 3)} → {n(comp["Poisson (mag_sobre_mc + prof)"][0], 3)}), pero México y
-                    Filipinas quedaron mucho más cerca ({n(cociente.mag_sobre_mc.mexico_ca, 2)} y {n(cociente.mag_sobre_mc.philippines, 2)}). Los Andes siguen
-                    lejos ({n(cociente.mag_sobre_mc.andes, 2)}), y eso el Mc no lo explica.
+                    México registra sismos desde M4,2 y Filipinas desde M4,7, así que México ve más réplicas. Restando el umbral de cada región, las dos
+                    quedan mucho más cerca de lo esperado.
                   </p>
                 </Paso>
                 <Paso
                   numero="4"
-                  titulo="Más columnas, probadas de a una"
+                  titulo="No sumamos más columnas: las otras doce no mejoran el modelo"
                   spec="specs/columnas_probadas.json"
                   descripcion="f1 macro del modelo agregando cada columna, de a una, contra la banda de un desvío del modelo sin agregar nada."
                 >
                   <p>
-                    Con la pista de los Andes probamos agregar la región (una columna por región) y los sismos de los 30 días previos. Ninguna mejoró por más que
-                    el desvío: con la región, {n(colProbadas.region[0], 3)} ± {n(colProbadas.region[1], 3)}, igual que sin ella; con los sismos previos,{" "}
-                    {n(colProbadas.previos[0], 3)} ± {n(colProbadas.previos[1], 3)}, que se superpone con {n(colProbadas.base[0], 3)} ± {n(colProbadas.base[1], 3)}.
-                  </p>
-                  <p>
-                    Las otras diez columnas que existen en el momento del sismo no las habíamos probado: ocho no estaban en el dataset con el que empezamos, y la
-                    latitud y la longitud las habíamos descartado al explorar los datos. Las probamos después, con el dataset final y el mismo método, y tampoco:
-                    ninguna sale de la banda de un desvío, ni sola ni todas juntas. La única
-                    con algo de información propia es la cantidad de sismos en los 2 días previos: entre los sismos de M5–6, dejan réplicas el{" "}
-                    {pct(previos2d.con_replicas_pct["5–6"]["0"], 1)} de los que no tuvieron actividad previa y el {pct(previos2d.con_replicas_pct["5–6"]["1–4"], 1)}{" "}
-                    de los que tuvieron de 1 a 4 sismos. Pero sólo el {pct(previos2d.pct_con_previos, 0)} de las secuencias tuvo actividad previa, y el f1 casi no se
-                    mueve ({n(nuevas.celda54.columnas.n_prior_2d.f1, 3)}).
+                    Las otras {colRojas} columnas casi no se mueven con las réplicas. Igual las probamos, agregándolas de a una y todas juntas: ninguna sale
+                    de la banda de un desvío del modelo sin agregar nada ({n(colProbadas.base[0], 3)} ± {n(colProbadas.base[1], 3)}). <strong>El modelo
+                    confirma el análisis exploratorio.</strong>
                   </p>
                   <p className="nota">
                     Un agregado sirve si su punto sale de la banda azul verdosa por la derecha. Los cuadrados se probaron al armar el modelo; los círculos
-                    huecos, después.
+                    huecos, después, con el dataset final.
                   </p>
                 </Paso>
                 <Paso
                   numero="5"
-                  titulo="Otras familias, la regularización y el empuje"
+                  titulo="Nos quedamos con Poisson y le subimos el empuje"
                   spec="specs/empuje.json"
                   descripcion="Recall de cada clase y f1 macro en validación según el empuje."
                 >
                   <p>
-                    Con las mismas dos entradas probamos otras familias: la mejor, {otraMejor}, llegó a {n(otraMejorF1, 3)}, por debajo de Poisson, y la binomial
-                    negativa terminó contestando siempre «ninguna». Con Poisson ajustamos la regularización (alpha {n(modelo.alpha, 3)}:{" "}
-                    {n(metricas.ajuste.alpha[String(modelo.alpha)][0], 3)}) y después el <strong>empuje</strong>, que es cuánto se anima el modelo a decir que hay
-                    réplicas. Preferimos avisar de más antes que perder un caso: con empuje {n(modelo.empuje, 1)} el recall de «pocas» pasa de {n(empuje0[3], 2)} a{" "}
-                    {n(empujeElegido[3], 2)} y el de «ninguna» baja de {n(empuje0[2], 2)} a {n(empujeElegido[2], 2)}. Elegimos el empuje más alto con el f1 a un
-                    desvío del mejor ({n(empujeElegido[0], 3)}).
+                    Ninguna otra familia superó a Poisson (la mejor, {n(otraMejorF1, 3)}), y la regularización casi no cambió el f1. Después subimos el{" "}
+                    <strong>empuje</strong>, que es cuánto se anima el modelo a decir que hay réplicas: preferimos avisar de más antes que perder un sismo con
+                    réplicas.
                   </p>
                 </Paso>
                 <Paso
                   numero="6"
-                  titulo="¿Y si cortábamos los intervalos en otro lado?"
+                  titulo="Mantuvimos los cortes [0] [1–2] [3–10] [11+]"
                   spec="specs/cortes.json"
-                  descripcion="f1 macro del piso, la logística balanceada y Poisson con cinco esquemas de cortes."
+                  descripcion="Con cada una de cinco formas de cortar los intervalos, cuánto le gana Poisson a la logística balanceada en f1 macro."
                 >
                   <p>
-                    Los cortes 0 · 1–2 · 3–10 · 11+ los elegimos nosotros, así que probamos otros cuatro con el piso, la logística balanceada y Poisson. Con más
-                    intervalos todos bajan, porque distinguir más clases es más difícil, pero Poisson queda arriba en los cinco esquemas: elegirlo no depende de
-                    dónde cortamos.
+                    Los cortes los elegimos nosotros, así que probamos otras cuatro formas de cortar: en todas, Poisson le gana a la logística.
+                  </p>
+                  <p className="nota">
+                    Con más intervalos el f1 baja para todos, porque la pregunta es más difícil: se comparan los dos puntos de cada fila, no las filas
+                    entre sí.
                   </p>
                 </Paso>
               </>
@@ -392,26 +381,22 @@ export default function App() {
             queMirar={
               <>
                 <p>
-                  Cada fila es un paso, en el orden en que lo probamos. Lo que adoptamos va en azul verdoso, unido por la línea; lo que probamos y dejamos, en rosa y
-                  hueco. La barra es el desvío entre los 5 folds de validación y la línea punteada, el piso. Pasá el mouse por un punto para ver qué pasó en ese paso.
+                  Cada fila es un paso: en azul verdoso lo que adoptamos, en rosa lo que dejamos; la línea punteada es el piso. Pasá el mouse por un punto
+                  para ver qué pasó en ese paso.
                 </p>
                 <p>
                   <strong>¿Por qué este modelo, si varios dan parecido?</strong> Fueron tres decisiones distintas:
                 </p>
                 <ul className="razones">
                   <li>
-                    <strong>Poisson y no otra familia:</strong> los Poisson le ganan a todo lo demás por más de un desvío (
-                    {n(comp["Poisson (mag_sobre_mc + prof)"][0], 3)} contra {n(otraMejorF1, 3)} de la mejor de las otras familias), y además son una fórmula que se
-                    puede escribir dentro de la página.
+                    <strong>Poisson y no otra familia:</strong> le gana a todo lo demás por más de un desvío, y es una fórmula que entra en la página.
                   </li>
                   <li>
-                    <strong>Magnitud sobre el umbral y no magnitud cruda:</strong> en f1 empatan ({n(comp["Poisson (mag_sobre_mc + prof)"][0], 3)} contra{" "}
-                    {n(comp["Poisson (mag + prof)"][0], 3)}); la elegimos porque corrige el sesgo entre regiones (paso 3), no por el f1.
+                    <strong>Magnitud sobre el umbral y no la cruda:</strong> en f1 empatan; la elegimos porque corrige el sesgo entre regiones (paso 3).
                   </li>
                   <li>
-                    <strong>Regularización y empuje:</strong> la regularización casi no importa (entre alpha 0,001 y 1 el f1 queda dentro del desvío; nos quedamos
-                    con el promedio más alto), y el empuje sale de una regla: el más alto con el f1 a un desvío del mejor, porque preferimos avisar de más antes que
-                    perder un sismo con réplicas.
+                    <strong>Regularización y empuje:</strong> la regularización casi no cambia nada; el empuje sale de una regla (el más alto con el f1 a un
+                    desvío del mejor).
                   </li>
                 </ul>
                 <p>
@@ -423,22 +408,16 @@ export default function App() {
             }
             extra={
               <>
-                <h3 className="subtitulo">Las dos variables: la magnitud cambia la respuesta mucho más que la profundidad</h3>
+                <h3 className="subtitulo">El modelo se apoya en la magnitud: sin ella, cae casi al nivel del piso</h3>
                 <Grafico
-                  url="specs/variables.json"
-                  descripcion="Lo que contesta el modelo para cada combinación de magnitud sobre el umbral y profundidad, con los sismos de entrenamiento encima."
+                  url="specs/permutacion.json"
+                  descripcion="f1 macro del modelo en el test con todas sus columnas y desordenando cada una, contra el piso."
                 />
                 <div className="que-mirar">
                   <p>
-                    El fondo es lo que contesta el modelo para cada combinación de magnitud sobre el umbral (horizontal) y profundidad (vertical, hacia abajo como en
-                    la Tierra). Los círculos son los {n(metricas.particion.entrenamiento)} sismos de entrenamiento. A la profundidad de la mayoría, recorrer la
-                    magnitud cruza las cuatro respuestas.
-                  </p>
-                  <p>
-                    La profundidad también corre los cortes (100 km más profundo equivale a {n(va.puntos_por_100km, 2)} puntos menos de magnitud), pero la mitad de los
-                    sismos está entre {n(va.prof_p25)} y {n(va.prof_p75)} km, y en ese rango los cortes se corren apenas {n(va.corrimiento_entre_cuartiles, 2)} puntos.
-                    Lo mismo da la importancia por permutación: si se desordena la profundidad, el f1 del test baja {n(perm.mainshock_depth.media, 3)}; si se
-                    desordena la magnitud, baja {n(perm.mainshock_mag.media, 3)}.
+                    Desordenamos al azar una columna en los sismos del test, como si el modelo no la conociera, y medimos cuánto empeora. Sin la magnitud,
+                    el f1 cae de {n(metricas.final.f1_test, 2)} a {n(metricas.final.f1_test - perm.mainshock_mag.media, 2)}: casi lo mismo que el piso (
+                    {n(metricas.piso.f1_test, 2)}). Sin la profundidad o sin el umbral, apenas baja.
                   </p>
                 </div>
               </>
