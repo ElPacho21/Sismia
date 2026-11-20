@@ -443,5 +443,37 @@
       }
     },
     "n_prior_2d_pct": 10.3
+  },
+  "semaforo": {
+    "_fuente": "Notebook «Análisis Exploratorio (dataset final)»: celdas 49 y 50 (Spearman y η² de las 15 columnas que existen al predecir), 46 (magnitud en M6 o más y en M6 o más someros) y 39 (separación someros/profundos y η² con tres franjas) y 41 (separación en M6 o más). Redondeados como en el notebook.",
+    "columnas": {
+      "mainshock_mag": 0.214,
+      "mainshock_depth": -0.173,
+      "region_log10_eta0": 0.088,
+      "mainshock_lon": -0.053,
+      "days_since_prior": -0.05,
+      "n_prior_30d": 0.049,
+      "n_prior_365d": 0.046,
+      "n_prior_2d": 0.042,
+      "region_mc": -0.041,
+      "mainshock_lat": 0.039,
+      "dist_to_border_km": -0.016,
+      "prior_max_mag_365d": 0.012,
+      "region": 0.0001,
+      "near_border": 0.0,
+      "prior_window_truncated": 0.0
+    },
+    "movimientos": {
+      "mainshock_mag": [
+        0.214,
+        0.504,
+        0.59
+      ],
+      "mainshock_depth": [
+        0.051,
+        0.0004,
+        0.216
+      ]
+    }
   }
 }

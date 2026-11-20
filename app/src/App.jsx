@@ -86,6 +86,13 @@ export default function App() {
   const tramoMayor = metricas.intervalos_por_tramo["7 o más"];
   const varMedia = tramos.map((t) => t.var_media);
   const colProbadas = metricas.columnas_probadas;
+  const sem = hipotesis.semaforo;
+  const colRojas = sem.columnas.length - sem.usa_el_modelo.length;
+  // de cada 100 secuencias de un grupo, cuántas caen en la clase i (0 = ninguna … 3 = muchas)
+  const rep = (panel, etapa, grupo, i, decimales = 0) => {
+    const v = sem.reparto.find((r) => r.panel === panel && r.etapa === etapa && r.grupo === grupo && r.clase === paleta.clases[i]).por_cien;
+    return decimales ? v : Math.round(v);
+  };
   // la mejor de las otras familias probadas con las mismas dos entradas (celda 57 del notebook)
   const [otraMejor, otraMejorF1] = [
     "regresión logística (mag_sobre_mc)",
@@ -201,19 +208,50 @@ export default function App() {
             numero="2"
             etiqueta="Lo que encontramos"
             titulo={textos.titulo_hallazgo}
+            puente={
+              <>
+                Ya sabemos de dónde salen los datos, que casi ninguna secuencia deja réplicas y qué columnas existen en el momento del sismo. Ahora, la
+                pregunta es cuáles de ellas se mueven con las réplicas.
+              </>
+            }
             spec="specs/hallazgo.json"
             descripcion="Réplicas medias según cuánto supera la magnitud al umbral de la región, con el eje vertical lineal y logarítmico."
             queMirar={
               <p>
-                Los dos paneles muestran los mismos puntos: cada uno es un tramo de magnitud; su tamaño, cuántas secuencias tiene, y su color, la
-                clase en la que cae el promedio redondeado (en promedio, un sismo de ese tramo deja tantas réplicas). Con el eje lineal se ve la forma
-                del crecimiento: casi plano hasta +2 y después se dispara. Con el logarítmico, los puntos quedan casi sobre una recta: cada tramo multiplica al
-                anterior por un factor parecido, que es lo que significa crecer en forma exponencial. Los puntos chicos de la derecha son pocas secuencias: ahí el
-                promedio lo mueven uno o dos megasismos.
+                El eje horizontal es cuánto supera cada sismo el umbral de su región; cada punto es un tramo, y su tamaño, cuántas secuencias tiene. A
+                la izquierda se ve la forma: casi plano hasta +2 y después se dispara. A la derecha, en escala logarítmica, la curva queda casi recta: cada
+                tramo multiplica al anterior. Así se pasa de {n(textos.hallazgo_desde, 1)} réplicas de media en los sismos que apenas superan el umbral
+                a {n(textos.hallazgo_hasta)} en los que lo superan por {textos.hallazgo_tramo_alto} puntos. Los puntos chicos son pocas secuencias, y los
+                mueve algún megasismo. Por eso la cuenta la hace el modelo, secuencia por secuencia: <strong>cada punto de magnitud multiplica las
+                réplicas esperadas por unas {n(metricas.coeficientes.multiplicador_por_punto, 1)} veces</strong>.
               </p>
             }
             extra={
               <>
+                <h3 className="subtitulo">
+                  Cuanto más grande el sismo, más réplicas; la profundidad sólo marca diferencia en los sismos grandes
+                </h3>
+                <Grafico
+                  url="specs/movimientos.json"
+                  descripcion="De cada 100 secuencias de cada grupo, en cuántas hubo más de 10 réplicas: por tamaño del sismo, y someros contra profundos con todos los sismos y sólo con los de M6 o más."
+                />
+                <div className="que-mirar">
+                  <p>
+                    Antes de medir escribimos qué esperábamos. <strong>H1</strong>: «las réplicas crecen con la magnitud». <strong>H3</strong>: «los sismos
+                    someros dejan más réplicas que los profundos». Cada barra dice, de cada 100 secuencias del grupo, en cuántas hubo más de 10 réplicas. La
+                    medición de cada hipótesis está en «Cómo lo sabemos».
+                  </p>
+                  <p>
+                    <strong>H1 se sostuvo.</strong> De cada 100 secuencias con un principal de M4 a M5, prácticamente en ninguna ({n(rep("magnitud", "todas las secuencias", "M4–5", 3, 1), 1)});
+                    de cada 100 con un principal de M7 o más, en {rep("magnitud", "todas las secuencias", "M7 o más", 3)}.
+                  </p>
+                  <p>
+                    <strong>H3, a medias.</strong> Con todas las secuencias, someras y profundas casi no tienen réplicas. Entre las de un principal de M6 o
+                    más sí se separan: {rep("profundidad", "sólo M6 o más", "someros", 3)} de cada 100 someras tienen más de 10 réplicas, contra{" "}
+                    {rep("profundidad", "sólo M6 o más", "profundos", 3)} de cada 100 profundas. Por eso la profundidad entra al modelo junto con la magnitud.
+                  </p>
+                </div>
+
                 <h3 className="subtitulo">Pero la magnitud sola no alcanza: hay casos que se salen de la regla</h3>
                 <Grafico
                   url="specs/atipicos.json"
@@ -221,18 +259,18 @@ export default function App() {
                 />
                 <div className="que-mirar">
                   <p>
-                    Cada punto es una secuencia, pintada según su clase de réplicas; la forma marca el grupo. Los <strong>triángulos</strong> son las {n(at.secuencias_mayor_despues)} secuencias en las que, después del
-                    principal, vino un sismo más grande: son el {pct(at.pct_secuencias_mayor_despues, 1)} de las secuencias, pero suman el{" "}
-                    {pct(at.pct_replicas_mayor_despues, 0)} de todas las réplicas. Como el principal es el sismo que abre la secuencia, todas esas réplicas se le
-                    cuentan a él. Por eso hay principales de M4 con decenas de réplicas: los {at.chicos_con_muchas} que superan el umbral de su región por menos de
-                    medio punto y tienen más de 10 réplicas son todos de este grupo.
+                    <strong>H4 no se sostuvo</strong>: «con la magnitud alcanza para saber cuántas réplicas habrá». Entre los {n(hipotesis.h4.n)} sismos de
+                    M6 o más, la relación es sólo moderada (Spearman {n(hipotesis.h4.spearman, 2)}), y sismos de magnitud parecida dejan desde{" "}
+                    {n(hipotesis.h4.minimo)} hasta {n(hipotesis.h4.maximo)} réplicas.
                   </p>
                   <p>
-                    Los <strong>cuadrados</strong> son el caso opuesto: los {at.grandes_con_pocas} sismos de M7 o más con 2 réplicas o menos;{" "}
-                    {at.grandes_con_pocas_profundos_290} de ellos a más de 290 km de profundidad. Entre los {n(hipotesis.h4.n)} sismos de M6 o más hay de{" "}
-                    {hipotesis.h4.minimo} a {n(hipotesis.h4.maximo)} réplicas.
+                    Los <strong>triángulos</strong> son el costo de tomar como principal el sismo que abre la secuencia: secuencias en las que, después del principal, vino un sismo más grande: son el{" "}
+                    {pct(at.pct_secuencias_mayor_despues, 1)} de las secuencias, pero suman el {pct(at.pct_replicas_mayor_despues, 0)} de las réplicas, porque
+                    todas se le cuentan al principal. Los <strong>cuadrados</strong> son lo contrario: sismos de M7 o más casi sin réplicas;{" "}
+                    {at.grandes_con_pocas_profundos_290} de los {at.grandes_con_pocas}, a más de 290 km de profundidad.
                   </p>
                 </div>
+
               </>
             }
           >

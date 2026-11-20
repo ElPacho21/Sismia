@@ -217,6 +217,92 @@ def hipotesis(df):
     }
 
 
+# El semáforo de la Entrega 2 (mismas medidas y mismos cortes que el notebook «Análisis Exploratorio (dataset final)»)
+CORTES_SEMAFORO = {"correlacion": (0.2, 0.6), "separacion": (0.2, 0.8), "eta2": (0.05, 0.25)}
+NUMERICAS_AL_PREDECIR = ["mainshock_mag", "mainshock_depth", "mainshock_lat", "mainshock_lon", "region_mc", "region_log10_eta0",
+                         "n_prior_2d", "n_prior_30d", "n_prior_365d", "prior_max_mag_365d", "days_since_prior", "dist_to_border_km"]
+CATEGORICAS_AL_PREDECIR = ["region", "near_border", "prior_window_truncated"]
+
+
+def zona_semaforo(valor, medida):
+    bajo, alto = CORTES_SEMAFORO[medida]
+    v = abs(valor)
+    return "rojo" if v < bajo else "verde" if v > alto else "amarillo"
+
+
+def semaforo_columnas(df):
+    """Las 15 columnas que existen en el momento del sismo, medidas contra las réplicas con el semáforo de la
+    Entrega 2 (celdas 49 y 50 del notebook del dataset final), y el antes y el después de los movimientos de las
+    dos que pasan: la magnitud (H4: partir en M6 o más, y después sólo los someros) y la profundidad (H3: partir
+    en M6 o más)."""
+    y = df["n_aftershocks"]
+
+    def eta2(numerica, categoria):
+        g = numerica.groupby(categoria, observed=True)
+        m = numerica.mean()
+        return float((g.count() * (g.mean() - m) ** 2).sum() / ((numerica - m) ** 2).sum())
+
+    def separacion(a, b):
+        return float(abs(a.mean() - b.mean()) / np.sqrt((a.std() ** 2 + b.std() ** 2) / 2))
+
+    columnas = []
+    for c in NUMERICAS_AL_PREDECIR:
+        v = float(df[c].corr(y, method="spearman"))
+        columnas.append({"columna": c, "medida": "spearman", "valor": v, "zona": zona_semaforo(v, "correlacion")})
+    for c in CATEGORICAS_AL_PREDECIR:
+        v = eta2(y, df[c])
+        columnas.append({"columna": c, "medida": "η²", "valor": v, "zona": zona_semaforo(v, "eta2")})
+
+    m6 = df[df["mainshock_mag"] >= 6]
+    someros6 = m6[m6["mainshock_depth"] < 70]
+    prof = df["mainshock_depth"]
+
+    def etapa(nombre, datos, medida, valor, tipo):
+        return {"etapa": nombre, "secuencias": int(len(datos)), "medida": medida, "valor": float(valor),
+                "zona": zona_semaforo(valor, tipo)}
+
+    franja = pd.cut(prof, [-1, 70, 300, 800], labels=["superficial", "intermedio", "profundo"])
+    movimientos = {
+        "mainshock_mag": [
+            etapa("todas las secuencias", df, "spearman", df["mainshock_mag"].corr(y, method="spearman"), "correlacion"),
+            etapa("sólo M6 o más", m6, "spearman",
+                  m6["mainshock_mag"].corr(m6["n_aftershocks"], method="spearman"), "correlacion"),
+            etapa("M6 o más y someros", someros6, "spearman",
+                  someros6["mainshock_mag"].corr(someros6["n_aftershocks"], method="spearman"), "correlacion")],
+        "mainshock_depth": [
+            etapa("todas las secuencias", df, "separación", separacion(y[prof < 70], y[prof >= 70]), "separacion"),
+            etapa("tres franjas de profundidad", df, "η²", eta2(y, franja), "eta2"),
+            etapa("sólo M6 o más", m6, "separación",
+                  separacion(m6.loc[m6["mainshock_depth"] < 70, "n_aftershocks"], m6.loc[m6["mainshock_depth"] >= 70, "n_aftershocks"]),
+                  "separacion")],
+    }
+    # las réplicas medias de someros y profundos, sobre todas las secuencias y en los de M6 o más
+    for e, datos in zip(movimientos["mainshock_depth"], (df, df, m6)):
+        e["media_someros"] = float(datos.loc[datos["mainshock_depth"] < 70, "n_aftershocks"].mean())
+        e["media_profundos"] = float(datos.loc[datos["mainshock_depth"] >= 70, "n_aftershocks"].mean())
+
+    # el apoyo visual: de cada 100 sismos de cada grupo, cuántos dejan ninguna, pocas, moderadas o muchas réplicas
+    clase = pd.Series(a_intervalo(y), index=df.index)
+    somero = np.where(prof < 70, "someros", "profundos")
+    tramo = pd.cut(df["mainshock_mag"], TRAMOS[0], labels=["M4–5", "M5–6", "M6–7", "M7 o más"], right=False).astype(str)
+    reparto = []
+
+    def repartir(panel, etapa_, grupos, filtro):
+        d = pd.DataFrame({"grupo": grupos, "clase": clase})[filtro]
+        for g, sub in d.groupby("grupo", sort=False):
+            frec = sub["clase"].value_counts(normalize=True)
+            for c in CLASES:
+                reparto.append({"panel": panel, "etapa": etapa_, "grupo": g, "clase": c,
+                                "por_cien": float(frec.get(c, 0) * 100), "sismos": int(len(sub))})
+
+    todos = pd.Series(True, index=df.index)
+    repartir("magnitud", "todas las secuencias", tramo, todos)
+    repartir("profundidad", "todas las secuencias", somero, todos)
+    repartir("profundidad", "sólo M6 o más", somero, df["mainshock_mag"] >= 6)
+    return {"cortes": CORTES_SEMAFORO, "columnas": columnas, "movimientos": movimientos, "reparto": reparto,
+            "usa_el_modelo": list(COLUMNAS[G[5]])}
+
+
 # dónde va el nombre de cada región en el mapa del Cinturón de Fuego (lon, lat, de qué lado del punto)
 ROTULO_REGION = {"japan": (150, 40, "left"), "philippines": (115, 19, "right"), "sumatra_java": (90, 3, "right"),
                  "mexico_ca": (-96, 26, "center"), "andes": (-79, -44, "right")}
@@ -235,6 +321,24 @@ def regiones_mapa(df):
                        "min_lat": r["minlatitude"], "max_lat": r["maxlatitude"],
                        "rotulo_lon": lon, "rotulo_lat": lat, "alinear": alinear})
     return salida
+
+
+def verificar_semaforo(sem):
+    """Los números del semáforo tienen que dar lo mismo que el notebook del dataset final (redondeados como ahí)."""
+    ref = json.loads((RAIZ / "tests" / "reference_metrics.json").read_text(encoding="utf8"))["semaforo"]
+    fallas = []
+    medido = {c["columna"]: c["valor"] for c in sem["columnas"]}
+    for c, v in ref["columnas"].items():
+        if abs(v - medido[c]) > 0.0006:
+            fallas.append(f"semáforo {c}: notebook {v} / build {medido[c]:.4f}")
+    for c, valores in ref["movimientos"].items():
+        for e, v in zip(sem["movimientos"][c], valores):
+            if abs(v - e["valor"]) > 0.0006:
+                fallas.append(f"semáforo {c} «{e['etapa']}»: notebook {v} / build {e['valor']:.4f}")
+    if fallas:
+        sys.exit("EL SEMÁFORO NO REPRODUCE EL NOTEBOOK DEL DATASET FINAL:\n  - " + "\n  - ".join(fallas))
+    print("OK: el semáforo reproduce el notebook del dataset final")
+
 
 def pasos_entrega3(df, corte):
     """Los pasos de la Entrega 3 que cuenta «El modelo» y que no son una fila de la tabla de comparación:
@@ -633,7 +737,7 @@ NOMBRE_PERMUTACION = {"mainshock_mag": "Magnitud del principal", "mainshock_dept
                       "region_mc": "Umbral Mc de la región (parte de mag − Mc)"}
 
 
-def exportar_graficos(df, modelo, medidas, comparacion, ajuste, pasos, corte):
+def exportar_graficos(df, modelo, medidas, comparacion, ajuste, pasos, corte, sem):
     """Especificaciones Vega-Lite de Altair + los textos que dependen de números. Devuelve los resúmenes de los
     gráficos nuevos (los números que citan los textos de la página)."""
     import altair as alt
@@ -651,9 +755,11 @@ def exportar_graficos(df, modelo, medidas, comparacion, ajuste, pasos, corte):
     specs = {
         "datos.json": graficos.grafico_datos(df),
         "columnas.json": graficos.grafico_columnas(inventario_columnas(df, pasos)),
-        "hallazgo.json": graficos.grafico_hallazgo(df),
         "cinturon.json": graficos.grafico_cinturon(
             regiones_mapa(df), json.loads((DATOS / "land-110m.json").read_text(encoding="utf8"))),
+        "semaforo.json": graficos.grafico_semaforo(sem),
+        "movimientos.json": graficos.grafico_movimientos(sem),
+        "hallazgo.json": graficos.grafico_hallazgo(df, medidas["coeficientes"]["multiplicador_por_punto"]),
         "atipicos.json": graficos.grafico_atipicos(datos_url, anotaciones),
         "evolucion.json": graficos.grafico_evolucion(pasos_del_modelo(comparacion, ajuste, pasos, medidas)),
         "variables.json": graficos.grafico_variables(grilla, densidad, lineas),
@@ -724,12 +830,14 @@ def main():
         sys.exit("LA FÓRMULA NO COINCIDE CON EL MODELO DEL NOTEBOOK")
 
     guardar("model.json", fm)
-    guardar("hipotesis.json", hipotesis(df))
+    sem = semaforo_columnas(df)
+    verificar_semaforo(sem)
+    guardar("hipotesis.json", {**hipotesis(df), "semaforo": sem})
     guardar("paleta.json", {"clases": CLASES, "color_clase": COLOR_CLASE, "color_particion": COLOR_PARTICION,
                          "color_principal": COLOR_PRINCIPAL, "color_mayor": COLOR_MAYOR})
     guardar("pasos_filtrado.json", json.loads((DATOS / "filter_steps.json").read_text(encoding="utf8")))
     exportar_secuencias(df, modelo, X)
-    resumenes = exportar_graficos(df, modelo, medidas, comparacion, ajuste, pasos, corte)
+    resumenes = exportar_graficos(df, modelo, medidas, comparacion, ajuste, pasos, corte, sem)
     guardar("metricas.json", {**medidas, "comparacion_validacion": comparacion, "comparacion_medida_en_build": medida_aca,
                               "ajuste": ajuste, **pasos, **resumenes})
     exportar_regiones(df, real, pred, corte)

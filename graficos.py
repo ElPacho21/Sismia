@@ -16,8 +16,8 @@ import altair as alt
 import numpy as np
 import pandas as pd
 
-from palette import (CLASES, COLOR_CLASE, COLOR_DATOS, COLOR_DESCARTE, COLOR_ELEGIDO, COLOR_NEUTRO, COLOR_PARTICION, EJE,
-                     FONDO_GRAFICO, GRILLA, TEXTO_FUERTE, TEXTO_GRAFICO)
+from palette import (CLASES, COLOR_CLASE, COLOR_DATOS, COLOR_DESCARTE, COLOR_ELEGIDO, COLOR_NEUTRO, COLOR_PARTICION,
+                     COLOR_SEMAFORO, EJE, FONDO_GRAFICO, GRILLA, TEXTO_FUERTE, TEXTO_GRAFICO)
 
 alt.data_transformers.disable_max_rows()
 
@@ -147,6 +147,158 @@ def grafico_columnas(inventario):
     return alt.layer(forma, texto_franjas, texto_ultima, texto_salidas).properties(width=640, height=330)
 
 
+# nombres en castellano de las tres columnas que usa el modelo (las otras doce están en NOMBRE_COLUMNA, más abajo)
+NOMBRE_USADAS = {"mainshock_mag": "magnitud", "mainshock_depth": "profundidad",
+                 "region_mc": "umbral de detección de la región"}
+ZONAS = ["rojo", "amarillo", "verde"]
+SIGNIFICADO_ZONA = {"rojo": "rojo: no se mueve con las réplicas", "amarillo": "amarillo: se mueve, pero no del todo",
+                    "verde": "verde: se mueve claramente con las réplicas"}
+
+
+def valor_semaforo(valor, medida):
+    """El número que va adentro del cuadrado: tres decimales, y «< 0,001» para los η² que dan prácticamente cero."""
+    if abs(valor) < 0.0005:
+        return "< 0,001"
+    return es(valor, 3)
+
+
+# qué afirmábamos en la Entrega 2 sobre cada columna que usa el modelo, y qué pasó con eso
+HIPOTESIS_COLUMNA = {
+    "mainshock_mag": ("H1 · «Las réplicas crecen con la magnitud»",
+                      "Se sostuvo: arranca en amarillo y, en los sismos grandes y someros, queda en el borde del verde."),
+    "mainshock_depth": ("H3 · «Los sismos someros (menos de 70 km) dejan más réplicas que los profundos»",
+                        "Con todos los sismos, no (rojo, aun en 3 franjas); entre los de M6 o más, sí (amarillo)."),
+    "region_mc": ("Umbral de detección de la región: sin hipótesis propia",
+                  "Solo no se mueve; entra restado a la magnitud porque corrige un sesgo entre regiones (paso 3 de «El modelo»)."),
+}
+
+# cómo se nombra cada movimiento adentro de una celda (tiene que entrar en el cuadrado)
+CORTO = {"tres franjas de profundidad": "en 3 franjas"}
+
+
+def grafico_semaforo(sem):
+    """La tabla de columnas candidatas de la Entrega 2, como cuadrados del color del semáforo: una fila por cada una
+    de las tres columnas que usa el modelo; a la izquierda, la medida sobre todas las secuencias; a la
+    derecha, después de cada movimiento de las dos que se movieron (cada celda dice cuál fue)."""
+    # las tres columnas de la tabla (antes, movimiento 1, movimiento 2), en posiciones fijas: x cuantitativa sin eje, así
+    # entran las flechas entre una y otra
+    POS, ANCHO_CELDA = [0.0, 1.45, 2.9], 1.15
+    ANTES, ANCHO = POS[0], 520
+    x = alt.Scale(domain=[0, POS[-1] + ANCHO_CELDA], nice=False, zero=False)
+    color = alt.Color("zona:N", scale=alt.Scale(domain=ZONAS, range=[COLOR_SEMAFORO[z] for z in ZONAS]), legend=None)
+    eje_y = dict(title=None, axis=alt.Axis(labelLimit=300, grid=False, domain=False, ticks=False, labelFontSize=13,
+                                           labelColor=TEXTO_FUERTE, minExtent=140, maxExtent=140))
+    medida_txt = {"spearman": "Spearman", "η²": "η²", "separación": "separación"}
+
+    def celdas(filas_):
+        t = pd.DataFrame(filas_)
+        t["x2"] = t["x"] + ANCHO_CELDA
+        t["xm"] = t["x"] + ANCHO_CELDA / 2
+        t["texto"] = [valor_semaforo(v, m) for v, m in zip(t["valor"], t["medida"])]
+        t["significado"] = t["zona"].map(SIGNIFICADO_ZONA)
+        return t
+
+    def bloque(filas_, orden, titulo, color_titulo, notas=None, flechas=None, alto_fila=34, subtitulo=None):
+        t = celdas(filas_)
+        y = alt.Y("fila:N", sort=orden, **eje_y)
+        capas = [
+            alt.Chart(t).mark_rect(cornerRadius=3, stroke=FONDO_GRAFICO, strokeWidth=3, opacity=0.9).encode(
+                x=alt.X("x:Q", scale=x, axis=None), x2="x2:Q", y=y, color=color,
+                tooltip=[alt.Tooltip("fila:N", title="Columna"), alt.Tooltip("etapa:N", title="Sobre"),
+                         alt.Tooltip("medida_nombre:N", title="Medida"), alt.Tooltip("texto:N", title="Valor"),
+                         alt.Tooltip("significado:N", title="Zona")]),
+            alt.Chart(t).mark_text(fontSize=12, fontWeight=700, lineBreak="|", lineHeight=15).encode(
+                x=alt.X("xm:Q", scale=x, axis=None), y=y, text="rotulo:N",
+                color=alt.condition("datum.zona == 'amarillo'", alt.value(FONDO_GRAFICO), alt.value("#ffffff"))),
+        ]
+        if flechas:
+            capas.append(alt.Chart(pd.DataFrame(flechas)).mark_text(fontSize=20, color=TEXTO_FUERTE).encode(
+                x=alt.X("x:Q", scale=x, axis=None), y=y, text="t:N"))
+        if notas:
+            capas.append(alt.Chart(pd.DataFrame(notas)).mark_text(align="left", fontSize=11, color=TEXTO_GRAFICO,
+                                                                 lineBreak="|").encode(
+                x=alt.X("x:Q", scale=x, axis=None), y=y, text="t:N"))
+        return alt.layer(*capas).properties(width=ANCHO, height=alto_fila * len(orden),
+                                            title=alt.TitleParams(titulo, color=color_titulo, fontSize=13,
+                                                                  subtitle=subtitulo or "", subtitleColor=TEXTO_GRAFICO,
+                                                                  subtitleFontSize=12))
+
+    def fila(nombre, etapa, x0, d, debajo=None):
+        # `debajo`: la segunda línea de la celda (qué medida es, o qué movimiento se hizo)
+        rotulo = f"{valor_semaforo(d['valor'], d['medida'])} · {d['zona']}" + (f"|{debajo}" if debajo else "")
+        return {"fila": nombre, "etapa": etapa, "x": x0, "valor": d["valor"], "medida": d["medida"],
+                "medida_nombre": medida_txt[d["medida"]], "zona": d["zona"], "rotulo": rotulo}
+
+    # encabezado: los nombres de las tres columnas de la tabla
+    cab = pd.DataFrame({"x": [p + ANCHO_CELDA / 2 for p in POS], "fila": [""] * 3,
+                        "t": ["Antes:|todas las secuencias", "Movimiento 1", "Movimiento 2"]})
+    encabezado = alt.Chart(cab).mark_text(fontSize=13, fontWeight=700, color=TEXTO_FUERTE, lineBreak="|", lineHeight=16).encode(
+        x=alt.X("x:Q", scale=x, axis=None), y=alt.Y("fila:N", **eje_y), text="t:N").properties(width=ANCHO, height=36)
+
+    # las que usa el modelo: antes y después de cada movimiento que tuvo (la magnitud y la profundidad, dos cada una)
+    mov = sem["movimientos"]
+    por_col = {c["columna"]: c for c in sem["columnas"]}
+    nombre = {"mainshock_mag": "magnitud", "mainshock_depth": "profundidad", "region_mc": "umbral de la región"}
+    filas_usa, flechas, notas = [], [], []
+    for c in sem["usa_el_modelo"]:
+        if c in mov:
+            for i, e in enumerate(mov[c]):
+                debajo = medida_txt[e["medida"]] if i == 0 else CORTO.get(e["etapa"], e["etapa"]) + (
+                    f" ({medida_txt[e['medida']]})" if e["medida"] != mov[c][0]["medida"] else "")
+                filas_usa.append(fila(nombre[c], e["etapa"], POS[i], e, debajo))
+                if i:
+                    flechas.append({"fila": nombre[c], "x": (POS[i - 1] + ANCHO_CELDA + POS[i]) / 2, "t": "→"})
+        else:
+            filas_usa.append(fila(nombre[c], "todas las secuencias", ANTES, por_col[c], medida_txt[por_col[c]["medida"]]))
+    # un bloque por hipótesis de la Entrega 2: el título dice qué afirmábamos y el subtítulo, qué pasó
+    bloques = []
+    for c, (titulo, subtitulo) in HIPOTESIS_COLUMNA.items():
+        bloques.append(bloque([f for f in filas_usa if f["fila"] == nombre[c]], [nombre[c]], titulo, COLOR_ELEGIDO,
+                              flechas=[f for f in flechas if f["fila"] == nombre[c]] or None, alto_fila=50,
+                              subtitulo=subtitulo))
+    # las otras doce no van acá: se probaron directamente en el modelo (paso 4) y su tabla está en «Cómo lo sabemos»
+    return alt.vconcat(encabezado, *bloques, spacing=16)
+
+
+def grafico_movimientos(sem):
+    """El apoyo visual del semáforo, sin medidas: de cada 100 secuencias de cada grupo, en cuántas hubo más de 10 réplicas.
+    H1, por tamaño del sismo; H3, someros contra profundos, con todos los sismos y sólo con los de M6 o más."""
+    t = pd.DataFrame(sem["reparto"])
+    t = t[t["clase"] == CLASES[3]].copy()
+    t["rotulo"] = [es(v, 1) if v < 1 else es(v) for v in t["por_cien"]]
+    x = alt.Scale(domain=[0, 75], nice=False)
+    VERDE = COLOR_CLASE[3]
+
+    def barras(d, orden, alto, titulo=None, subtitulo=None, color_titulo=TEXTO_FUERTE, tamano=12):
+        y = alt.Y("grupo:N", sort=orden, title=None, axis=alt.Axis(grid=False, domain=False, ticks=False, labelFontSize=13,
+                                                                     labelColor=TEXTO_FUERTE, minExtent=110, maxExtent=110))
+        base = alt.Chart(d).encode(y=y, x=alt.X("por_cien:Q", scale=x, axis=None))
+        tooltip = [alt.Tooltip("grupo:N", title="Secuencias"), alt.Tooltip("sismos:Q", title="Cuántas hay", format=","),
+                   alt.Tooltip("rotulo:N", title="De cada 100, con más de 10 réplicas")]
+        b = base.mark_bar(color=VERDE, cornerRadiusEnd=3, height=22).encode(tooltip=tooltip)
+        n = base.mark_text(align="left", dx=8, fontSize=14, fontWeight=700, color=TEXTO_FUERTE).encode(text="rotulo:N")
+        props = {"width": 420, "height": alto * len(orden)}
+        if titulo:
+            props["title"] = alt.TitleParams(titulo, color=color_titulo, fontSize=tamano, subtitle=subtitulo or "",
+                                             subtitleColor=TEXTO_GRAFICO, subtitleFontSize=12)
+        return (b + n).properties(**props)
+
+    H1, H3 = HIPOTESIS_COLUMNA["mainshock_mag"][0], HIPOTESIS_COLUMNA["mainshock_depth"][0]
+    mag = t[t["panel"] == "magnitud"]
+    h1 = barras(mag, ["M4–5", "M5–6", "M6–7", "M7 o más"], 32, H1,
+                "Según la magnitud del sismo principal: cuanto más grande, más chances de muchas réplicas.", COLOR_ELEGIDO, 13)
+    prof = t[t["panel"] == "profundidad"]
+    orden = ["someros", "profundos"]
+    todos_ = barras(prof[prof["etapa"] == "todas las secuencias"], orden, 32, "Todas las secuencias")
+    grandes = barras(prof[prof["etapa"] == "sólo M6 o más"], orden, 32, "Sólo las secuencias con un sismo principal de M6 o más")
+    h3 = alt.vconcat(todos_, grandes, spacing=14).properties(title=alt.TitleParams(
+        H3, color=COLOR_ELEGIDO, fontSize=13, subtitleColor=TEXTO_GRAFICO, subtitleFontSize=12,
+        subtitle="Según la profundidad del sismo principal. Con todas, las dos casi no tienen réplicas; entre las grandes, la diferencia aparece."))
+    return alt.vconcat(h1, h3, spacing=30).properties(
+        title=alt.TitleParams("De cada 100 secuencias, en cuántas hubo más de 10 réplicas", color=TEXTO_FUERTE, fontSize=14,
+                              offset=16))
+
+
 # El Cinturón de Fuego del Pacífico, trazado aproximado a mano (lon, lat): dos tramos que siguen las fosas de
 # subducción del borde del Pacífico. Es una guía visual, no el límite exacto de las placas.
 CINTURON = [
@@ -226,8 +378,9 @@ def pendiente_h1(t):
     return float(np.exp(ajuste_h1(t)[0]))
 
 
-def grafico_hallazgo(df):
-    """Los mismos tramos con el eje vertical lineal (se ve la explosión) y logarítmico (se ve el factor constante)."""
+def grafico_hallazgo(df, multiplicador_modelo):
+    """Los mismos tramos con el eje vertical lineal (se ve la explosión) y logarítmico (se ve el factor constante).
+    multiplicador_modelo: cuánto multiplica las réplicas cada punto de magnitud según el modelo (el número que se cita)."""
     from referencia_sklearn import a_intervalo
     t = tabla_h1(df)
     # la clase del promedio redondeado: en promedio, un sismo de este tramo deja tantas réplicas, que caen en esta clase
@@ -235,9 +388,21 @@ def grafico_hallazgo(df):
     pendiente, ordenada = ajuste_h1(t)
     curva = pd.DataFrame({"centro": np.linspace(t["centro"].min(), t["centro"].max(), 80)})
     curva["media"] = np.exp(ordenada + pendiente * curva["centro"])
-    x = alt.X("centro:Q", title="Magnitud sobre el umbral de su región (puntos)",
+    # el eje no es la magnitud: debajo de cada valor va la magnitud aproximada, con el umbral promedio de las regiones
+    mc_region = df.groupby("region")["region_mc"].first()
+    mc = round(float(mc_region.mean()), 1)
+    sobre = df["mainshock_mag"] - df["region_mc"]
+    fuera = df.loc[sobre >= t["tramo"].max() + 0.5, "mainshock_mag"]
+    x = alt.X("centro:Q", title="Magnitud sobre el umbral de su región",
               scale=alt.Scale(zero=False, nice=False, domain=[0, 3.5]),
-              axis=alt.Axis(values=list(np.arange(0, 3.6, 0.5)), format=".1f"))
+              axis=alt.Axis(values=list(np.arange(0, 3.6, 0.5)), labelLineHeight=16,
+                            labelExpr=f"['+' + format(datum.value, '.1f'), '≈ M' + format(datum.value + {mc}, '.1f')]"))
+    notas = [f"0 es el umbral de cada región (de M{es(mc_region.min(), 1)} a M{es(mc_region.max(), 1)}): "
+             f"el eje mide cuánto lo supera el sismo, no la magnitud."]
+    if len(fuera):
+        notas.append(f"Quedan fuera {len(fuera)} sismos de M{es(fuera.min(), 1)} a M{es(fuera.max(), 1)}: "
+                     f"sus tramos tienen menos de 10 secuencias y su promedio no sería confiable.")
+    notas.append(f"Según el modelo, cada punto de magnitud multiplica las réplicas por {es(multiplicador_modelo, 1)}.")
     tamano = alt.Size("secuencias:Q", scale=alt.Scale(type="sqrt", range=[40, 700]),
                       legend=alt.Legend(title="Secuencias en el tramo", values=[10, 100, 1000, 10000], orient="bottom",
                                         direction="horizontal"))
@@ -261,7 +426,9 @@ def grafico_hallazgo(df):
                                               titleLimit=300)))
         return (linea + puntos).properties(width=300, height=290, title=titulo)
 
-    return alt.hconcat(panel(False), panel(True), spacing=36)
+    return alt.hconcat(panel(False), panel(True), spacing=36).properties(
+        title=alt.TitleParams("Cómo leer el gráfico", subtitle=notas, subtitleColor=TEXTO_GRAFICO, subtitleFontSize=12,
+                              fontSize=12))
 
 
 GRUPO_ATIPICO = ["Resto de las secuencias", "Después vino un sismo mayor que el principal", "M7 o más con 2 réplicas o menos"]
@@ -749,9 +916,10 @@ def textos(df, medidas, comparacion):
              "texto": "réplicas esperadas por cada punto de magnitud sobre el umbral de la región"}],
         "titulo_datos": (f"El {es(clase.iloc[0] / total * 100)} % de las secuencias no deja ninguna réplica, "
                          f"y sólo {es(clase.iloc[3])} de {es(total)} dejan más de diez"),
-        "titulo_hallazgo": (f"Las réplicas crecen con la magnitud: de {es(t_h1['media'].iloc[0], 1)} de media en los "
-                            f"sismos que apenas superan el umbral a {es(alto)} en los que lo superan "
-                            f"por {es(CORTE_ALTO, 1)} a {es(CORTE_ALTO + 0.5, 1)} puntos"),
+        "titulo_hallazgo": "Las réplicas no crecen de a poco con la magnitud: se multiplican",
+        # los números que sostienen el título van en el texto de debajo del gráfico
+        "hallazgo_desde": float(t_h1["media"].iloc[0]), "hallazgo_hasta": float(alto),
+        "hallazgo_tramo_alto": f"{es(CORTE_ALTO, 1)} a {es(CORTE_ALTO + 0.5, 1)}",
         "titulo_modelo": (f"El modelo {'más que duplica' if veces >= 2 else 'supera'} al piso: f1 de {es(f_test, 2)} "
                           f"contra {es(f_piso, 2)} en sismos que no vio"),
         "multiplicador_h1": mult,

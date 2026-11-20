@@ -13,6 +13,9 @@ COLOR_PARTICION = {"entrenamiento": "#5d6d8a", "test": "#e8edf5"}
 COLOR_ELEGIDO = "#19a4b7"
 COLOR_DESCARTE = "#d15d7d"
 COLOR_NEUTRO = "#8593ab"
+# el semáforo de la Entrega 2: sólo en el gráfico del semáforo, con la zona escrita en cada celda (así no se confunde
+# con el verde de «muchas», que nunca comparte gráfico con él)
+COLOR_SEMAFORO = {"rojo": "#c94c4c", "amarillo": "#d4a72c", "verde": "#3f9b5a"}
 COLOR_DATOS = "#dbe3f0"
 # el sismo principal en el globo, cuando se anima una secuencia: rojo, para distinguirlo de sus réplicas (que van con el
 # color de su clase). No es una clase ni un acento: sólo aparece en el globo, y la leyenda lo nombra.

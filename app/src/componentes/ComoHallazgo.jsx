@@ -1,9 +1,12 @@
 import { n } from "../lib/formato.js";
+import Grafico from "./Grafico.jsx";
 import Tabla from "./Tabla.jsx";
 
 // «Cómo lo sabemos» de Lo que encontramos: una hipótesis que se sostuvo (H1) y una que no (H4), cada una con su número.
 export default function ComoHallazgo({ hipotesis, metricas }) {
-  const { h1, h4 } = hipotesis;
+  const { h1, h4, semaforo: sem } = hipotesis;
+  const magMov = sem.movimientos.mainshock_mag;
+  const profMov = sem.movimientos.mainshock_depth;
   return (
     <>
       <h4>Una hipótesis que se sostuvo: H1, «las réplicas crecen con la magnitud»</h4>
@@ -46,6 +49,56 @@ export default function ComoHallazgo({ hipotesis, metricas }) {
         Por eso el proyecto no predice un número exacto sino un <strong>intervalo</strong> (ninguna, pocas, moderadas, muchas) y por eso el modelo no
         usa sólo la magnitud.
       </p>
+
+      <h4>El semáforo de las columnas</h4>
+      <p>
+        Es el del análisis exploratorio. Cada columna se mide contra las réplicas con la medida que corresponde a su tipo, y el valor absoluto cae en una zona:
+      </p>
+      <Tabla
+        columnas={[
+          { titulo: "Medida", ver: (f) => f[0] },
+          { titulo: "Se usa para", ver: (f) => f[1] },
+          { titulo: "Rojo", ver: (f) => `menos de ${n(f[2][0], 2)}`, alinear: "num" },
+          { titulo: "Amarillo", ver: (f) => `${n(f[2][0], 2)} a ${n(f[2][1], 2)}`, alinear: "num" },
+          { titulo: "Verde", ver: (f) => `más de ${n(f[2][1], 2)}`, alinear: "num" },
+        ]}
+        filas={[
+          ["Spearman", "columnas numéricas", sem.cortes.correlacion],
+          ["η²", "columnas de categorías (región) o de sí o no", sem.cortes.eta2],
+          ["Separación estandarizada", "comparar dos grupos (someros y profundos)", sem.cortes.separacion],
+        ]}
+      />
+      <p>
+        Se usa Spearman y no Pearson porque mira el orden y no exige una recta: con el 88 % de ceros y unas pocas secuencias de miles de réplicas, Pearson
+        lo mueven los extremos. En amarillo valen hasta dos <strong>movimientos</strong> (partir la población, controlar una tercera variable o cambiar la
+        escala); después la hipótesis se declara inconclusa. La magnitud y la profundidad usaron los dos: la magnitud, sólo M6 o más y después sólo los someros; la profundidad, tres franjas
+        (η²) y después sólo M6 o más. En el semáforo la magnitud se mide con Spearman, como todas las columnas numéricas, para
+        compararla con las demás; la H1 se midió además con η² por tramos de magnitud (abajo), y también da amarillo. Los η² de la región y de las dos columnas de sí o no dan menos de
+        0,001: los mueven unas pocas secuencias de miles de réplicas, porque η² mide varianza.
+      </p>
+      <Grafico
+        url="specs/semaforo.json"
+        descripcion="Las tres columnas que usa el modelo sobre el semáforo, con el antes y el después de los movimientos de la magnitud y la profundidad."
+      />
+      <p>
+        <strong>H1 se sostuvo:</strong> la magnitud arranca en amarillo ({n(magMov[0].valor, 3)}) y con cada movimiento se acerca al verde (
+        {n(magMov[2].valor, 3)}). <strong>H3, a medias:</strong> la profundidad arranca en rojo ({n(profMov[0].valor, 3)}); agrupada en tres franjas
+        sigue en rojo, y recién mirando los sismos de M6 o más pasa a amarillo ({n(profMov[2].valor, 3)}). El umbral de la región no tenía hipótesis
+        propia: entra restado a la magnitud porque corrige un sesgo entre regiones (paso 3 de «El modelo»). Las otras columnas dan todas en rojo, y
+        agregadas al modelo no lo mejoran (paso 4):
+      </p>
+      <Tabla
+        leyenda="Las columnas que existen en el momento del sismo, sobre todas las secuencias"
+        columnas={[
+          { titulo: "Columna", ver: (c) => <code>{c.columna}</code> },
+          { titulo: "Medida", ver: (c) => c.medida },
+          { titulo: "Valor", ver: (c) => (Math.abs(c.valor) < 0.0005 ? "< 0,001" : n(c.valor, 3)), alinear: "num" },
+          { titulo: "Zona", ver: (c) => c.zona },
+          { titulo: "Decisión", ver: (c) => (sem.usa_el_modelo.includes(c.columna) ? "Entra al modelo" : "Sale: se probó en el modelo y no lo mejora (paso 4)") },
+        ]}
+        filas={[...sem.columnas].sort((a, b) => sem.usa_el_modelo.includes(b.columna) - sem.usa_el_modelo.includes(a.columna))}
+        resaltar={(c) => sem.usa_el_modelo.includes(c.columna)}
+      />
 
       <h4>Cómo se construyó el gráfico</h4>
       <ul className="razones">
