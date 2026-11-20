@@ -5,7 +5,9 @@
 //   * rectángulos de las cinco regiones         -> dónde se aplica cada Mc
 //   * anillos que laten en los sismos M7+       -> sólo para llamar la atención sobre los más grandes
 //   * una secuencia animada                      -> cada evento aparece en su momento (reloj logarítmico);
-//                                                  su anillo se expande una vez; color = clase real de la secuencia
+//                                                  su anillo se expande una vez; el principal en rojo, un sismo
+//                                                  posterior mayor (si lo hay) en amarillo, las réplicas con el color
+//                                                  de la clase real de la secuencia
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { centroRegion, latLonAVec3, regionDe, suavizar, tiempoLog, vec3ALatLon } from "./geo.js";
@@ -109,6 +111,8 @@ export class EscenaGlobo {
     this.datos = o.datos;
     this.regiones = o.regiones;
     this.colores = o.colores.map((c) => new THREE.Color(c));
+    this.colorPrincipal = new THREE.Color(o.colorPrincipal ?? "#ff3b3b"); // el sismo principal de la secuencia animada
+    this.colorMayor = new THREE.Color(o.colorMayor ?? "#ffe14d"); // un sismo posterior mayor que el principal, si lo hay
     this.reducirMovimiento = o.reducirMovimiento;
     this.alHover = o.alHover;
     this.alClickPunto = o.alClickPunto;
@@ -371,14 +375,23 @@ export class EscenaGlobo {
     const pos = new Float32Array(m * 3), mag = new Float32Array(m), s = new Float32Array(m), col = new Float32Array(m * 3);
     const c = this.colores[claseIdx];
     const centro = new THREE.Vector3();
-    for (let i = 0; i < m; i++) {
+    // el evento 0 es el sismo principal (el que abre la secuencia): en rojo. Si después vino uno mayor, el más grande de
+    // ellos va en amarillo. Los dos se dibujan al final, encima de las réplicas (que van con el color de la clase).
+    let mayor = -1;
+    for (let i = 1; i < m; i++) if (ev.mag[i] > ev.mag[0] && (mayor < 0 || ev.mag[i] > ev.mag[mayor])) mayor = i;
+    const orden = [];
+    for (let i = 1; i < m; i++) if (i !== mayor) orden.push(i);
+    if (mayor >= 0) orden.push(mayor);
+    orden.push(0);
+    orden.forEach((i, k) => {
       const v = latLonAVec3(ev.lat[i], ev.lon[i], RADIO_PUNTOS + 0.002);
-      pos.set(v, i * 3);
-      mag[i] = ev.mag[i];
-      s[i] = tiempoLog(ev.h[i]);
-      col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b;
+      pos.set(v, k * 3);
+      mag[k] = ev.mag[i];
+      s[k] = tiempoLog(ev.h[i]);
+      const color = i === 0 ? this.colorPrincipal : i === mayor ? this.colorMayor : c;
+      col[k * 3] = color.r; col[k * 3 + 1] = color.g; col[k * 3 + 2] = color.b;
       centro.add(new THREE.Vector3(...v));
-    }
+    });
     const g = new THREE.BufferGeometry();
     g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
     g.setAttribute("aMag", new THREE.BufferAttribute(mag, 1));

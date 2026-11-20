@@ -14,6 +14,12 @@ COLOR_ELEGIDO = "#19a4b7"
 COLOR_DESCARTE = "#d15d7d"
 COLOR_NEUTRO = "#8593ab"
 COLOR_DATOS = "#dbe3f0"
+# el sismo principal en el globo, cuando se anima una secuencia: rojo, para distinguirlo de sus réplicas (que van con el
+# color de su clase). No es una clase ni un acento: sólo aparece en el globo, y la leyenda lo nombra.
+COLOR_PRINCIPAL = "#ff3b3b"
+# si en la secuencia hay un sismo mayor que el principal (vino después), ese evento va en amarillo claro: se distingue del
+# rojo del principal y, sobre el fondo oscuro, del naranja de «moderadas». También sólo en el globo.
+COLOR_MAYOR = "#ffe14d"
 
 # neutros de los gráficos sobre el fondo oscuro (la «placa» donde se apoya cada gráfico)
 FONDO_GRAFICO = "#111a2b"

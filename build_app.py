@@ -26,7 +26,7 @@ from sklearn.metrics import accuracy_score, recall_score, classification_report,
 from sklearn.model_selection import TimeSeriesSplit
 
 import modelo_core
-from palette import CLASES, COLOR_CLASE, COLOR_PARTICION
+from palette import CLASES, COLOR_CLASE, COLOR_MAYOR, COLOR_PARTICION, COLOR_PRINCIPAL
 import graficos
 from referencia_sklearn import (a_intervalo, candidatos, con_columnas, con_mc, crudas, esperadas_de_validacion,
                                 modelo_final, PoissonIntervalos, real_sobre_predicho, tabla_cortes, validar_extras,
@@ -703,7 +703,8 @@ def main():
 
     guardar("model.json", fm)
     guardar("hipotesis.json", hipotesis(df))
-    guardar("paleta.json", {"clases": CLASES, "color_clase": COLOR_CLASE, "color_particion": COLOR_PARTICION})
+    guardar("paleta.json", {"clases": CLASES, "color_clase": COLOR_CLASE, "color_particion": COLOR_PARTICION,
+                         "color_principal": COLOR_PRINCIPAL, "color_mayor": COLOR_MAYOR})
     guardar("pasos_filtrado.json", json.loads((DATOS / "filter_steps.json").read_text(encoding="utf8")))
     exportar_secuencias(df, modelo, X)
     resumenes = exportar_graficos(df, modelo, medidas, comparacion, ajuste, pasos, corte)

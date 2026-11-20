@@ -1002,6 +1002,10 @@ tr.resaltada td {
   color: #c3d0e6;
   font-size: 0.82rem;
 }
+.globo-leyenda .principal {
+  margin-top: 0.3rem;
+  color: var(--texto);
+}
 .globo-leyenda .chico {
   margin-top: 0.3rem;
   color: #a3b0c5;
@@ -1116,7 +1120,7 @@ tr.resaltada td {
   width: 0.5rem;
   height: 0.5rem;
   border-radius: 50%;
-  background: var(--aviso);
+  background: var(--mayor, #ffe14d); /* el mismo amarillo con que el globo marca ese sismo (COLOR_MAYOR) */
 }
 .globo-aviso-mayor .mas,
 .globo-aviso-mayor .menos {

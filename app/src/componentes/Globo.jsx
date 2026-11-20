@@ -56,6 +56,8 @@ export default function Globo({ d, filtros, setFiltros }) {
       datos,
       regiones,
       colores: paleta.color_clase,
+      colorPrincipal: paleta.color_principal,
+      colorMayor: paleta.color_mayor,
       tierra: TIERRA,
       reducirMovimiento: reducirMovimiento(),
       alHover: mostrarDetalle,
@@ -281,7 +283,22 @@ export default function Globo({ d, filtros, setFiltros }) {
                 {c}
               </li>
             ))}
-            <li className="chico">Tamaño = magnitud · anillos = sismos M7+</li>
+            {reloj ? (
+              <>
+                <li className="principal">
+                  <i style={{ background: paleta.color_principal }} />
+                  sismo principal
+                </li>
+                {secuencia?.ev.mag.slice(1).some((x) => x > secuencia.ev.mag[0]) && (
+                  <li className="principal">
+                    <i style={{ background: paleta.color_mayor }} />
+                    sismo mayor que el principal
+                  </li>
+                )}
+              </>
+            ) : (
+              <li className="chico">Tamaño = magnitud · anillos = sismos M7+</li>
+            )}
           </ul>
           {reloj && (
             // arriba: el reloj al centro y el resumen de la secuencia a la derecha (en pantallas chicas, uno debajo del otro)
@@ -317,7 +334,7 @@ export default function Globo({ d, filtros, setFiltros }) {
                   </dl>
                 )}
                 {resumenSecuencia.mayorVinoDespues && (
-                  <details className="globo-aviso-mayor" key={secuencia.indice}>
+                  <details className="globo-aviso-mayor" key={secuencia.indice} style={{ "--mayor": paleta.color_mayor }}>
                     <summary>
                       Luego hubo un M{n(resumenSecuencia.mayor, 1)}, mayor que el principal
                       <span className="mas">¿Qué implica?</span>

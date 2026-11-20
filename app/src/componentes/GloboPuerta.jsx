@@ -30,6 +30,10 @@ export default function GloboPuerta(props) {
     <section id="explora" className="copa" ref={marco}>
       <p className="etiqueta">Copa · Explorá</p>
       <h2>Recorré las {n(total)} secuencias y mirá qué dijo el modelo sobre cada una</h2>
+      <p className="puente">
+        Hasta acá contamos lo que encontramos nosotros. Ahora te toca a vos: los mismos datos, con lo que dijo el modelo sobre cada secuencia, para
+        que busques dónde acierta y dónde se equivoca.
+      </p>
       <ul className="guia">
         <li>
           <strong>Panorama:</strong> cada punto del globo es un sismo principal; el tamaño es la magnitud y el color, la clase de réplicas. Los anillos marcan los
