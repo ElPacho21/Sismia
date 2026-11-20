@@ -27,7 +27,8 @@ export default function ComoDatos({ pasos, metricas, regiones }) {
       </p>
       <h4>Por qué cinco regiones y no el mundo entero</h4>
       <p>
-        Elegimos cinco zonas de subducción con mucha actividad sísmica: Andes, Japón, Filipinas, Sumatra–Java y México–Centroamérica. No usamos el mundo
+        Elegimos cinco zonas de subducción del Cinturón de Fuego del Pacífico, donde ocurre la mayoría de los sismos grandes del mundo: Andes,
+        Japón, Filipinas, Sumatra–Java (que mira al océano Índico, pero se la cuenta dentro del cinturón) y México–Centroamérica. No usamos el mundo
         entero por tres motivos:
       </p>
       <ol className="razones">

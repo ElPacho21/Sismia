@@ -7,6 +7,7 @@ import Grafico from "./componentes/Grafico.jsx";
 import ComoDatos from "./componentes/ComoDatos.jsx";
 import ComoHallazgo from "./componentes/ComoHallazgo.jsx";
 import ComoModelo from "./componentes/ComoModelo.jsx";
+import Problema from "./componentes/Problema.jsx";
 import GloboPuerta from "./componentes/GloboPuerta.jsx";
 import ProbaModelo, { EJEMPLOS, usePrediccion } from "./componentes/ProbaModelo.jsx";
 
@@ -139,28 +140,54 @@ export default function App() {
             descripcion="Barras con la cantidad de secuencias en cada intervalo de réplicas."
             queMirar={
               <p>
-                Mirá la barra gris: casi todo el dataset son secuencias sin ninguna réplica. Por eso un modelo que contesta siempre «ninguna» acierta el{" "}
-                {pct(metricas.piso.accuracy_test * 100, 0)} de las veces y no sirve para nada, y por eso la métrica tiene que mirar las cuatro clases por igual.
+                Casi todas las secuencias son grises: no dejaron ninguna réplica. Un modelo que contesta siempre «ninguna» acierta el{" "}
+                {pct(metricas.piso.accuracy_test * 100, 0)} de las veces sin servir para nada: lo llamamos <strong>el piso</strong>, lo mínimo a superar.
+                Por eso medimos con el <strong>f1 macro</strong>, que mira las cuatro clases por igual; el piso saca apenas {n(metricas.piso.f1_test, 2)}.
               </p>
             }
             extra={
               <>
+                <Problema>
+                  Empezamos sólo con los Andes y no alcanzaba: había apenas 41 sismos de más de M6, y el 93 % de las secuencias no tenía ninguna réplica.
+                </Problema>
+                <h3 className="subtitulo">Por eso sumamos cinco regiones del Cinturón de Fuego del Pacífico, donde ocurre la mayoría de los sismos grandes</h3>
+                <Grafico
+                  url="specs/cinturon.json"
+                  descripcion="Mapa centrado en el Pacífico con el Cinturón de Fuego (trazado aproximado) y los rectángulos de las cinco regiones, con cuántas secuencias aporta cada una."
+                />
+                <div className="que-mirar">
+                  <p>
+                    Son zonas de subducción del <strong>Cinturón de Fuego del Pacífico</strong>, donde ocurre cerca del 81 % de los sismos más grandes
+                    del planeta (USGS): así pasamos a {n(total)} secuencias. No usamos el planeta entero porque, con zonas grandes, el método unía sismos sin relación
+                    (en los Andes aparecieron «secuencias» de 3.610 km). Procesando cada región por separado y con un tope de distancia entre réplica y
+                    sismo, hoy la más extensa mide {n(metricas.extension.maxima_km)} km.
+                  </p>
+                </div>
+
                 <h3 className="subtitulo">
                   De las {totalColumnas} columnas del dataset, el modelo usa {usadas}
                 </h3>
-                <Grafico url="specs/columnas.json" descripcion="Un cuadrado por columna del dataset, en filas según por qué entra o no al modelo." />
+                <Grafico
+                  url="specs/columnas.json"
+                  descripcion="Embudo de las columnas: las del dataset, las que existen en el momento del sismo y las que usa el modelo, con cuántas salen en cada paso y por qué."
+                />
                 <div className="que-mirar">
                   <p>
-                    Cada cuadrado es una columna; pasá el mouse para ver cuál es y por qué está en esa fila. Las {identifican + respuesta + fuga + constantes} de
-                    arriba no pueden entrar: identifican la secuencia, son la respuesta, son <strong>fuga</strong> ({fuga}: se saben recién cuando la secuencia
-                    terminó) o valen siempre lo mismo. Quedan {probadas + usadas} que existen en el momento del sismo. Nos quedamos con {usadas}: la magnitud y el
-                    umbral de detección de la región, que entran juntos como <em>magnitud sobre el umbral</em>, y la profundidad. Las otras {probadas} las
-                    probamos agregándolas al modelo de a una, y ninguna lo mejora (paso 4 de «El modelo»).
+                    El filtro es una pregunta: <em>¿esta columna existiría en el momento del sismo?</em> Las de <strong>fuga</strong> no, porque se saben
+                    recién cuando la secuencia terminó (pasá el mouse por cada grupo para ver cuáles son). De las {probadas + usadas} que quedan, el modelo
+                    usa {usadas}. Una es el <strong>umbral</strong> (Mc): la magnitud desde la que cada región registra todos los sismos. Entra restado a la
+                    magnitud, como <em>magnitud sobre el umbral</em>.
                   </p>
+                </div>
+                <Problema>
+                  Al principio, el sismo principal de cada secuencia era el más grande, pero eso también es fuga: se sabe recién cuando la secuencia
+                  termina, y en el momento nadie sabe si después viene uno mayor.
+                </Problema>
+                <div className="que-mirar">
                   <p>
-                    <strong>Por qué cinco regiones y no el mundo entero.</strong> Elegimos cinco zonas de subducción con mucha actividad sísmica. El método que
-                    separa las réplicas necesita una zona donde se detecte a partir de una magnitud parecida: con el planeta entero mezcla regiones que detectan
-                    desde magnitudes muy distintas y termina uniendo sismos sin relación en grupos de miles de kilómetros. El detalle, en «Cómo lo sabemos».
+                    Por eso el principal es el sismo que <strong>abre</strong> la secuencia, que es lo que se sabe en el momento. El costo: si después viene
+                    uno más grande, sus réplicas se le cuentan al primero. Por ejemplo, el M7,3 del 9 de marzo de 2011 frente a Ōfunato (Japón) figura con
+                    2.544 réplicas, pero casi todas son del M9,1 que vino dos días después.
                   </p>
                 </div>
               </>

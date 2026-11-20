@@ -71,33 +71,136 @@ GRUPOS_COLUMNAS = ["Identifican la secuencia", "Son la respuesta", "Fuga: se sab
                    "Constantes en este dataset", "Se probaron en el modelo y no mejoraron", "Usa el modelo"]
 
 
+# por qué sale cada grupo del embudo, en una línea (va en el tooltip)
+POR_QUE_SALE = {
+    GRUPOS_COLUMNAS[0]: "Sirven para identificar o para ordenar la secuencia, no dicen nada del sismo.",
+    GRUPOS_COLUMNAS[1]: "Son lo que queremos predecir.",
+    GRUPOS_COLUMNAS[2]: "Fuga: se saben recién cuando la secuencia terminó, no en el momento del sismo.",
+    GRUPOS_COLUMNAS[3]: "En este dataset tienen el mismo valor en todas las filas.",
+    GRUPOS_COLUMNAS[4]: "Existen en el momento del sismo, pero agregadas al modelo, de a una o todas juntas, no lo mejoran (paso 4 de «El modelo»).",
+}
+SALIDA_CORTA = {GRUPOS_COLUMNAS[0]: "identifican la secuencia", GRUPOS_COLUMNAS[1]: "son la respuesta",
+                GRUPOS_COLUMNAS[2]: "son fuga: se saben cuando terminó", GRUPOS_COLUMNAS[3]: "valen siempre lo mismo",
+                GRUPOS_COLUMNAS[4]: "se probaron en el modelo y no lo mejoraron"}
+
+
 def grafico_columnas(inventario):
-    """Las columnas del dataset, un cuadrado por columna, en filas según por qué entran o no al modelo."""
-    t = inventario.copy()
-    t["fila"] = t["grupo"].map({g: i for i, g in enumerate(GRUPOS_COLUMNAS)})
-    t = t.sort_values(["fila", "columna"], kind="stable")
-    t["posicion"] = t.groupby("grupo").cumcount()
-    t["estado"] = np.select([t["grupo"] == GRUPOS_COLUMNAS[-1], t["grupo"] == GRUPOS_COLUMNAS[4]],
-                            ["las usa el modelo", "se probaron y no mejoraron"], "no pueden entrar")
-    # a la derecha de cada fila, cuántas son (y cuáles, en las dos filas que importan para el modelo)
-    r = t.groupby("grupo", sort=False).agg(n=("columna", "size"), fila=("fila", "first")).reset_index()
-    nombres = {GRUPOS_COLUMNAS[4]: "ver el paso 4 de «El modelo»",
-               GRUPOS_COLUMNAS[5]: "magnitud, umbral de la región y profundidad"}
-    r["rotulo"] = [f"{n}: {nombres[g]}" if g in nombres else str(n) for g, n in zip(r["grupo"], r["n"])]
-    r["x"] = r["n"] - 0.45
-    y = alt.Y("grupo:N", sort=GRUPOS_COLUMNAS, title=None,
-              axis=alt.Axis(labelLimit=320, domain=False, ticks=False, grid=False, labelPadding=10))
-    x = alt.Scale(domain=[-0.6, 16.5])
-    cuadros = alt.Chart(t).mark_square(size=250, opacity=1).encode(
-        x=alt.X("posicion:Q", scale=x, axis=None), y=y,
-        color=alt.Color("estado:N", scale=alt.Scale(domain=["no pueden entrar", "se probaron y no mejoraron", "las usa el modelo"],
-                                                    range=[COLOR_NEUTRO, COLOR_DESCARTE, COLOR_ELEGIDO]),
-                        legend=alt.Legend(title=None, orient="bottom", direction="horizontal", labelLimit=320)),
-        tooltip=[alt.Tooltip("columna:N", title="Columna"), alt.Tooltip("grupo:N", title="Grupo"),
-                 alt.Tooltip("motivo:N", title="Por qué")])
-    rotulos = alt.Chart(r).mark_text(align="left", baseline="middle", fontSize=13, color=TEXTO_FUERTE).encode(
-        x=alt.X("x:Q", scale=x, axis=None), y=y, text="rotulo:N")
-    return (cuadros + rotulos).properties(width=480, height=220)
+    """El embudo de las columnas: todas las del dataset → las que existen en el momento del sismo → las que usa el
+    modelo. El ancho de cada franja es la cantidad de columnas; a la derecha de cada estrechamiento, qué grupos salen
+    y por qué (el tooltip de cada grupo dice cuáles son)."""
+    t = inventario
+    grupos = {g: t.loc[t["grupo"] == g, "columna"].tolist() for g in GRUPOS_COLUMNAS}
+    n = [len(t), len(t) - sum(len(grupos[g]) for g in GRUPOS_COLUMNAS[:4]), len(grupos[GRUPOS_COLUMNAS[5]])]
+    # alturas: franja, estrechamiento, franja, estrechamiento, franja (de arriba hacia abajo)
+    F, E1, E2 = 0.9, 1.9, 1.0
+    y0 = [0, F + E1, F + E1 + F + E2]
+    nombres_usa = ", ".join(NOMBRE_USADAS[c] for c in ("mainshock_mag", "region_mc", "mainshock_depth"))
+    rotulos = [f"{n[0]} columnas en el dataset", f"{n[1]} existen en el|momento del sismo",
+               f"{n[2]} usa el modelo"]
+    cuales = [", ".join(t["columna"]), ", ".join(t.loc[t["grupo"].isin(GRUPOS_COLUMNAS[4:]), "columna"]),
+              ", ".join(grupos[GRUPOS_COLUMNAS[5]]) + f" ({nombres_usa})"]
+    colores = [COLOR_NEUTRO, COLOR_NEUTRO, COLOR_ELEGIDO]
+
+    # la silueta del embudo: cada tramo es un área entre el borde izquierdo y el derecho (x, x2) a lo largo de y
+    puntos = []
+    for k in range(3):
+        for yy in (y0[k], y0[k] + F):                       # franja de ancho constante
+            puntos.append({"tramo": f"franja {k}", "y": yy, "x": -n[k] / 2, "x2": n[k] / 2, "color": colores[k],
+                           "opacidad": 1.0, "paso": rotulos[k], "cuales": cuales[k]})
+        if k < 2:                                            # estrechamiento hasta la franja siguiente
+            for yy, w in ((y0[k] + F, n[k]), (y0[k + 1], n[k + 1])):
+                puntos.append({"tramo": f"estrecha {k}", "y": yy, "x": -w / 2, "x2": w / 2, "color": COLOR_NEUTRO,
+                               "opacidad": 0.35, "paso": "", "cuales": ""})
+    silueta = pd.DataFrame(puntos)
+    x = alt.Scale(domain=[-n[0] / 2 - 0.5, 38], nice=False)
+    y = alt.Scale(domain=[-0.15, y0[2] + F + 0.15], reverse=True, nice=False)
+    forma = alt.Chart(silueta).mark_area(orient="horizontal", interpolate="linear").encode(
+        y=alt.Y("y:Q", scale=y, axis=None), x=alt.X("x:Q", scale=x, axis=None), x2="x2:Q",
+        detail="tramo:N", color=alt.Color("color:N", scale=None), opacity=alt.Opacity("opacidad:Q", scale=None),
+        tooltip=[alt.Tooltip("paso:N", title="Paso"), alt.Tooltip("cuales:N", title="Columnas")])
+    franjas = pd.DataFrame({"y": [v + F / 2 - (0.12 if "|" in r else 0) for v, r in zip(y0, rotulos)], "rotulo": rotulos, "n": n})
+    # el rótulo de la última franja no entra adentro: va a la derecha, con las tres columnas
+    texto_franjas = alt.Chart(franjas[franjas["n"] > 5]).mark_text(fontSize=14, fontWeight=700, color="#ffffff",
+                                                                   lineBreak="|", lineHeight=17).encode(
+        y=alt.Y("y:Q", scale=y), x=alt.X("cero:Q", scale=x), text="rotulo:N").transform_calculate(cero="0")
+    ultima = pd.DataFrame({"y": [y0[2] + F / 2], "x": [n[2] / 2 + 1], "t": [f"{n[2]} usa el modelo: {nombres_usa}"]})
+    texto_ultima = alt.Chart(ultima).mark_text(align="left", fontSize=14, fontWeight=700, color=COLOR_ELEGIDO).encode(
+        y=alt.Y("y:Q", scale=y), x=alt.X("x:Q", scale=x), text="t:N")
+
+    # las salidas, a la derecha de cada estrechamiento: una línea por grupo
+    salidas = []
+    medio1 = F + E1 / 2
+    for i, g in enumerate(GRUPOS_COLUMNAS[:4]):
+        salidas.append({"y": medio1 + (i - 1.5) * 0.42, "grupo": g, "n": len(grupos[g]), "color": TEXTO_GRAFICO})
+    salidas.append({"y": y0[1] + F + E2 / 2, "grupo": GRUPOS_COLUMNAS[4], "n": len(grupos[GRUPOS_COLUMNAS[4]]),
+                    "color": COLOR_DESCARTE})
+    s_ = pd.DataFrame(salidas)
+    s_["t"] = "→  " + s_["n"].astype(str) + " " + s_["grupo"].map(SALIDA_CORTA)
+    s_["por_que"] = s_["grupo"].map(POR_QUE_SALE)
+    s_["cuales"] = s_["grupo"].map(lambda g: ", ".join(grupos[g]))
+    X_SALIDA = n[0] / 2 + 1
+    texto_salidas = alt.Chart(s_).mark_text(align="left", fontSize=13, fontWeight=600).encode(
+        y=alt.Y("y:Q", scale=y), x=alt.value(0), text="t:N", color=alt.Color("color:N", scale=None),
+        tooltip=[alt.Tooltip("t:N", title="Salen"), alt.Tooltip("cuales:N", title="Columnas"),
+                 alt.Tooltip("por_que:N", title="Por qué")]).transform_calculate(xs=str(X_SALIDA)).encode(
+        x=alt.X("xs:Q", scale=x))
+    return alt.layer(forma, texto_franjas, texto_ultima, texto_salidas).properties(width=640, height=330)
+
+
+# El Cinturón de Fuego del Pacífico, trazado aproximado a mano (lon, lat): dos tramos que siguen las fosas de
+# subducción del borde del Pacífico. Es una guía visual, no el límite exacto de las placas.
+CINTURON = [
+    [(95, 6), (100, -3), (106, -7), (115, -10), (125, -8), (135, -5), (148, -6), (158, -9), (168, -17), (-174, -20),
+     (-178, -32), (176, -40), (172, -45)],
+    [(126, 2), (126, 10), (121, 18), (122, 24), (129, 30), (141, 36), (146, 43), (153, 47), (162, 54), (175, 52),
+     (-170, 52), (-158, 55), (-150, 60), (-138, 58), (-130, 52), (-124, 42), (-120, 34), (-112, 25), (-104, 18),
+     (-94, 15), (-86, 12), (-80, 7), (-78, 2), (-81, -6), (-76, -15), (-71, -25), (-73, -38), (-75, -48), (-74, -54)],
+]
+
+
+def grafico_cinturon(regiones, tierra):
+    """Mapa centrado en el Pacífico: el Cinturón de Fuego (trazado aproximado) y las cinco regiones del dataset,
+    recuadradas con su rectángulo de la consulta a USGS (pipeline/include/sismos/regions.yaml)."""
+    proyeccion = alt.Projection(type="naturalEarth1", rotate=[-160, 0, 0], scale=118, translate=[330, 175])
+
+    def rectangulo(r, pasos=12):
+        # los lados se densifican para que acompañen la curvatura de la proyección
+        lo0, lo1, la0, la1 = r["min_lon"], r["max_lon"], r["min_lat"], r["max_lat"]
+        lados = ([(lo0 + (lo1 - lo0) * i / pasos, la0) for i in range(pasos)] +
+                 [(lo1, la0 + (la1 - la0) * i / pasos) for i in range(pasos)] +
+                 [(lo1 - (lo1 - lo0) * i / pasos, la1) for i in range(pasos)] +
+                 [(lo0, la1 - (la1 - la0) * i / pasos) for i in range(pasos)])
+        return [list(p) for p in lados] + [[lo0, la0]]
+
+    # anillo de afuera en sentido horario: así d3 lo toma como el rectángulo y no como «todo el planeta menos el rectángulo»
+    cajas = {"type": "FeatureCollection", "features": [
+        {"type": "Feature", "properties": {"nombre": r["nombre"], "secuencias": r["secuencias"]},
+         "geometry": {"type": "Polygon", "coordinates": [rectangulo(r)[::-1]]}} for r in regiones]}
+    linea = {"type": "Feature", "properties": {},
+             "geometry": {"type": "MultiLineString", "coordinates": [[list(p) for p in tramo] for tramo in CINTURON]}}
+
+    fondo = alt.Chart(alt.Data(values=[{"type": "Sphere"}])).mark_geoshape(fill="#0c1424", stroke=EJE, strokeWidth=0.5)
+    tierra_ = alt.Chart(alt.Data(values=tierra, format=alt.DataFormat(type="topojson", feature="land"))).mark_geoshape(
+        fill="#2a3a57", stroke="#3b4d6e", strokeWidth=0.5)
+    cinturon = alt.Chart(alt.Data(values=[linea])).mark_geoshape(
+        filled=False, stroke=COLOR_SEMAFORO["rojo"], strokeWidth=14, strokeOpacity=0.45, strokeCap="round", strokeJoin="round")
+    recuadros = alt.Chart(alt.Data(values=cajas["features"])).mark_geoshape(
+        fill=COLOR_ELEGIDO, fillOpacity=0.18, stroke=COLOR_ELEGIDO, strokeWidth=2.2).encode(
+        tooltip=[alt.Tooltip("properties.nombre:N", title="Región"),
+                 alt.Tooltip("properties.secuencias:Q", title="Secuencias", format=",")])
+    rotulos = pd.DataFrame([{"lon": r["rotulo_lon"], "lat": r["rotulo_lat"], "alinear": r["alinear"],
+                             "t": f"{r['nombre']} · {es(r['secuencias'])} secuencias"} for r in regiones])
+    texto = []
+    for alinear in ("left", "right", "center"):
+        texto.append(alt.Chart(rotulos[rotulos["alinear"] == alinear]).mark_text(
+            align=alinear, fontSize=12, fontWeight=700, color=TEXTO_FUERTE).encode(
+            longitude="lon:Q", latitude="lat:Q", text="t:N"))
+    leyenda = pd.DataFrame([{"lon": -150, "lat": -12, "t": "Cinturón de Fuego del Pacífico|(trazado aproximado)"}])
+    texto_cinturon = alt.Chart(leyenda).mark_text(fontSize=12, fontWeight=700, color=COLOR_SEMAFORO["rojo"],
+                                                   lineBreak="|", align="center").encode(
+        longitude="lon:Q", latitude="lat:Q", text="t:N")
+    return (alt.layer(fondo, tierra_, cinturon, recuadros, *texto, texto_cinturon)
+            .project(**proyeccion.to_dict()).properties(width=660, height=350))
 
 
 # =================================================================== 2. LO QUE ENCONTRAMOS (H1)

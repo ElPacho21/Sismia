@@ -217,6 +217,25 @@ def hipotesis(df):
     }
 
 
+# dónde va el nombre de cada región en el mapa del Cinturón de Fuego (lon, lat, de qué lado del punto)
+ROTULO_REGION = {"japan": (150, 40, "left"), "philippines": (115, 19, "right"), "sumatra_java": (90, 3, "right"),
+                 "mexico_ca": (-96, 26, "center"), "andes": (-79, -44, "right")}
+
+
+def regiones_mapa(df):
+    """Las cinco regiones con el rectángulo de su consulta a USGS (el mismo archivo que usa el pipeline) y cuántas
+    secuencias aporta cada una."""
+    conf = yaml.safe_load((RAIZ / "pipeline" / "include" / "sismos" / "regions.yaml").read_text(encoding="utf8"))
+    cuenta = df["region"].value_counts()
+    salida = []
+    for r in conf["regions"]:
+        lon, lat, alinear = ROTULO_REGION[r["name"]]
+        salida.append({"region": r["name"], "nombre": NOMBRE_REGION[r["name"]], "secuencias": int(cuenta[r["name"]]),
+                       "min_lon": r["minlongitude"], "max_lon": r["maxlongitude"],
+                       "min_lat": r["minlatitude"], "max_lat": r["maxlatitude"],
+                       "rotulo_lon": lon, "rotulo_lat": lat, "alinear": alinear})
+    return salida
+
 def pasos_entrega3(df, corte):
     """Los pasos de la Entrega 3 que cuenta «El modelo» y que no son una fila de la tabla de comparación:
     por qué intervalos (celda 9), el ejemplo de Poisson (celda 39), el sesgo por región (celdas 43 y 50),
@@ -633,6 +652,8 @@ def exportar_graficos(df, modelo, medidas, comparacion, ajuste, pasos, corte):
         "datos.json": graficos.grafico_datos(df),
         "columnas.json": graficos.grafico_columnas(inventario_columnas(df, pasos)),
         "hallazgo.json": graficos.grafico_hallazgo(df),
+        "cinturon.json": graficos.grafico_cinturon(
+            regiones_mapa(df), json.loads((DATOS / "land-110m.json").read_text(encoding="utf8"))),
         "atipicos.json": graficos.grafico_atipicos(datos_url, anotaciones),
         "evolucion.json": graficos.grafico_evolucion(pasos_del_modelo(comparacion, ajuste, pasos, medidas)),
         "variables.json": graficos.grafico_variables(grilla, densidad, lineas),
@@ -654,7 +675,8 @@ def exportar_graficos(df, modelo, medidas, comparacion, ajuste, pasos, corte):
     for nombre, chart in specs.items():
         graficos.guardar_spec(nombre, chart, carpeta)
     guardar("textos.json", graficos.textos(df, medidas, comparacion))
-    return {"atipicos": resumen_atipicos, "variables": resumen_variables,
+    extension = {"maxima_km": float(df["extent_km"].max()), "mas_de_1000_km": int((df["extent_km"] > 1000).sum())}
+    return {"atipicos": resumen_atipicos, "extension": extension,
             "columnas": [{"grupo": g, "n": len(COLUMNAS[g])} for g in graficos.GRUPOS_COLUMNAS]}
 
 

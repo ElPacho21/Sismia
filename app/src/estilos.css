@@ -550,6 +550,7 @@ tr.resaltada td {
 .guia {
   max-width: 48em;
   padding-left: 1.2rem;
+  max-width: 44em;
   margin: 0 0 1.6rem;
   font-size: 0.97rem;
   color: #cbd5e4;
@@ -1371,4 +1372,38 @@ tr.resaltada td {
 /* sin controles de Vega no hay barra de controles */
 .vega-bindings:empty {
   display: none;
+}
+
+/* la línea que enlaza cada sección con la anterior: la historia no arranca de cero en cada una */
+.puente {
+  max-width: 44em;
+  margin: 0 0 1.6rem;
+  padding: 0.2rem 0 0.2rem 1rem;
+  border-left: 3px solid var(--hielo);
+  font-size: 1.08rem;
+  line-height: 1.6;
+  color: var(--suave);
+}
+
+/* un problema del proyecto, en una línea, justo antes de la parte que lo resuelve */
+.problema {
+  display: flex;
+  gap: 0.8rem;
+  align-items: baseline;
+  max-width: 44em;
+  margin: 2rem 0 0.9rem;
+  padding: 0.65rem 1rem;
+  background: var(--aviso-fondo);
+  border-left: 3px solid var(--aviso);
+  border-radius: 0 var(--r-control) var(--r-control) 0;
+  color: var(--texto);
+  line-height: 1.5;
+}
+.problema-etiqueta {
+  flex: none;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--aviso);
 }
