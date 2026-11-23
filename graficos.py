@@ -18,7 +18,7 @@ import pandas as pd
 
 from palette import (CLASES, COLOR_CLASE, COLOR_DATOS, COLOR_DESCARTE, COLOR_ELEGIDO, COLOR_NEUTRO, COLOR_PARTICION,
                      COLOR_SEMAFORO, EJE, FONDO_GRAFICO, GRILLA, OCEANO, TEXTO_FUERTE, TEXTO_GRAFICO, TIERRA,
-                     BORDE_TIERRA, COLOR_CINTURON)
+                     BORDE_TIERRA, COLOR_CINTURON, TEXTO_SOBRE_AMARILLO, TEXTO_SOBRE_NEUTRO)
 
 alt.data_transformers.disable_max_rows()
 
@@ -125,7 +125,7 @@ def grafico_columnas(inventario):
         tooltip=[alt.Tooltip("paso:N", title="Paso"), alt.Tooltip("cuales:N", title="Columnas")])
     franjas = pd.DataFrame({"y": [v + F / 2 - (0.12 if "|" in r else 0) for v, r in zip(y0, rotulos)], "rotulo": rotulos, "n": n})
     # el rótulo de la última franja no entra adentro: va a la derecha, con las tres columnas
-    texto_franjas = alt.Chart(franjas[franjas["n"] > 5]).mark_text(fontSize=14, fontWeight=700, color="#ffffff",
+    texto_franjas = alt.Chart(franjas[franjas["n"] > 5]).mark_text(fontSize=14, fontWeight=700, color=TEXTO_SOBRE_NEUTRO,
                                                                    lineBreak="|", lineHeight=17).encode(
         y=alt.Y("y:Q", scale=y), x=alt.X("cero:Q", scale=x), text="rotulo:N").transform_calculate(cero="0")
     ultima = pd.DataFrame({"y": [y0[2] + F / 2], "x": [n[2] / 2 + 1], "t": [f"{n[2]} usa el modelo: {nombres_usa}"]})
@@ -214,7 +214,7 @@ def grafico_semaforo(sem):
                          alt.Tooltip("significado:N", title="Zona")]),
             alt.Chart(t).mark_text(fontSize=12, fontWeight=700, lineBreak="|", lineHeight=15).encode(
                 x=alt.X("xm:Q", scale=x, axis=None), y=y, text="rotulo:N",
-                color=alt.condition("datum.zona == 'amarillo'", alt.value(FONDO_GRAFICO), alt.value("#ffffff"))),
+                color=alt.condition("datum.zona == 'amarillo'", alt.value(TEXTO_SOBRE_AMARILLO), alt.value("#ffffff"))),
         ]
         if flechas:
             capas.append(alt.Chart(pd.DataFrame(flechas)).mark_text(fontSize=20, color=TEXTO_FUERTE).encode(

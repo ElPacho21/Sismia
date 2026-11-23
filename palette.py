@@ -41,3 +41,26 @@ BORDE_TIERRA = "#4e3a29"    # horizonte-2: su contorno
 # el Cinturón de Fuego en el mapa: arcilla a 0,45 de opacidad (queda en L 0,45–0,51), lejos del verde liquen de los
 # recuadros de las regiones (L 0,76): ΔE ≥ 25 con cualquier daltonismo
 COLOR_CINTURON = "#e2946a"
+# texto encima de un relleno: sobre el neutro del embudo (claro en basalto; en loess, oscuro, ver TEMA_CLARO) y sobre el
+# amarillo del semáforo (oscuro en los dos temas: no está en TEMA_CLARO)
+TEXTO_SOBRE_NEUTRO = "#fffffe"
+TEXTO_SOBRE_AMARILLO = "#1d1610"
+
+# Tema claro (loess). Los specs se generan en basalto; la app, con el tema claro elegido, cambia cada color de esta tabla
+# por su par de loess al dibujar (Grafico.jsx). Lo que no está en la tabla (semáforo, sismo principal y mayor) no cambia.
+# El globo es el espacio: queda oscuro en los dos temas y no usa esta tabla.
+# Validados como los de basalto: clases ΔE ≥ 9, elegido/descarte ≥ 11 y elegido/neutro ≥ 10 con cualquier daltonismo. El
+# neutro de los gráficos es más claro que veta-fuerte del CSS (#87694d) para separarse del verde liquen con protanopía.
+TEMA_CLARO = {
+    COLOR_CLASE[0]: "#968979", COLOR_CLASE[1]: "#9f6700", COLOR_CLASE[2]: "#903303", COLOR_CLASE[3]: "#561811",
+    COLOR_ELEGIDO: "#2d6a6c", COLOR_DESCARTE: "#71232f",
+    COLOR_NEUTRO: "#9e7f63",        # también EJE y la partición «entrenamiento» (mismo valor en basalto)
+    TEXTO_FUERTE: "#2b1e15",        # tinta; también COLOR_DATOS y la partición «test»
+    TEXTO_GRAFICO: "#5c4838",       # tinta-suave
+    FONDO_GRAFICO: "#f6efe3",       # placa
+    GRILLA: "#c7b293",              # veta
+    OCEANO: "#ece1cf", TIERRA: "#d9c6a8", BORDE_TIERRA: "#c4a37c",
+    COLOR_CINTURON: "#8f3f1d",      # arcilla de loess
+    TEXTO_SOBRE_NEUTRO: "#1a120c",
+}
+assert len({k.lower() for k in TEMA_CLARO}) == len(TEMA_CLARO), "dos colores de basalto con el mismo valor: el tema claro no los distinguiría"

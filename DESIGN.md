@@ -79,12 +79,12 @@ components:
 
 **Creative North Star: «Estratos»** (design system *Sisimia Estratos*, tema **basalto**)
 
-La página se lee como un corte de terreno: marrones de tierra, placas planas separadas por vetas de 1px y un único acento, la arcilla. La interfaz es monocroma; **el color vivo es dato**: sólo las cuatro clases de réplicas, el modelo elegido y lo descartado llevan croma. El design system define dos temas (loess claro y basalto oscuro); la app usa sólo **basalto**.
+La página se lee como un corte de terreno: marrones de tierra, placas planas separadas por vetas de 1px y un único acento, la arcilla. La interfaz es monocroma; **el color vivo es dato**: sólo las cuatro clases de réplicas, el modelo elegido y lo descartado llevan croma. El design system define dos temas, **basalto** (oscuro, por defecto) y **loess** (claro); se eligen con el botón de ícono de la barra (sol en el tema oscuro, luna en el claro: muestra adónde se pasa; es el único ícono de la interfaz), que se recuerda en el navegador (`localStorage`, clave `sisimia-tema`; `index.html` lo aplica antes de dibujar para que no parpadee). El globo es el espacio: queda oscuro en los dos.
 
 La única firma decorativa es una traza de sismograma que se dibuja una vez en la portada (ornamental, sin datos). Sin sombras, sin degradados decorativos, sin tarjetas idénticas.
 
 **Key Characteristics:**
-- Tema oscuro único (`color-scheme: dark`), basalto.
+- Dos temas: basalto por defecto y loess con `data-theme="loess"` en `<html>`; sólo cambian los colores.
 - Un acento de interfaz (arcilla); el resto del croma son los datos, definidos en Python.
 - Plano: bordes de 1px, sin sombras, radios chicos «de piedra cortada».
 - Tallo (1, 2, 3): título a la izquierda y gráfico a la derecha. Copa (Explorá, Globo, Probá): ancho completo.
@@ -108,6 +108,7 @@ Los tokens viven en `:root` de `app/src/estilos.css` con los nombres del design 
 - Clases, rampa de tierra ordinal: piedra #746a61 (ninguna) → ocre #aa843f (pocas) → óxido #ff9262 (moderadas) → arena #ffd7b0 (muchas). Cuantas más réplicas, más luminosa.
 - **Elegido** (#7cc0bd): lo adoptado / el modelo elegido; el texto lo nombra «verde liquen». **Descarte** (#c66f76): lo que se probó y se dejó; el texto lo nombra «rosa».
 - Globo: **sismo principal** azul #2ca2ff y **sismo mayor** blanco, fuera de la rampa de tierra.
+- Tema claro en los gráficos: los specs se generan en basalto y `Grafico.jsx` cambia cada color por su par de `TEMA_CLARO` (palette.py → `paleta.json`), validado con daltonismo igual que basalto. El semáforo y los colores del globo no cambian.
 - Neutros de gráficos (`FONDO_GRAFICO`, `TEXTO_GRAFICO`, `GRILLA`, `EJE`, `OCEANO`, `TIERRA`) también en palette.py, con los valores de placa, tinta-suave, veta, veta-fuerte, suelo y horizonte-1.
 
 ### Named Rules

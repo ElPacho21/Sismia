@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { calcular } from "../lib/api.js";
+import { colorEnTema, useTema } from "../lib/tema.js";
 import { n, pct } from "../lib/formato.js";
 
 // La copa, segunda parte: el usuario carga un caso nuevo y ve qué dice el modelo.
@@ -112,7 +113,8 @@ function CamposCaso({ modelo, entrada, setEntrada }) {
 
 // La respuesta: clase, probabilidades, avisos y de dónde salió el cálculo.
 function Respuesta({ modelo, paleta, resultado, calculando }) {
-  const colorDe = (clase) => paleta.color_clase[paleta.clases.indexOf(clase)];
+  const contextoTema = useTema();
+  const colorDe = (clase) => colorEnTema(paleta.color_clase[paleta.clases.indexOf(clase)], contextoTema);
   if (!resultado) return <div className="resultado" aria-live="polite" />;
   return (
     <div className="resultado" aria-live="polite">

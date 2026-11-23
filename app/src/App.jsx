@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { cargarDatos } from "./lib/datos.js";
 import { despertarApi } from "./lib/api.js";
 import { n, pct } from "./lib/formato.js";
+import { aplicarTema, temaInicial, TemaContexto } from "./lib/tema.js";
 import Tallo, { Paso } from "./componentes/Tallo.jsx";
 import Grafico from "./componentes/Grafico.jsx";
 import ComoDatos from "./componentes/ComoDatos.jsx";
@@ -20,12 +21,34 @@ const NAV = [
   ["proba", "Probá el modelo"],
 ];
 
+// íconos del botón de tema: trazo de 1,8px con el color del texto, decorativos (el botón lleva su aria-label)
+function IconoSol() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="4.2" />
+      <path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6" />
+    </svg>
+  );
+}
+function IconoLuna() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" aria-hidden="true">
+      <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" />
+    </svg>
+  );
+}
+
 export default function App() {
   const [d, setD] = useState(null);
   const [error, setError] = useState(null);
   // lo que comparten el globo y las barras de Explorá (filtros) y el caso cargado en «Probá el modelo»
   const [filtros, setFiltros] = useState(null);
   const [entrada, setEntrada] = useState(EJEMPLOS[0]);
+  const [tema, setTema] = useState(temaInicial);
+  const elegirTema = (t) => {
+    aplicarTema(t);
+    setTema(t);
+  };
 
   // la región elegida en Explorá pasa también al caso de «Probá el modelo»
   const regionFiltrada = filtros?.region;
@@ -96,7 +119,7 @@ export default function App() {
     .sort((a, b) => b[1] - a[1])[0];
 
   return (
-    <>
+    <TemaContexto.Provider value={{ tema, claro: d.paleta.tema_claro }}>
       <nav className="barra" aria-label="Secciones">
         <a className="marca" href="#proyecto" translate="no">
           Sisimia
@@ -106,6 +129,17 @@ export default function App() {
             {nombre}
           </a>
         ))}
+        {/* el tema: oscuro (basalto) o claro (loess); se recuerda en este navegador. El ícono muestra adónde se pasa:
+            el sol en el tema oscuro, la luna en el claro */}
+        {(() => {
+          const otro = tema === "loess" ? "basalto" : "loess";
+          const rotulo = otro === "loess" ? "Pasar al tema claro" : "Pasar al tema oscuro";
+          return (
+            <button type="button" className="tema" onClick={() => elegirTema(otro)} aria-label={rotulo} title={rotulo}>
+              {otro === "loess" ? <IconoSol /> : <IconoLuna />}
+            </button>
+          );
+        })()}
       </nav>
 
       <main>
@@ -434,6 +468,6 @@ export default function App() {
       <footer className="pie">
         Sisimia · datos: USGS · modelo: regresión de Poisson por intervalos · código: pipeline, análisis y modelo en el repositorio.
       </footer>
-    </>
+    </TemaContexto.Provider>
   );
 }

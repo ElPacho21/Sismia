@@ -1,9 +1,12 @@
 /* Sisimia · design system «Estratos», tema basalto (oscuro).
    La página se lee como un corte de terreno: marrones de tierra, interfaz monocroma y el color vivo reservado para los
    datos (las cuatro clases de réplicas salen de palette.py y no se redefinen acá). El único acento de interfaz es la
-   arcilla. Los nombres y valores son los tokens del design system Sisimia Estratos. */
+   arcilla. Los nombres y valores son los tokens del design system Sisimia Estratos.
+   Hay un segundo tema, loess (claro), que se elige en la barra: data-theme="loess" en <html>.
+   El globo es el espacio: .globo-caja declara los tokens de basalto y queda oscuro en los dos temas. */
 
-:root {
+:root,
+.globo-caja {
   color-scheme: dark;
   interpolate-size: allow-keywords;
 
@@ -47,6 +50,27 @@
   --aviso-fondo: var(--estrato-alto);
   --titulos: var(--serif);
   --cuerpo: var(--serif);
+}
+
+/* tema loess (claro): sólo cambian los colores */
+:root[data-theme="loess"] {
+  color-scheme: light;
+  --suelo: #ece1cf;
+  --estrato: #e2d3bc;
+  --estrato-alto: #f6efe3;
+  --placa: #f6efe3;
+  --veta: #c7b293;
+  --veta-fuerte: #87694d;
+  --tinta: #2b1e15;
+  --tinta-suave: #5c4838;
+  --sobre-tinta: #f6efe3;
+  --arcilla: #8f3f1d;
+  --aviso: #7f520b;
+  --error: #9e2b20;
+  --elegido: #2d6a6c;
+}
+:root[data-theme="loess"] ::selection {
+  background: rgba(143, 63, 29, 0.2);
 }
 
 * {
@@ -132,7 +156,7 @@ canvas:focus-visible,
   align-items: center;
   padding: 0 max(1.25rem, calc((100vw - var(--ancho)) / 2 + 1.25rem));
   height: 56px;
-  background: rgba(33, 25, 18, 0.92); /* estrato */
+  background: color-mix(in srgb, var(--estrato) 92%, transparent);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--trazo);
   font-size: 0.88rem;
@@ -184,6 +208,41 @@ canvas:focus-visible,
 }
 .barra .marca::after {
   display: none;
+}
+/* el tema: un botón con ícono (sol en el tema oscuro, luna en el claro: adónde se pasa) */
+.tema {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  margin-left: 0.5rem;
+  padding: 0;
+  border: 1px solid var(--veta-fuerte);
+  border-radius: var(--r-control);
+  background: none;
+  color: var(--tinta-suave);
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    border-color 160ms ease,
+    transform 160ms var(--suave-salida);
+}
+.tema:hover {
+  color: var(--tinta);
+  border-color: var(--tinta-suave);
+}
+.tema:active {
+  transform: scale(0.94);
+}
+.tema svg {
+  animation: gira 320ms var(--suave-salida);
+}
+@keyframes gira {
+  from {
+    opacity: 0;
+    transform: rotate(-60deg) scale(0.7);
+  }
 }
 
 main {
@@ -246,12 +305,20 @@ h2 {
   right: 0;
   top: 2.2rem;
   height: 96px;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1180 96' preserveAspectRatio='none'%3E%3Cpath d='M0 48.0 L3 48.0 L6 48.0 L9 48.0 L12 48.0 L15 48.1 L18 47.9 L21 48.1 L24 47.9 L27 48.2 L30 47.8 L33 48.2 L36 47.7 L39 48.3 L42 47.6 L45 48.4 L48 47.6 L51 48.5 L54 47.5 L57 48.5 L60 47.5 L63 48.5 L66 47.5 L69 48.5 L72 47.5 L75 48.5 L78 47.5 L81 48.4 L84 47.6 L87 48.4 L90 47.7 L93 48.2 L96 47.8 L99 48.1 L102 48.0 L105 48.0 L108 48.1 L111 47.8 L114 48.3 L117 47.6 L120 48.5 L123 47.4 L126 48.7 L129 47.3 L132 48.8 L135 47.1 L138 49.0 L141 47.0 L144 49.1 L147 46.9 L150 49.2 L153 46.8 L156 49.2 L159 46.8 L162 49.2 L165 46.8 L168 49.2 L171 46.8 L174 49.1 L177 46.9 L180 49.0 L183 47.1 L186 48.8 L189 47.3 L192 48.6 L195 47.5 L198 48.4 L201 47.7 L204 48.1 L207 48.0 L210 47.9 L213 48.3 L216 47.6 L219 48.5 L222 47.3 L225 48.8 L228 47.1 L231 49.0 L234 46.9 L237 49.2 L240 46.7 L243 49.4 L246 46.5 L249 49.5 L252 46.5 L255 49.6 L258 46.4 L261 49.6 L264 46.4 L267 49.5 L270 46.5 L273 49.4 L276 46.6 L279 49.3 L282 46.8 L285 49.1 L288 47.0 L291 48.9 L294 47.2 L297 48.6 L300 47.5 L303 47.9 L306 48.6 L309 47.5 L312 47.5 L315 49.8 L318 45.8 L321 49.1 L324 49.4 L327 43.9 L330 53.3 L333 44.1 L336 48.4 L339 51.3 L342 91.3 L345 29.3 L348 44.0 L351 61.3 L354 34.9 L357 58.6 L360 43.0 L363 38.7 L366 77.5 L369 6.4 L372 81.8 L375 37.7 L378 36.0 L381 68.0 L384 32.6 L387 55.5 L390 47.5 L393 39.3 L396 69.0 L399 19.9 L402 68.8 L405 47.7 L408 28.3 L411 74.2 L414 29.1 L417 55.3 L420 49.0 L423 41.4 L426 60.4 L429 32.5 L432 57.1 L435 55.1 L438 24.5 L441 76.3 L444 28.4 L447 53.9 L450 51.3 L453 41.5 L456 55.5 L459 40.8 L462 50.0 L465 57.8 L468 25.9 L471 73.2 L474 31.9 L477 50.0 L480 55.5 L483 39.0 L486 54.5 L489 44.5 L492 47.2 L495 56.6 L498 31.2 L501 66.5 L504 37.9 L507 44.9 L510 60.1 L513 35.5 L516 55.5 L519 45.7 L522 46.4 L525 54.1 L528 37.2 L531 59.2 L534 43.8 L537 40.9 L540 62.9 L543 33.6 L546 55.8 L549 46.9 L552 45.4 L555 52.7 L558 41.6 L561 66.2 L564 35.8 L567 50.5 L570 52.8 L573 43.2 L576 46.8 L579 55.4 L582 38.3 L585 56.6 L588 41.4 L591 52.0 L594 49.1 L597 39.5 L600 61.9 L603 34.9 L606 54.5 L609 48.7 L612 44.2 L615 50.5 L618 48.2 L621 45.5 L624 53.3 L627 38.8 L630 59.9 L633 37.9 L636 51.4 L639 52.0 L642 40.7 L645 53.6 L648 46.2 L651 47.0 L654 50.8 L657 43.3 L660 53.9 L663 43.8 L666 46.8 L669 55.3 L672 38.2 L675 55.3 L678 45.6 L681 46.7 L684 50.7 L687 44.9 L690 51.2 L693 46.3 L696 45.7 L699 55.0 L702 39.2 L705 54.1 L708 47.2 L711 44.9 L714 52.1 L717 44.8 L720 50.0 L723 47.7 L726 45.4 L729 54.0 L732 40.7 L735 52.7 L738 48.2 L741 43.9 L744 52.6 L747 45.4 L750 48.4 L753 49.4 L756 44.8 L759 53.3 L762 46.4 L765 48.6 L768 50.7 L771 42.8 L774 52.5 L777 46.8 L780 45.5 L783 52.8 L786 41.9 L789 55.2 L792 40.7 L795 53.3 L798 46.6 L801 46.1 L804 50.2 L807 48.3 L810 44.7 L813 52.7 L816 43.5 L819 51.7 L822 45.4 L825 48.5 L828 50.8 L831 42.4 L834 53.8 L837 44.8 L840 47.9 L843 49.7 L846 46.8 L849 47.8 L852 49.5 L855 45.2 L858 52.8 L861 41.6 L864 54.0 L867 44.7 L870 47.7 L873 50.2 L876 46.4 L879 47.8 L882 49.7 L885 45.4 L888 51.5 L891 43.9 L894 51.5 L897 47.0 L900 45.7 L903 52.0 L906 44.8 L909 48.9 L912 49.0 L915 46.3 L918 49.8 L921 46.3 L924 49.0 L927 49.0 L930 39.8 L933 57.0 L936 40.7 L939 52.1 L942 46.8 L945 47.9 L948 48.2 L951 47.9 L954 47.7 L957 49.3 L960 45.1 L963 51.6 L966 45.7 L969 47.5 L972 50.9 L975 44.4 L978 50.6 L981 46.7 L984 48.3 L987 48.7 L990 46.0 L993 50.6 L996 46.3 L999 47.3 L1002 50.8 L1005 44.8 L1008 49.9 L1011 47.9 L1014 46.9 L1017 49.7 L1020 45.9 L1023 50.2 L1026 46.8 L1029 47.1 L1032 51.0 L1035 44.6 L1038 50.0 L1041 48.0 L1044 46.8 L1047 49.4 L1050 46.9 L1053 48.8 L1056 48.2 L1059 46.1 L1062 51.5 L1065 44.3 L1068 50.2 L1071 48.1 L1074 46.6 L1077 49.4 L1080 47.3 L1083 48.0 L1086 48.8 L1089 46.2 L1092 50.9 L1095 45.1 L1098 49.3 L1101 49.0 L1104 45.6 L1107 50.3 L1110 46.9 L1113 48.1 L1116 48.6 L1119 46.8 L1122 49.7 L1125 46.5 L1128 48.1 L1131 49.9 L1134 44.8 L1137 50.8 L1140 46.7 L1143 47.9 L1146 48.8 L1149 47.0 L1152 49.1 L1155 47.2 L1158 47.7 L1161 49.9 L1164 45.1 L1167 50.4 L1170 47.4 L1173 46.9 L1176 49.8 L1179 46.4' fill='none' stroke='%23e2946a' stroke-width='1.4' vector-effect='non-scaling-stroke' stroke-linejoin='round'/%3E%3C/svg%3E")
-    center / 100% 100% no-repeat;
+  /* el trazo es una máscara y el color lo pone la arcilla del tema; el degradado desvanece los extremos */
+  background: var(--arcilla);
   opacity: 0.55;
   pointer-events: none;
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
-  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  --traza: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1180 96' preserveAspectRatio='none'%3E%3Cpath d='M0 48.0 L3 48.0 L6 48.0 L9 48.0 L12 48.0 L15 48.1 L18 47.9 L21 48.1 L24 47.9 L27 48.2 L30 47.8 L33 48.2 L36 47.7 L39 48.3 L42 47.6 L45 48.4 L48 47.6 L51 48.5 L54 47.5 L57 48.5 L60 47.5 L63 48.5 L66 47.5 L69 48.5 L72 47.5 L75 48.5 L78 47.5 L81 48.4 L84 47.6 L87 48.4 L90 47.7 L93 48.2 L96 47.8 L99 48.1 L102 48.0 L105 48.0 L108 48.1 L111 47.8 L114 48.3 L117 47.6 L120 48.5 L123 47.4 L126 48.7 L129 47.3 L132 48.8 L135 47.1 L138 49.0 L141 47.0 L144 49.1 L147 46.9 L150 49.2 L153 46.8 L156 49.2 L159 46.8 L162 49.2 L165 46.8 L168 49.2 L171 46.8 L174 49.1 L177 46.9 L180 49.0 L183 47.1 L186 48.8 L189 47.3 L192 48.6 L195 47.5 L198 48.4 L201 47.7 L204 48.1 L207 48.0 L210 47.9 L213 48.3 L216 47.6 L219 48.5 L222 47.3 L225 48.8 L228 47.1 L231 49.0 L234 46.9 L237 49.2 L240 46.7 L243 49.4 L246 46.5 L249 49.5 L252 46.5 L255 49.6 L258 46.4 L261 49.6 L264 46.4 L267 49.5 L270 46.5 L273 49.4 L276 46.6 L279 49.3 L282 46.8 L285 49.1 L288 47.0 L291 48.9 L294 47.2 L297 48.6 L300 47.5 L303 47.9 L306 48.6 L309 47.5 L312 47.5 L315 49.8 L318 45.8 L321 49.1 L324 49.4 L327 43.9 L330 53.3 L333 44.1 L336 48.4 L339 51.3 L342 91.3 L345 29.3 L348 44.0 L351 61.3 L354 34.9 L357 58.6 L360 43.0 L363 38.7 L366 77.5 L369 6.4 L372 81.8 L375 37.7 L378 36.0 L381 68.0 L384 32.6 L387 55.5 L390 47.5 L393 39.3 L396 69.0 L399 19.9 L402 68.8 L405 47.7 L408 28.3 L411 74.2 L414 29.1 L417 55.3 L420 49.0 L423 41.4 L426 60.4 L429 32.5 L432 57.1 L435 55.1 L438 24.5 L441 76.3 L444 28.4 L447 53.9 L450 51.3 L453 41.5 L456 55.5 L459 40.8 L462 50.0 L465 57.8 L468 25.9 L471 73.2 L474 31.9 L477 50.0 L480 55.5 L483 39.0 L486 54.5 L489 44.5 L492 47.2 L495 56.6 L498 31.2 L501 66.5 L504 37.9 L507 44.9 L510 60.1 L513 35.5 L516 55.5 L519 45.7 L522 46.4 L525 54.1 L528 37.2 L531 59.2 L534 43.8 L537 40.9 L540 62.9 L543 33.6 L546 55.8 L549 46.9 L552 45.4 L555 52.7 L558 41.6 L561 66.2 L564 35.8 L567 50.5 L570 52.8 L573 43.2 L576 46.8 L579 55.4 L582 38.3 L585 56.6 L588 41.4 L591 52.0 L594 49.1 L597 39.5 L600 61.9 L603 34.9 L606 54.5 L609 48.7 L612 44.2 L615 50.5 L618 48.2 L621 45.5 L624 53.3 L627 38.8 L630 59.9 L633 37.9 L636 51.4 L639 52.0 L642 40.7 L645 53.6 L648 46.2 L651 47.0 L654 50.8 L657 43.3 L660 53.9 L663 43.8 L666 46.8 L669 55.3 L672 38.2 L675 55.3 L678 45.6 L681 46.7 L684 50.7 L687 44.9 L690 51.2 L693 46.3 L696 45.7 L699 55.0 L702 39.2 L705 54.1 L708 47.2 L711 44.9 L714 52.1 L717 44.8 L720 50.0 L723 47.7 L726 45.4 L729 54.0 L732 40.7 L735 52.7 L738 48.2 L741 43.9 L744 52.6 L747 45.4 L750 48.4 L753 49.4 L756 44.8 L759 53.3 L762 46.4 L765 48.6 L768 50.7 L771 42.8 L774 52.5 L777 46.8 L780 45.5 L783 52.8 L786 41.9 L789 55.2 L792 40.7 L795 53.3 L798 46.6 L801 46.1 L804 50.2 L807 48.3 L810 44.7 L813 52.7 L816 43.5 L819 51.7 L822 45.4 L825 48.5 L828 50.8 L831 42.4 L834 53.8 L837 44.8 L840 47.9 L843 49.7 L846 46.8 L849 47.8 L852 49.5 L855 45.2 L858 52.8 L861 41.6 L864 54.0 L867 44.7 L870 47.7 L873 50.2 L876 46.4 L879 47.8 L882 49.7 L885 45.4 L888 51.5 L891 43.9 L894 51.5 L897 47.0 L900 45.7 L903 52.0 L906 44.8 L909 48.9 L912 49.0 L915 46.3 L918 49.8 L921 46.3 L924 49.0 L927 49.0 L930 39.8 L933 57.0 L936 40.7 L939 52.1 L942 46.8 L945 47.9 L948 48.2 L951 47.9 L954 47.7 L957 49.3 L960 45.1 L963 51.6 L966 45.7 L969 47.5 L972 50.9 L975 44.4 L978 50.6 L981 46.7 L984 48.3 L987 48.7 L990 46.0 L993 50.6 L996 46.3 L999 47.3 L1002 50.8 L1005 44.8 L1008 49.9 L1011 47.9 L1014 46.9 L1017 49.7 L1020 45.9 L1023 50.2 L1026 46.8 L1029 47.1 L1032 51.0 L1035 44.6 L1038 50.0 L1041 48.0 L1044 46.8 L1047 49.4 L1050 46.9 L1053 48.8 L1056 48.2 L1059 46.1 L1062 51.5 L1065 44.3 L1068 50.2 L1071 48.1 L1074 46.6 L1077 49.4 L1080 47.3 L1083 48.0 L1086 48.8 L1089 46.2 L1092 50.9 L1095 45.1 L1098 49.3 L1101 49.0 L1104 45.6 L1107 50.3 L1110 46.9 L1113 48.1 L1116 48.6 L1119 46.8 L1122 49.7 L1125 46.5 L1128 48.1 L1131 49.9 L1134 44.8 L1137 50.8 L1140 46.7 L1143 47.9 L1146 48.8 L1149 47.0 L1152 49.1 L1155 47.2 L1158 47.7 L1161 49.9 L1164 45.1 L1167 50.4 L1170 47.4 L1173 46.9 L1176 49.8 L1179 46.4' fill='none' stroke='%23e2946a' stroke-width='1.4' vector-effect='non-scaling-stroke' stroke-linejoin='round'/%3E%3C/svg%3E");
+  --desvanece: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  -webkit-mask-image: var(--traza), var(--desvanece);
+  mask-image: var(--traza), var(--desvanece);
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
   animation: traza 3.2s cubic-bezier(0.45, 0, 0.2, 1) 0.2s both;
 }
 @keyframes traza {
@@ -1314,6 +1381,10 @@ tr.resaltada td {
   .globo-reproductor button,
   .globo-reproductor .selector {
     min-height: 44px;
+  }
+  .tema {
+    width: 44px;
+    height: 44px;
   }
   .vega-bind input[type="range"],
   .globo-filtros input[type="range"],
