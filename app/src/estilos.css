@@ -30,6 +30,9 @@
   --horizonte-2: #4e3a29;
   --horizonte-3: #654a33;
   --horizonte-4: #80603f;
+  /* la grieta de fondo: el hueco, apenas distinto del suelo, y su labio de luz */
+  --grieta-hueco: #090604;
+  --grieta-labio: #3a2c20;
 
   /* ---- tipografía ---- */
   --serif: "Alegreya Variable", "Alegreya", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
@@ -77,6 +80,8 @@
   --horizonte-2: #c4a37c;
   --horizonte-3: #a67f58;
   --horizonte-4: #7c5a3d;
+  --grieta-hueco: #d2bf9f;
+  --grieta-labio: #fbf6ee;
 }
 :root[data-theme="loess"] ::selection {
   background: rgba(143, 63, 29, 0.2);
@@ -92,7 +97,8 @@ html {
 }
 body {
   margin: 0;
-  background: var(--noche);
+  /* sin fondo propio: el de html pinta la página y la grieta de fondo (z-index -1) queda entre los dos */
+  background: transparent;
   color: var(--texto);
   font-family: var(--cuerpo);
   line-height: 1.55;
@@ -155,6 +161,35 @@ canvas:focus-visible,
   outline-offset: 3px;
 }
 
+/* ---------- la grieta de fondo: decorativa, detrás de todo; atraviesa el relato y se cierra en el borde de la copa ---------- */
+.grieta-fondo {
+  position: absolute;
+  z-index: -1;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+}
+.grieta-hueco {
+  fill: var(--grieta-hueco);
+}
+.grieta-labio {
+  fill: var(--grieta-labio);
+}
+.testigo-grieta {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+.testigo-grieta path {
+  fill: none;
+  stroke: var(--grieta-labio);
+  stroke-width: 2.4;
+  vector-effect: non-scaling-stroke;
+}
+
 /* ---------- navegación: el testigo de perforación ---------- */
 /* pantallas anchas: una columna fija a la izquierda; la página le deja su ancho */
 .testigo {
@@ -202,8 +237,17 @@ canvas:focus-visible,
 .capa.hueca {
   border: 1.5px solid var(--veta-fuerte);
 }
-.capa.borde-copa {
-  margin-top: 8px; /* el borde de la copa: de leer a explorar */
+/* las capas van en dos tramos, el tallo y la copa; entre los dos, el borde de la copa: de leer a explorar */
+.testigo-tramo {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.testigo-tramo-copa {
+  margin-top: 6px; /* + los 2px del gap: 8px de borde de copa */
 }
 .testigo .capa:hover {
   outline: 1px solid var(--tinta-suave);

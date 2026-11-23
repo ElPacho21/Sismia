@@ -12,6 +12,7 @@ import Problema from "./componentes/Problema.jsx";
 import GloboPuerta from "./componentes/GloboPuerta.jsx";
 import ProbaModelo, { EJEMPLOS, usePrediccion } from "./componentes/ProbaModelo.jsx";
 import Testigo from "./componentes/Testigo.jsx";
+import GrietaFondo from "./componentes/GrietaFondo.jsx";
 
 
 export default function App() {
@@ -90,6 +91,7 @@ export default function App() {
         ]}
       />
 
+      <GrietaFondo fin="explora" />
       <main>
         {/* la pregunta es lo más grande de la portada; la respuesta y el título del proyecto van en chico */}
         <header id="proyecto" className="portada">

@@ -120,6 +120,21 @@ export default function Testigo({ secciones, tema, alElegirTema }) {
   };
   const esBordeCopa = (i) => secciones[i].copa && !secciones[i - 1]?.copa;
   const sec = secciones[actual];
+  const suma = alturas.reduce((a, b) => a + b, 0);
+  const tallo = alturas.filter((_, i) => !secciones[i].copa).reduce((a, b) => a + b, 0);
+  // la grieta en miniatura va dentro del tramo del tallo: arranca arriba de la primera capa y termina justo al pie de
+  // la última, antes del borde de la copa
+  const grietaTestigo = "M" + [0, 0.15, 0.32, 0.5, 0.68, 0.85, 1].map((t, i) => `${i % 2 ? 62 : 38} ${(100 * t).toFixed(2)}`).join(" L");
+  const capa = (s, i) => (
+    <a
+      key={s.id}
+      href={`#${s.id}`}
+      className={`capa${s.copa ? " hueca" : ""}`}
+      style={{ flexGrow: alturas[i], background: fondo(s, i) }}
+      aria-label={s.rotulo}
+      aria-current={i === actual ? "location" : undefined}
+    />
+  );
 
   return (
     <>
@@ -139,16 +154,17 @@ export default function Testigo({ secciones, tema, alElegirTema }) {
           Sisimia
         </a>
         <div className="testigo-corte">
-          {secciones.map((s, i) => (
-            <a
-              key={s.id}
-              href={`#${s.id}`}
-              className={`capa${s.copa ? " hueca" : ""}${esBordeCopa(i) ? " borde-copa" : ""}`}
-              style={{ flexGrow: alturas[i], background: fondo(s, i) }}
-              aria-label={s.rotulo}
-              aria-current={i === actual ? "location" : undefined}
-            />
-          ))}
+          {/* el tallo: sus capas y la grieta de fondo en miniatura, que termina al pie de la última */}
+          <div className="testigo-tramo" style={{ flexGrow: tallo }}>
+            {secciones.map((s, i) => !s.copa && capa(s, i))}
+            <svg className="testigo-grieta" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+              <path d={grietaTestigo} />
+            </svg>
+          </div>
+          {/* la copa: capas huecas, sin grieta */}
+          <div className="testigo-tramo testigo-tramo-copa" style={{ flexGrow: suma - tallo }}>
+            {secciones.map((s, i) => s.copa && capa(s, i))}
+          </div>
           <div className="testigo-marcador" style={{ top: `${(leido * 100).toFixed(2)}%` }} aria-hidden="true">
             <span className="testigo-rotulo" data-visible={avisa && !abierto}>
               {sec.rotulo}
