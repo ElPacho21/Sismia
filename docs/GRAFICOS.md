@@ -36,10 +36,10 @@ Los del «Cómo lo sabemos» del modelo reemplazan a las tablas (salvo la de com
 | Componente | Qué es | Por qué |
 |---|---|---|
 | Datos | Una fila por columna del dataset (27): nombre, grupo y motivo. El inventario está en `build_app.py` (`COLUMNAS`) y el build falla si el dataset trae una columna que no está ahí | Cuenta de dónde salen las 3 columnas del modelo sin mostrar la tabla técnica de fuga (que queda en «Cómo lo sabemos»). |
-| Mapeo | `x` y `x2` = bordes izquierdo y derecho de la silueta, centrada (el ancho es la cantidad de columnas); `y` = de arriba hacia abajo | Un embudo: 27 en el dataset → 15 existen en el momento del sismo → 3 usa el modelo. |
-| Marca | `area` horizontal: tres franjas de ancho constante unidas por estrechamientos (más tenues); el rótulo adentro de las franjas anchas y a la derecha de la angosta; a la derecha de cada estrechamiento, una línea por grupo que sale | Se lee sin pasar el mouse. |
-| Escala | gris = las barras del dataset y de las que existen al predecir; verde liquen = las que usa el modelo; el texto de las que salen, gris (no pueden entrar) o rosa (se probaron y se descartaron) | Los mismos dos acentos que el resto de la aplicación. |
-| Detalle | tooltip de cada grupo que sale: sus columnas y por qué salen (separado por grupo: identificadores, respuesta, fuga, constantes, probadas); tooltip de cada franja: sus columnas | |
+| Mapeo | Un recuadro por columna, siempre en el mismo `x` (en píxeles), agrupadas por motivo de salida con un hueco entre grupos; `y` = la fila del paso (dataset → existen en el momento del sismo → usa el modelo) | Las tres filas tienen el mismo ancho: la cantidad se cuenta en recuadros llenos (27, 15, 3), no en un ancho que se achica como una escalera. Cada columna se sigue de una fila a otra. |
+| Marca | `rect` lleno = la columna sigue en ese paso; con sólo el borde = ya salió. Arriba de cada fila, su rótulo con la cantidad; debajo de la última, una llave por grupo con «n motivo» (en dos alturas alternadas para no pisarse) | Se lee sin pasar el mouse. |
+| Escala | gris = las columnas que siguen; verde liquen = las que usa el modelo (en las tres filas, para seguirlas); borde gris = salieron porque no pueden entrar; borde rosa = se probaron y se descartaron | Los mismos dos acentos que el resto de la aplicación. |
+| Detalle | tooltip de cada recuadro: la columna, el paso, si sigue o por qué salió, y qué es; tooltip de cada rótulo de grupo: sus columnas y por qué salen | |
 
 ## 2. Lo que encontramos
 

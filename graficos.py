@@ -18,7 +18,7 @@ import pandas as pd
 
 from palette import (CLASES, COLOR_CLASE, COLOR_DATOS, COLOR_DESCARTE, COLOR_ELEGIDO, COLOR_NEUTRO, COLOR_PARTICION,
                      COLOR_SEMAFORO, EJE, FONDO_GRAFICO, GRILLA, OCEANO, TEXTO_FUERTE, TEXTO_GRAFICO, TIERRA,
-                     BORDE_TIERRA, COLOR_CINTURON, TEXTO_SOBRE_AMARILLO, TEXTO_SOBRE_NEUTRO)
+                     BORDE_TIERRA, COLOR_CINTURON, TEXTO_SOBRE_AMARILLO)
 
 alt.data_transformers.disable_max_rows()
 
@@ -76,7 +76,7 @@ GRUPOS_COLUMNAS = ["Identifican la secuencia", "Son la respuesta", "Fuga: se sab
                    "Constantes en este dataset", "Se probaron en el modelo y no mejoraron", "Usa el modelo"]
 
 
-# por qué sale cada grupo del embudo, en una línea (va en el tooltip)
+# por qué sale cada grupo de columnas, en una línea (va en el tooltip)
 POR_QUE_SALE = {
     GRUPOS_COLUMNAS[0]: "Sirven para identificar o para ordenar la secuencia, no dicen nada del sismo.",
     GRUPOS_COLUMNAS[1]: "Son lo que queremos predecir.",
@@ -84,72 +84,97 @@ POR_QUE_SALE = {
     GRUPOS_COLUMNAS[3]: "En este dataset tienen el mismo valor en todas las filas.",
     GRUPOS_COLUMNAS[4]: "Existen en el momento del sismo, pero agregadas al modelo, de a una o todas juntas, no lo mejoran (paso 4 de «El modelo»).",
 }
-SALIDA_CORTA = {GRUPOS_COLUMNAS[0]: "identifican la secuencia", GRUPOS_COLUMNAS[1]: "son la respuesta",
-                GRUPOS_COLUMNAS[2]: "son fuga: se saben cuando terminó", GRUPOS_COLUMNAS[3]: "valen siempre lo mismo",
-                GRUPOS_COLUMNAS[4]: "se probaron en el modelo y no lo mejoraron"}
+
+
+# el rótulo de cada grupo debajo de los recuadros (corto: tiene que entrar en el ancho del grupo o del de al lado)
+ROTULO_GRUPO = {GRUPOS_COLUMNAS[0]: "identifican", GRUPOS_COLUMNAS[1]: "respuesta", GRUPOS_COLUMNAS[2]: "fuga",
+                GRUPOS_COLUMNAS[3]: "constantes", GRUPOS_COLUMNAS[4]: "probadas, no mejoran",
+                GRUPOS_COLUMNAS[5]: "usa el modelo"}
 
 
 def grafico_columnas(inventario):
-    """El embudo de las columnas: todas las del dataset → las que existen en el momento del sismo → las que usa el
-    modelo. El ancho de cada franja es la cantidad de columnas; a la derecha de cada estrechamiento, qué grupos salen
-    y por qué (el tooltip de cada grupo dice cuáles son)."""
+    """Las columnas como recuadros: tres filas iguales, una por paso (el dataset → las que existen en el momento del
+    sismo → las que usa el modelo), con un recuadro por columna del dataset que no cambia de lugar. En cada fila, lleno =
+    la columna sigue; vacío = ya salió. Los recuadros van agrupados por el motivo de salida, con el grupo rotulado abajo;
+    el tooltip de cada recuadro dice qué columna es y por qué sale (o por qué queda)."""
     t = inventario
     grupos = {g: t.loc[t["grupo"] == g, "columna"].tolist() for g in GRUPOS_COLUMNAS}
+    motivo = dict(zip(t["columna"], t["motivo"]))
     n = [len(t), len(t) - sum(len(grupos[g]) for g in GRUPOS_COLUMNAS[:4]), len(grupos[GRUPOS_COLUMNAS[5]])]
-    # alturas: franja, estrechamiento, franja, estrechamiento, franja (de arriba hacia abajo)
-    F, E1, E2 = 0.9, 1.9, 1.0
-    y0 = [0, F + E1, F + E1 + F + E2]
     nombres_usa = ", ".join(NOMBRE_USADAS[c] for c in ("mainshock_mag", "region_mc", "mainshock_depth"))
-    rotulos = [f"{n[0]} columnas en el dataset", f"{n[1]} existen en el|momento del sismo",
-               f"{n[2]} usa el modelo"]
-    cuales = [", ".join(t["columna"]), ", ".join(t.loc[t["grupo"].isin(GRUPOS_COLUMNAS[4:]), "columna"]),
-              ", ".join(grupos[GRUPOS_COLUMNAS[5]]) + f" ({nombres_usa})"]
-    colores = [COLOR_NEUTRO, COLOR_NEUTRO, COLOR_ELEGIDO]
+    rotulos = [f"{n[0]} columnas en el dataset", f"{n[1]} existen en el momento del sismo",
+               f"{n[2]} usa el modelo: {nombres_usa}"]
+    # en qué fila sale cada grupo: los cuatro primeros antes de la segunda, las probadas antes de la tercera
+    sale_en = {g: 1 for g in GRUPOS_COLUMNAS[:4]} | {GRUPOS_COLUMNAS[4]: 2, GRUPOS_COLUMNAS[5]: 3}
 
-    # la silueta del embudo: cada tramo es un área entre el borde izquierdo y el derecho (x, x2) a lo largo de y
-    puntos = []
-    for k in range(3):
-        for yy in (y0[k], y0[k] + F):                       # franja de ancho constante
-            puntos.append({"tramo": f"franja {k}", "y": yy, "x": -n[k] / 2, "x2": n[k] / 2, "color": colores[k],
-                           "opacidad": 1.0, "paso": rotulos[k], "cuales": cuales[k]})
-        if k < 2:                                            # estrechamiento hasta la franja siguiente
-            for yy, w in ((y0[k] + F, n[k]), (y0[k + 1], n[k + 1])):
-                puntos.append({"tramo": f"estrecha {k}", "y": yy, "x": -w / 2, "x2": w / 2, "color": COLOR_NEUTRO,
-                               "opacidad": 0.35, "paso": "", "cuales": ""})
-    silueta = pd.DataFrame(puntos)
-    x = alt.Scale(domain=[-n[0] / 2 - 0.5, 38], nice=False)
-    y = alt.Scale(domain=[-0.15, y0[2] + F + 0.15], reverse=True, nice=False)
-    forma = alt.Chart(silueta).mark_area(orient="horizontal", interpolate="linear").encode(
-        y=alt.Y("y:Q", scale=y, axis=None), x=alt.X("x:Q", scale=x, axis=None), x2="x2:Q",
-        detail="tramo:N", color=alt.Color("color:N", scale=None), opacity=alt.Opacity("opacidad:Q", scale=None),
-        tooltip=[alt.Tooltip("paso:N", title="Paso"), alt.Tooltip("cuales:N", title="Columnas")])
-    franjas = pd.DataFrame({"y": [v + F / 2 - (0.12 if "|" in r else 0) for v, r in zip(y0, rotulos)], "rotulo": rotulos, "n": n})
-    # el rótulo de la última franja no entra adentro: va a la derecha, con las tres columnas
-    texto_franjas = alt.Chart(franjas[franjas["n"] > 5]).mark_text(fontSize=14, fontWeight=700, color=TEXTO_SOBRE_NEUTRO,
-                                                                   lineBreak="|", lineHeight=17).encode(
-        y=alt.Y("y:Q", scale=y), x=alt.X("cero:Q", scale=x), text="rotulo:N").transform_calculate(cero="0")
-    ultima = pd.DataFrame({"y": [y0[2] + F / 2], "x": [n[2] / 2 + 1], "t": [f"{n[2]} usa el modelo: {nombres_usa}"]})
-    texto_ultima = alt.Chart(ultima).mark_text(align="left", fontSize=14, fontWeight=700, color=COLOR_ELEGIDO).encode(
-        y=alt.Y("y:Q", scale=y), x=alt.X("x:Q", scale=x), text="t:N")
+    # todo en píxeles: un lugar por columna más un hueco entre grupos
+    ANCHO, HUECO, LADO = 660, 0.8, 0.8           # ancho total; hueco y lado del recuadro, en lugares
+    U = ANCHO / (n[0] + HUECO * (len(GRUPOS_COLUMNAS) - 1))
+    RENGLON, ALTO_FILA = 20, 20 + U * LADO + 16  # rótulo de la fila arriba de sus recuadros
+    y_recuadro = [k * ALTO_FILA + RENGLON for k in range(3)]
+    inicio, x = {}, 0.0
+    for g in GRUPOS_COLUMNAS:
+        inicio[g] = x
+        x += (len(grupos[g]) + HUECO) * U
 
-    # las salidas, a la derecha de cada estrechamiento: una línea por grupo
-    salidas = []
-    medio1 = F + E1 / 2
-    for i, g in enumerate(GRUPOS_COLUMNAS[:4]):
-        salidas.append({"y": medio1 + (i - 1.5) * 0.42, "grupo": g, "n": len(grupos[g]), "color": TEXTO_GRAFICO})
-    salidas.append({"y": y0[1] + F + E2 / 2, "grupo": GRUPOS_COLUMNAS[4], "n": len(grupos[GRUPOS_COLUMNAS[4]]),
-                    "color": COLOR_DESCARTE})
-    s_ = pd.DataFrame(salidas)
-    s_["t"] = "→  " + s_["n"].astype(str) + " " + s_["grupo"].map(SALIDA_CORTA)
-    s_["por_que"] = s_["grupo"].map(POR_QUE_SALE)
-    s_["cuales"] = s_["grupo"].map(lambda g: ", ".join(grupos[g]))
-    X_SALIDA = n[0] / 2 + 1
-    texto_salidas = alt.Chart(s_).mark_text(align="left", fontSize=13, fontWeight=600).encode(
-        y=alt.Y("y:Q", scale=y), x=alt.value(0), text="t:N", color=alt.Color("color:N", scale=None),
-        tooltip=[alt.Tooltip("t:N", title="Salen"), alt.Tooltip("cuales:N", title="Columnas"),
-                 alt.Tooltip("por_que:N", title="Por qué")]).transform_calculate(xs=str(X_SALIDA)).encode(
-        x=alt.X("xs:Q", scale=x))
-    return alt.layer(forma, texto_franjas, texto_ultima, texto_salidas).properties(width=640, height=330)
+    recuadros = []
+    for g in GRUPOS_COLUMNAS:
+        elegido = g == GRUPOS_COLUMNAS[5]
+        for i, c in enumerate(grupos[g]):
+            x0 = inicio[g] + i * U
+            for k in range(3):
+                queda = k < sale_en[g]
+                if queda:
+                    relleno = borde = COLOR_ELEGIDO if elegido else COLOR_NEUTRO
+                    estado = "La usa el modelo." if elegido else "Sigue en este paso."
+                else:
+                    relleno, borde = FONDO_GRAFICO, COLOR_DESCARTE if g == GRUPOS_COLUMNAS[4] else COLOR_NEUTRO
+                    estado = "Ya salió: " + POR_QUE_SALE[g][0].lower() + POR_QUE_SALE[g][1:]
+                recuadros.append({"x": x0, "x2": x0 + U * LADO, "y": y_recuadro[k], "y2": y_recuadro[k] + U * LADO,
+                                  "relleno": relleno, "borde": borde, "columna": c, "paso": rotulos[k],
+                                  "estado": estado, "motivo": motivo[c]})
+    r = pd.DataFrame(recuadros)
+    alto = 3 * ALTO_FILA + 46
+    ex = alt.Scale(domain=[0, ANCHO], nice=False, zero=False)
+    ey = alt.Scale(domain=[0, alto], reverse=True, nice=False, zero=False)
+    cajas = alt.Chart(r).mark_rect(strokeWidth=1.5, cornerRadius=2).encode(
+        x=alt.X("x:Q", scale=ex, axis=None), x2="x2:Q", y=alt.Y("y:Q", scale=ey, axis=None), y2="y2:Q",
+        fill=alt.Fill("relleno:N", scale=None), stroke=alt.Stroke("borde:N", scale=None),
+        tooltip=[alt.Tooltip("columna:N", title="Columna"), alt.Tooltip("paso:N", title="Paso"),
+                 alt.Tooltip("estado:N", title="En este paso"), alt.Tooltip("motivo:N", title="Qué es")])
+
+    # el rótulo de cada fila, arriba de sus recuadros: la cantidad es lo primero que se lee
+    filas = pd.DataFrame({"y": [v - 7 for v in y_recuadro], "t": rotulos,
+                          "color": [TEXTO_FUERTE, TEXTO_FUERTE, COLOR_ELEGIDO]})
+    texto_filas = alt.Chart(filas).mark_text(align="left", baseline="bottom", fontSize=14, fontWeight=700).encode(
+        x=alt.value(0), y=alt.Y("y:Q", scale=ey), text="t:N", color=alt.Color("color:N", scale=None))
+
+    # debajo de la última fila, una llave por grupo y su rótulo; los rótulos alternan en dos alturas para no pisarse
+    y_llave = y_recuadro[2] + U * LADO + 8
+    llaves, textos = [], []
+    for j, g in enumerate(GRUPOS_COLUMNAS):
+        a, b = inicio[g], inicio[g] + (len(grupos[g]) - 1) * U + U * LADO
+        color = COLOR_ELEGIDO if j == 5 else COLOR_DESCARTE if j == 4 else TEXTO_GRAFICO
+        y_t = y_llave + 8 + (j % 2) * 17
+        llaves.append({"x": a, "x2": b, "y": y_llave, "color": color})
+        llaves.append({"x": (a + b) / 2, "x2": (a + b) / 2, "y": y_llave, "y2": y_t - 2, "color": color})
+        alinear = "left" if j == 0 else "right" if j == len(GRUPOS_COLUMNAS) - 1 else "center"
+        xt = a if alinear == "left" else b if alinear == "right" else (a + b) / 2
+        textos.append({"x": xt, "y": y_t, "t": f"{len(grupos[g])} {ROTULO_GRUPO[g]}", "color": color,
+                       "alinear": alinear, "por_que": POR_QUE_SALE.get(g, "Las tres columnas del modelo."),
+                       "cuales": ", ".join(grupos[g])})
+    ll = pd.DataFrame(llaves)
+    ll["y2"] = ll["y2"].fillna(ll["y"])
+    lineas = alt.Chart(ll).mark_rule(strokeWidth=1).encode(
+        x=alt.X("x:Q", scale=ex), x2="x2:Q", y=alt.Y("y:Q", scale=ey), y2="y2:Q",
+        color=alt.Color("color:N", scale=None))
+    tx = pd.DataFrame(textos)
+    texto_grupos = [alt.Chart(tx[tx["alinear"] == al]).mark_text(align=al, baseline="top", fontSize=13,
+                                                                 fontWeight=600).encode(
+        x=alt.X("x:Q", scale=ex), y=alt.Y("y:Q", scale=ey), text="t:N", color=alt.Color("color:N", scale=None),
+        tooltip=[alt.Tooltip("t:N", title="Grupo"), alt.Tooltip("cuales:N", title="Columnas"),
+                 alt.Tooltip("por_que:N", title="Por qué")]) for al in ("left", "center", "right")]
+    return alt.layer(cajas, texto_filas, lineas, *texto_grupos).properties(width=ANCHO, height=alto)
 
 
 # nombres en castellano de las tres columnas que usa el modelo (las otras doce están en NOMBRE_COLUMNA, más abajo)

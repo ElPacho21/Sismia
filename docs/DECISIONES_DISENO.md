@@ -155,8 +155,8 @@ Cambios pedidos por el docente después de la Entrega 4. El hilo: que cada secci
   «Por eso el principal es el sismo que abre la secuencia» (su costo son los triángulos de los atípicos); sismos parecidos dejan cantidades muy distintas → paso 1 (intervalo); el error dependía de la
   región → paso 3 (magnitud sobre el umbral). Los números del primer análisis son del notebook de los Andes (celdas 13, 90 y 104).
 - **«Los datos», reordenado.** Después del gráfico principal va primero de dónde salen los datos (el problema de los Andes y el
-  mapa de las cinco regiones), después qué columnas se pueden usar (el embudo) y al final el problema de fuga del sismo principal,
-  al lado del embudo, que también habla de fuga. Así los dos avisos de problema no quedan seguidos.
+  mapa de las cinco regiones), después qué columnas se pueden usar (el gráfico de columnas) y al final el problema de fuga del sismo principal,
+  al lado de ese gráfico, que también habla de fuga. Así los dos avisos de problema no quedan seguidos.
 - **El título de «Lo que encontramos».** Era «Las réplicas crecen con la magnitud: de 0,2 de media en los sismos que apenas superan
   el umbral a 128 en los que lo superan por 2,5 a 3,0 puntos»: largo, técnico y repetía el título de las barras. Ahora afirma lo que
   muestra el gráfico, la forma del crecimiento: «Las réplicas no crecen de a poco con la magnitud: se multiplican». Los números
@@ -168,3 +168,9 @@ Cambios pedidos por el docente después de la Entrega 4. El hilo: que cada secci
   Si en la secuencia hay un sismo posterior mayor que el principal, el más grande va en amarillo claro (`COLOR_MAYOR`), también
   encima de las réplicas, y la leyenda lo nombra sólo cuando existe; el punto del aviso «Luego hubo un M…, mayor que el principal»
   usa el mismo amarillo.
+- **Las columnas, de embudo a recuadros.** El embudo (franjas de 27, 15 y 3 de ancho unidas por estrechamientos) se leía como
+  una escalera invertida: la forma pesaba más que los números, y no se veía qué columna salía en cada paso. Ahora son tres filas
+  del mismo ancho con un recuadro por columna, que no cambia de lugar de una fila a otra: lleno = sigue, sólo el borde = ya salió.
+  Los recuadros van agrupados por el motivo de salida, con una llave y «n motivo» debajo de la última fila, y las tres del modelo
+  van en verde liquen en las tres filas para seguirlas. Se descartó dibujar tres rectángulos separados de 27, 15 y 3 recuadros:
+  volvía la escalera y se perdía cuáles salen y por qué.

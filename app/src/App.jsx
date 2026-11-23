@@ -151,12 +151,12 @@ export default function App() {
                 </h3>
                 <Grafico
                   url="specs/columnas.json"
-                  descripcion="Embudo de las columnas: las del dataset, las que existen en el momento del sismo y las que usa el modelo, con cuántas salen en cada paso y por qué."
+                  descripcion="Las columnas como recuadros, en tres filas: las del dataset, las que existen en el momento del sismo y las que usa el modelo. Lleno = sigue; vacío = ya salió, agrupadas por el motivo."
                 />
                 <div className="que-mirar">
                   <p>
                     El filtro es una pregunta: <em>¿esta columna existiría en el momento del sismo?</em> Las de <strong>fuga</strong> no, porque se saben
-                    recién cuando la secuencia terminó (pasá el mouse por cada grupo para ver cuáles son). De las {probadas + usadas} que quedan, el modelo
+                    recién cuando la secuencia terminó (pasá el mouse por cada recuadro para ver qué columna es). De las {probadas + usadas} que quedan, el modelo
                     usa {usadas}. Una es el <strong>umbral</strong> (Mc): la magnitud desde la que cada región registra todos los sismos. Entra restado a la
                     magnitud, como <em>magnitud sobre el umbral</em>.
                   </p>
