@@ -75,6 +75,8 @@ components:
 
 # Design System: Sisimia
 
+> **Fuente del diseño:** el design system **Sisimia Estratos** (https://claude.ai/artifact/DzL7JqPRcjypCqAeGwCym4) tiene los tokens, las reglas de uso y los componentes de referencia. Este archivo resume cómo los aplica la app. Ante una duda de diseño (un color, una tipografía, un componente nuevo, una regla), consultá primero el design system; si la app se aparta de él, anotá acá por qué. La app arranca en basalto (oscuro), aunque el design system pone loess (claro) primero.
+
 ## Overview
 
 **Creative North Star: «Estratos»** (design system *Sisimia Estratos*, tema **basalto**)
