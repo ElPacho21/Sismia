@@ -1,31 +1,52 @@
-/* Sisimia · «sala de registro sísmico».
-   Tema oscuro: la interfaz es casi monocromática y el color queda para los datos (las cuatro clases de réplicas
-   salen de palette.py y no se redefinen acá). El único acento de interfaz es el hielo. */
+/* Sisimia · design system «Estratos», tema basalto (oscuro).
+   La página se lee como un corte de terreno: marrones de tierra, interfaz monocroma y el color vivo reservado para los
+   datos (las cuatro clases de réplicas salen de palette.py y no se redefinen acá). El único acento de interfaz es la
+   arcilla. Los nombres y valores son los tokens del design system Sisimia Estratos. */
 
 :root {
   color-scheme: dark;
   interpolate-size: allow-keywords;
 
-  --noche: #070b12;
-  --placa: #111a2b;
-  --placa-alta: #182338;
-  --trazo: #2a3b5c;
-  --trazo-fuerte: #3a4f78;
-  --texto: #e8edf5;
-  --suave: #b7c3d6;
-  --hielo: #7fd0e0;
-  --hielo-fondo: rgba(127, 208, 224, 0.1);
-  --aviso: #e0a04a;
-  --aviso-fondo: rgba(224, 160, 74, 0.1);
-  --error: #ff8f85;
+  /* ---- color (tema basalto) ---- */
+  --suelo: #16110d; /* fondo de página */
+  --estrato: #211912; /* paneles, barra, «Cómo lo sabemos» */
+  --estrato-alto: #2b2119; /* campos, chips, veredicto; fondo de avisos */
+  --placa: #211912; /* fondo de cada gráfico (= FONDO_GRAFICO) */
+  --veta: #45362a; /* filetes de 1px y grilla: separa, no comunica */
+  --veta-fuerte: #7d6853; /* bordes de controles y ejes (≥3:1) */
+  --tinta: #f0e4d3; /* texto principal */
+  --tinta-suave: #c6b39d; /* texto secundario (≥5,8:1) */
+  --sobre-tinta: #16110d; /* texto sobre un relleno de tinta */
+  --arcilla: #e2946a; /* único acento: enlaces, foco, marcador de sección */
+  --aviso: #e0aa55;
+  --error: #f08a7a;
+  --elegido: #7cc0bd; /* el modelo elegido / lo adoptado (liquen) */
+  --globo-espacio: #0d0a08; /* el fondo del globo 3D */
 
-  --ancho: 1180px;
-  --titulos: "Schibsted Grotesk Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --cuerpo: "Instrument Sans Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* ---- tipografía ---- */
+  --serif: "Alegreya Variable", "Alegreya", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  /* ---- forma ---- */
+  --ancho: 1180px; /* ancho-copa */
   --suave-salida: cubic-bezier(0.22, 1, 0.36, 1);
-  --r-control: 5px;
-  --r-placa: 9px;
-  --r-globo: 14px;
+  --r-control: 3px; /* radio-control */
+  --r-placa: 4px; /* radio-placa */
+  --r-globo: 10px; /* radio-globo */
+  --r-pildora: 999px;
+
+  /* ---- nombres anteriores, como alias (se retiran al renombrar las reglas) ---- */
+  --noche: var(--suelo);
+  --placa-alta: var(--estrato-alto);
+  --trazo: var(--veta);
+  --trazo-fuerte: var(--veta-fuerte);
+  --texto: var(--tinta);
+  --suave: var(--tinta-suave);
+  --hielo: var(--arcilla);
+  --hielo-fondo: var(--estrato-alto); /* la arcilla nunca va de relleno: el resalte es tonal */
+  --aviso-fondo: var(--estrato-alto);
+  --titulos: var(--serif);
+  --cuerpo: var(--serif);
 }
 
 * {
@@ -41,14 +62,14 @@ body {
   background: var(--noche);
   color: var(--texto);
   font-family: var(--cuerpo);
-  line-height: 1.62;
-  font-size: 17px;
+  line-height: 1.55;
+  font-size: 19px; /* cuerpo: Alegreya tiene ojo chico */
   font-feature-settings: "tnum" 0;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 ::selection {
-  background: rgba(127, 208, 224, 0.28);
+  background: rgba(226, 148, 106, 0.3);
 }
 a {
   color: var(--hielo);
@@ -111,7 +132,7 @@ canvas:focus-visible,
   align-items: center;
   padding: 0 max(1.25rem, calc((100vw - var(--ancho)) / 2 + 1.25rem));
   height: 56px;
-  background: rgba(7, 11, 18, 0.82);
+  background: rgba(33, 25, 18, 0.92); /* estrato */
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--trazo);
   font-size: 0.88rem;
@@ -154,10 +175,9 @@ canvas:focus-visible,
   transform: scaleX(1);
 }
 .barra .marca {
-  font-family: var(--titulos);
-  font-weight: 700;
-  font-size: 1.05rem;
-  letter-spacing: 0.01em;
+  font-family: var(--serif);
+  font-weight: 800; /* la marca es la palabra «Sisimia» en Alegreya 800 */
+  font-size: 1.2rem;
   color: var(--texto);
   margin-right: auto;
   padding-right: 1rem;
@@ -182,9 +202,11 @@ header {
   align-items: center;
   gap: 0.55rem;
   margin: 0 0 0.7rem;
-  font-size: 0.92rem;
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  letter-spacing: 0.02em;
   color: var(--suave);
-  font-weight: 550;
+  font-weight: 500;
 }
 .etiqueta::before {
   content: "";
@@ -201,10 +223,10 @@ header {
 h2 {
   margin: 0 0 1.4rem;
   font-family: var(--titulos);
-  font-weight: 650;
-  font-size: clamp(1.5rem, 2.6vw, 2.05rem);
-  line-height: 1.18;
-  letter-spacing: -0.015em;
+  font-weight: 700;
+  font-size: clamp(1.6rem, 2.8vw, 2.125rem);
+  line-height: 1.12;
+  letter-spacing: -0.005em;
   text-wrap: balance;
   max-width: 34em;
 }
@@ -224,7 +246,7 @@ h2 {
   right: 0;
   top: 2.2rem;
   height: 96px;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1180 96' preserveAspectRatio='none'%3E%3Cpath d='M0 48.0 L3 48.0 L6 48.0 L9 48.0 L12 48.0 L15 48.1 L18 47.9 L21 48.1 L24 47.9 L27 48.2 L30 47.8 L33 48.2 L36 47.7 L39 48.3 L42 47.6 L45 48.4 L48 47.6 L51 48.5 L54 47.5 L57 48.5 L60 47.5 L63 48.5 L66 47.5 L69 48.5 L72 47.5 L75 48.5 L78 47.5 L81 48.4 L84 47.6 L87 48.4 L90 47.7 L93 48.2 L96 47.8 L99 48.1 L102 48.0 L105 48.0 L108 48.1 L111 47.8 L114 48.3 L117 47.6 L120 48.5 L123 47.4 L126 48.7 L129 47.3 L132 48.8 L135 47.1 L138 49.0 L141 47.0 L144 49.1 L147 46.9 L150 49.2 L153 46.8 L156 49.2 L159 46.8 L162 49.2 L165 46.8 L168 49.2 L171 46.8 L174 49.1 L177 46.9 L180 49.0 L183 47.1 L186 48.8 L189 47.3 L192 48.6 L195 47.5 L198 48.4 L201 47.7 L204 48.1 L207 48.0 L210 47.9 L213 48.3 L216 47.6 L219 48.5 L222 47.3 L225 48.8 L228 47.1 L231 49.0 L234 46.9 L237 49.2 L240 46.7 L243 49.4 L246 46.5 L249 49.5 L252 46.5 L255 49.6 L258 46.4 L261 49.6 L264 46.4 L267 49.5 L270 46.5 L273 49.4 L276 46.6 L279 49.3 L282 46.8 L285 49.1 L288 47.0 L291 48.9 L294 47.2 L297 48.6 L300 47.5 L303 47.9 L306 48.6 L309 47.5 L312 47.5 L315 49.8 L318 45.8 L321 49.1 L324 49.4 L327 43.9 L330 53.3 L333 44.1 L336 48.4 L339 51.3 L342 91.3 L345 29.3 L348 44.0 L351 61.3 L354 34.9 L357 58.6 L360 43.0 L363 38.7 L366 77.5 L369 6.4 L372 81.8 L375 37.7 L378 36.0 L381 68.0 L384 32.6 L387 55.5 L390 47.5 L393 39.3 L396 69.0 L399 19.9 L402 68.8 L405 47.7 L408 28.3 L411 74.2 L414 29.1 L417 55.3 L420 49.0 L423 41.4 L426 60.4 L429 32.5 L432 57.1 L435 55.1 L438 24.5 L441 76.3 L444 28.4 L447 53.9 L450 51.3 L453 41.5 L456 55.5 L459 40.8 L462 50.0 L465 57.8 L468 25.9 L471 73.2 L474 31.9 L477 50.0 L480 55.5 L483 39.0 L486 54.5 L489 44.5 L492 47.2 L495 56.6 L498 31.2 L501 66.5 L504 37.9 L507 44.9 L510 60.1 L513 35.5 L516 55.5 L519 45.7 L522 46.4 L525 54.1 L528 37.2 L531 59.2 L534 43.8 L537 40.9 L540 62.9 L543 33.6 L546 55.8 L549 46.9 L552 45.4 L555 52.7 L558 41.6 L561 66.2 L564 35.8 L567 50.5 L570 52.8 L573 43.2 L576 46.8 L579 55.4 L582 38.3 L585 56.6 L588 41.4 L591 52.0 L594 49.1 L597 39.5 L600 61.9 L603 34.9 L606 54.5 L609 48.7 L612 44.2 L615 50.5 L618 48.2 L621 45.5 L624 53.3 L627 38.8 L630 59.9 L633 37.9 L636 51.4 L639 52.0 L642 40.7 L645 53.6 L648 46.2 L651 47.0 L654 50.8 L657 43.3 L660 53.9 L663 43.8 L666 46.8 L669 55.3 L672 38.2 L675 55.3 L678 45.6 L681 46.7 L684 50.7 L687 44.9 L690 51.2 L693 46.3 L696 45.7 L699 55.0 L702 39.2 L705 54.1 L708 47.2 L711 44.9 L714 52.1 L717 44.8 L720 50.0 L723 47.7 L726 45.4 L729 54.0 L732 40.7 L735 52.7 L738 48.2 L741 43.9 L744 52.6 L747 45.4 L750 48.4 L753 49.4 L756 44.8 L759 53.3 L762 46.4 L765 48.6 L768 50.7 L771 42.8 L774 52.5 L777 46.8 L780 45.5 L783 52.8 L786 41.9 L789 55.2 L792 40.7 L795 53.3 L798 46.6 L801 46.1 L804 50.2 L807 48.3 L810 44.7 L813 52.7 L816 43.5 L819 51.7 L822 45.4 L825 48.5 L828 50.8 L831 42.4 L834 53.8 L837 44.8 L840 47.9 L843 49.7 L846 46.8 L849 47.8 L852 49.5 L855 45.2 L858 52.8 L861 41.6 L864 54.0 L867 44.7 L870 47.7 L873 50.2 L876 46.4 L879 47.8 L882 49.7 L885 45.4 L888 51.5 L891 43.9 L894 51.5 L897 47.0 L900 45.7 L903 52.0 L906 44.8 L909 48.9 L912 49.0 L915 46.3 L918 49.8 L921 46.3 L924 49.0 L927 49.0 L930 39.8 L933 57.0 L936 40.7 L939 52.1 L942 46.8 L945 47.9 L948 48.2 L951 47.9 L954 47.7 L957 49.3 L960 45.1 L963 51.6 L966 45.7 L969 47.5 L972 50.9 L975 44.4 L978 50.6 L981 46.7 L984 48.3 L987 48.7 L990 46.0 L993 50.6 L996 46.3 L999 47.3 L1002 50.8 L1005 44.8 L1008 49.9 L1011 47.9 L1014 46.9 L1017 49.7 L1020 45.9 L1023 50.2 L1026 46.8 L1029 47.1 L1032 51.0 L1035 44.6 L1038 50.0 L1041 48.0 L1044 46.8 L1047 49.4 L1050 46.9 L1053 48.8 L1056 48.2 L1059 46.1 L1062 51.5 L1065 44.3 L1068 50.2 L1071 48.1 L1074 46.6 L1077 49.4 L1080 47.3 L1083 48.0 L1086 48.8 L1089 46.2 L1092 50.9 L1095 45.1 L1098 49.3 L1101 49.0 L1104 45.6 L1107 50.3 L1110 46.9 L1113 48.1 L1116 48.6 L1119 46.8 L1122 49.7 L1125 46.5 L1128 48.1 L1131 49.9 L1134 44.8 L1137 50.8 L1140 46.7 L1143 47.9 L1146 48.8 L1149 47.0 L1152 49.1 L1155 47.2 L1158 47.7 L1161 49.9 L1164 45.1 L1167 50.4 L1170 47.4 L1173 46.9 L1176 49.8 L1179 46.4' fill='none' stroke='%237fd0e0' stroke-width='1.4' vector-effect='non-scaling-stroke' stroke-linejoin='round'/%3E%3C/svg%3E")
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1180 96' preserveAspectRatio='none'%3E%3Cpath d='M0 48.0 L3 48.0 L6 48.0 L9 48.0 L12 48.0 L15 48.1 L18 47.9 L21 48.1 L24 47.9 L27 48.2 L30 47.8 L33 48.2 L36 47.7 L39 48.3 L42 47.6 L45 48.4 L48 47.6 L51 48.5 L54 47.5 L57 48.5 L60 47.5 L63 48.5 L66 47.5 L69 48.5 L72 47.5 L75 48.5 L78 47.5 L81 48.4 L84 47.6 L87 48.4 L90 47.7 L93 48.2 L96 47.8 L99 48.1 L102 48.0 L105 48.0 L108 48.1 L111 47.8 L114 48.3 L117 47.6 L120 48.5 L123 47.4 L126 48.7 L129 47.3 L132 48.8 L135 47.1 L138 49.0 L141 47.0 L144 49.1 L147 46.9 L150 49.2 L153 46.8 L156 49.2 L159 46.8 L162 49.2 L165 46.8 L168 49.2 L171 46.8 L174 49.1 L177 46.9 L180 49.0 L183 47.1 L186 48.8 L189 47.3 L192 48.6 L195 47.5 L198 48.4 L201 47.7 L204 48.1 L207 48.0 L210 47.9 L213 48.3 L216 47.6 L219 48.5 L222 47.3 L225 48.8 L228 47.1 L231 49.0 L234 46.9 L237 49.2 L240 46.7 L243 49.4 L246 46.5 L249 49.5 L252 46.5 L255 49.6 L258 46.4 L261 49.6 L264 46.4 L267 49.5 L270 46.5 L273 49.4 L276 46.6 L279 49.3 L282 46.8 L285 49.1 L288 47.0 L291 48.9 L294 47.2 L297 48.6 L300 47.5 L303 47.9 L306 48.6 L309 47.5 L312 47.5 L315 49.8 L318 45.8 L321 49.1 L324 49.4 L327 43.9 L330 53.3 L333 44.1 L336 48.4 L339 51.3 L342 91.3 L345 29.3 L348 44.0 L351 61.3 L354 34.9 L357 58.6 L360 43.0 L363 38.7 L366 77.5 L369 6.4 L372 81.8 L375 37.7 L378 36.0 L381 68.0 L384 32.6 L387 55.5 L390 47.5 L393 39.3 L396 69.0 L399 19.9 L402 68.8 L405 47.7 L408 28.3 L411 74.2 L414 29.1 L417 55.3 L420 49.0 L423 41.4 L426 60.4 L429 32.5 L432 57.1 L435 55.1 L438 24.5 L441 76.3 L444 28.4 L447 53.9 L450 51.3 L453 41.5 L456 55.5 L459 40.8 L462 50.0 L465 57.8 L468 25.9 L471 73.2 L474 31.9 L477 50.0 L480 55.5 L483 39.0 L486 54.5 L489 44.5 L492 47.2 L495 56.6 L498 31.2 L501 66.5 L504 37.9 L507 44.9 L510 60.1 L513 35.5 L516 55.5 L519 45.7 L522 46.4 L525 54.1 L528 37.2 L531 59.2 L534 43.8 L537 40.9 L540 62.9 L543 33.6 L546 55.8 L549 46.9 L552 45.4 L555 52.7 L558 41.6 L561 66.2 L564 35.8 L567 50.5 L570 52.8 L573 43.2 L576 46.8 L579 55.4 L582 38.3 L585 56.6 L588 41.4 L591 52.0 L594 49.1 L597 39.5 L600 61.9 L603 34.9 L606 54.5 L609 48.7 L612 44.2 L615 50.5 L618 48.2 L621 45.5 L624 53.3 L627 38.8 L630 59.9 L633 37.9 L636 51.4 L639 52.0 L642 40.7 L645 53.6 L648 46.2 L651 47.0 L654 50.8 L657 43.3 L660 53.9 L663 43.8 L666 46.8 L669 55.3 L672 38.2 L675 55.3 L678 45.6 L681 46.7 L684 50.7 L687 44.9 L690 51.2 L693 46.3 L696 45.7 L699 55.0 L702 39.2 L705 54.1 L708 47.2 L711 44.9 L714 52.1 L717 44.8 L720 50.0 L723 47.7 L726 45.4 L729 54.0 L732 40.7 L735 52.7 L738 48.2 L741 43.9 L744 52.6 L747 45.4 L750 48.4 L753 49.4 L756 44.8 L759 53.3 L762 46.4 L765 48.6 L768 50.7 L771 42.8 L774 52.5 L777 46.8 L780 45.5 L783 52.8 L786 41.9 L789 55.2 L792 40.7 L795 53.3 L798 46.6 L801 46.1 L804 50.2 L807 48.3 L810 44.7 L813 52.7 L816 43.5 L819 51.7 L822 45.4 L825 48.5 L828 50.8 L831 42.4 L834 53.8 L837 44.8 L840 47.9 L843 49.7 L846 46.8 L849 47.8 L852 49.5 L855 45.2 L858 52.8 L861 41.6 L864 54.0 L867 44.7 L870 47.7 L873 50.2 L876 46.4 L879 47.8 L882 49.7 L885 45.4 L888 51.5 L891 43.9 L894 51.5 L897 47.0 L900 45.7 L903 52.0 L906 44.8 L909 48.9 L912 49.0 L915 46.3 L918 49.8 L921 46.3 L924 49.0 L927 49.0 L930 39.8 L933 57.0 L936 40.7 L939 52.1 L942 46.8 L945 47.9 L948 48.2 L951 47.9 L954 47.7 L957 49.3 L960 45.1 L963 51.6 L966 45.7 L969 47.5 L972 50.9 L975 44.4 L978 50.6 L981 46.7 L984 48.3 L987 48.7 L990 46.0 L993 50.6 L996 46.3 L999 47.3 L1002 50.8 L1005 44.8 L1008 49.9 L1011 47.9 L1014 46.9 L1017 49.7 L1020 45.9 L1023 50.2 L1026 46.8 L1029 47.1 L1032 51.0 L1035 44.6 L1038 50.0 L1041 48.0 L1044 46.8 L1047 49.4 L1050 46.9 L1053 48.8 L1056 48.2 L1059 46.1 L1062 51.5 L1065 44.3 L1068 50.2 L1071 48.1 L1074 46.6 L1077 49.4 L1080 47.3 L1083 48.0 L1086 48.8 L1089 46.2 L1092 50.9 L1095 45.1 L1098 49.3 L1101 49.0 L1104 45.6 L1107 50.3 L1110 46.9 L1113 48.1 L1116 48.6 L1119 46.8 L1122 49.7 L1125 46.5 L1128 48.1 L1131 49.9 L1134 44.8 L1137 50.8 L1140 46.7 L1143 47.9 L1146 48.8 L1149 47.0 L1152 49.1 L1155 47.2 L1158 47.7 L1161 49.9 L1164 45.1 L1167 50.4 L1170 47.4 L1173 46.9 L1176 49.8 L1179 46.4' fill='none' stroke='%23e2946a' stroke-width='1.4' vector-effect='non-scaling-stroke' stroke-linejoin='round'/%3E%3C/svg%3E")
     center / 100% 100% no-repeat;
   opacity: 0.55;
   pointer-events: none;
@@ -246,8 +268,8 @@ h2 {
   font-family: var(--titulos);
   font-size: clamp(2.2rem, 5vw, 3.7rem);
   line-height: 1.06;
-  font-weight: 700;
-  letter-spacing: -0.028em;
+  font-weight: 800;
+  letter-spacing: -0.01em;
   max-width: 17em;
   text-wrap: balance;
 }
@@ -290,8 +312,8 @@ h2 {
   font-size: clamp(2rem, 3.6vw, 2.9rem);
   font-weight: 700;
   line-height: 1.1;
-  letter-spacing: -0.02em;
-  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  font-variant-numeric: lining-nums tabular-nums; /* Alegreya trae números de estilo antiguo */
 }
 .numeros .texto {
   display: block;
@@ -344,11 +366,10 @@ h2 {
 .paso-numero {
   display: block;
   margin-bottom: 0.25rem;
-  font-family: var(--cuerpo);
-  font-size: 0.85rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
   color: var(--hielo);
 }
 /* el segundo gráfico de una sección sigue la historia del primero: subtítulo más chico que el título que afirma */
@@ -388,7 +409,7 @@ h2 {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(100deg, transparent 30%, rgba(127, 208, 224, 0.07) 50%, transparent 70%) 0 0 / 220% 100%;
+  background: linear-gradient(100deg, transparent 30%, rgba(226, 148, 106, 0.07) 50%, transparent 70%) 0 0 / 220% 100%;
   animation: barrido 1.6s linear infinite;
   pointer-events: none;
 }
@@ -415,7 +436,7 @@ h2 {
 }
 .que-mirar {
   max-width: 44em;
-  color: #cbd5e4;
+  color: var(--tinta-suave);
 }
 .que-mirar p {
   margin: 0 0 1rem;
@@ -499,8 +520,8 @@ h2 {
 table {
   border-collapse: collapse;
   width: 100%;
-  font-size: 0.88rem;
-  font-variant-numeric: tabular-nums;
+  font-size: 0.92rem;
+  font-variant-numeric: lining-nums tabular-nums;
 }
 caption {
   text-align: left;
@@ -521,6 +542,8 @@ th {
 }
 .num {
   text-align: right;
+  font-family: var(--mono);
+  font-size: 0.92em;
 }
 tr.resaltada td {
   background: var(--hielo-fondo);
@@ -553,7 +576,7 @@ tr.resaltada td {
   max-width: 44em;
   margin: 0 0 1.6rem;
   font-size: 0.97rem;
-  color: #cbd5e4;
+  color: var(--tinta-suave);
 }
 .guia li {
   margin-bottom: 0.4rem;
@@ -743,7 +766,7 @@ tr.resaltada td {
     transform 160ms var(--suave-salida);
 }
 .ejemplos button {
-  border-radius: 999px;
+  border-radius: var(--r-pildora);
   padding: 0.3rem 0.8rem;
 }
 .ejemplos button:hover,
@@ -836,13 +859,15 @@ tr.resaltada td {
 }
 .barras .valor {
   text-align: right;
-  font-variant-numeric: tabular-nums;
+  font-family: var(--mono);
+  font-size: 0.88rem;
+  font-variant-numeric: lining-nums tabular-nums;
 }
 .avisos,
 .globo-aviso {
   position: relative;
   background: var(--aviso-fondo);
-  border: 1px solid rgba(224, 160, 74, 0.45);
+  border: 1px solid var(--aviso);
   border-radius: var(--r-control);
 }
 .avisos::before,
@@ -925,7 +950,7 @@ tr.resaltada td {
   /* el globo se achica en pantallas bajas para que entre junto con los filtros y la línea de la región
      (190px = barra de navegación + filtros + línea de la región + márgenes) */
   height: clamp(400px, calc(100svh - 190px), 640px);
-  background: #04070d;
+  background: var(--globo-espacio);
   border: 1px solid var(--trazo);
   border-radius: var(--r-globo);
   overflow: hidden;
@@ -944,8 +969,8 @@ tr.resaltada td {
   top: 0;
   pointer-events: none;
   font-size: 0.8rem;
-  color: #c3d0e6;
-  background: rgba(4, 7, 13, 0.62);
+  color: var(--tinta-suave);
+  background: rgba(13, 10, 8, 0.62);
   padding: 2px 7px;
   border-radius: 4px;
   white-space: nowrap;
@@ -959,8 +984,8 @@ tr.resaltada td {
   z-index: 3;
   max-width: 300px;
   pointer-events: none;
-  background: rgba(10, 16, 28, 0.94);
-  color: #e6edf8;
+  background: rgba(33, 25, 18, 0.95);
+  color: var(--tinta);
   border: 1px solid var(--trazo-fuerte);
   border-radius: var(--r-placa);
   padding: 0.65rem 0.85rem;
@@ -977,10 +1002,10 @@ tr.resaltada td {
 }
 .globo-detalle em {
   margin-top: 0.3rem;
-  color: #8fc8d2;
+  color: var(--elegido);
 }
 .globo-detalle .ojo {
-  color: #f1b36b;
+  color: var(--aviso);
 }
 .globo-detalle i,
 .globo-leyenda i {
@@ -997,10 +1022,10 @@ tr.resaltada td {
   margin: 0;
   padding: 0.6rem 0.8rem;
   list-style: none;
-  background: rgba(4, 7, 13, 0.72);
+  background: rgba(13, 10, 8, 0.72);
   border: 1px solid var(--trazo);
   border-radius: var(--r-placa);
-  color: #c3d0e6;
+  color: var(--tinta-suave);
   font-size: 0.82rem;
 }
 .globo-leyenda .principal {
@@ -1009,7 +1034,7 @@ tr.resaltada td {
 }
 .globo-leyenda .chico {
   margin-top: 0.3rem;
-  color: #a3b0c5;
+  color: var(--tinta-suave);
 }
 /* franja de arriba del globo: reloj al centro y resumen a la derecha; el espacio vacío deja pasar el mouse al globo */
 .globo-arriba {
@@ -1036,10 +1061,10 @@ tr.resaltada td {
   width: 100%;
   max-width: 19rem;
   padding: 0.6rem 0.8rem;
-  background: rgba(4, 7, 13, 0.82);
+  background: rgba(13, 10, 8, 0.82);
   border: 1px solid var(--trazo);
   border-radius: var(--r-placa);
-  color: #e6edf8;
+  color: var(--tinta);
   font-size: 0.84rem;
   line-height: 1.4;
 }
@@ -1047,7 +1072,7 @@ tr.resaltada td {
   margin: 0 0 0.4rem;
 }
 .globo-resumen .lugar span {
-  color: #a3b0c5;
+  color: var(--tinta-suave);
 }
 .globo-resumen dl {
   display: grid;
@@ -1056,7 +1081,7 @@ tr.resaltada td {
   margin: 0;
 }
 .globo-resumen dt {
-  color: #a3b0c5;
+  color: var(--tinta-suave);
 }
 .globo-resumen dd {
   margin: 0;
@@ -1069,38 +1094,38 @@ tr.resaltada td {
   margin: 0 0.3rem 0 0.15rem;
 }
 .globo-resumen .acerto {
-  color: #8fd4a8;
+  color: var(--elegido);
 }
 .globo-resumen .fallo {
-  color: #f1b36b;
+  color: var(--aviso);
 }
 .globo-resumen .globo-aviso-mayor {
   margin-top: 0.55rem;
 }
 .globo-reloj {
   text-align: center;
-  background: rgba(4, 7, 13, 0.75);
+  background: rgba(13, 10, 8, 0.75);
   border: 1px solid var(--trazo);
   border-radius: var(--r-placa);
   padding: 0.45rem 1.1rem;
-  color: #fff;
+  color: var(--tinta);
 }
 .globo-reloj strong {
   display: block;
   font-family: var(--titulos);
   font-size: 1.5rem;
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: lining-nums tabular-nums;
 }
 .globo-reloj span {
   font-size: 0.82rem;
-  color: #c3d0e6;
+  color: var(--tinta-suave);
 }
 /* el aviso del sismo mayor: una línea bajo el reloj; se despliega para leer la explicación */
 .globo-aviso-mayor {
-  background: rgba(20, 14, 6, 0.9);
-  border: 1px solid rgba(224, 160, 74, 0.6);
+  background: rgba(43, 33, 25, 0.95);
+  border: 1px solid var(--aviso);
   border-radius: var(--r-placa);
-  color: #f3e3cc;
+  color: var(--tinta);
   font-size: 0.85rem;
   line-height: 1.45;
 }
@@ -1121,7 +1146,7 @@ tr.resaltada td {
   width: 0.5rem;
   height: 0.5rem;
   border-radius: 50%;
-  background: var(--mayor, #ffe14d); /* el mismo amarillo con que el globo marca ese sismo (COLOR_MAYOR) */
+  background: var(--mayor, #ffffff); /* el mismo blanco con que el globo marca ese sismo (COLOR_MAYOR) */
 }
 .globo-aviso-mayor .mas,
 .globo-aviso-mayor .menos {
@@ -1182,7 +1207,7 @@ tr.resaltada td {
   color: var(--texto);
 }
 .globo-region .aclaracion {
-  color: #8f9bb0;
+  color: var(--tinta-suave);
 }
 /* filtros en una fila, justo arriba del globo */
 .globo-filtros {
@@ -1233,7 +1258,7 @@ tr.resaltada td {
   gap: 0.45rem;
   align-items: center;
   padding: 0.5rem 0.6rem;
-  background: rgba(4, 7, 13, 0.82);
+  background: rgba(13, 10, 8, 0.82);
   border: 1px solid var(--trazo);
   border-radius: var(--r-placa);
 }
@@ -1253,7 +1278,7 @@ tr.resaltada td {
 .globo-reproductor .titulo-barra {
   font-size: 0.9rem;
   font-weight: 600;
-  color: #c3d0e6;
+  color: var(--tinta-suave);
   white-space: nowrap;
 }
 .globo-reproductor .selector {
@@ -1309,7 +1334,7 @@ tr.resaltada td {
 /* ---------- pantallas chicas ---------- */
 @media (max-width: 640px) {
   body {
-    font-size: 16px;
+    font-size: 17px;
   }
   section,
   header {
@@ -1394,16 +1419,16 @@ tr.resaltada td {
   margin: 2rem 0 0.9rem;
   padding: 0.65rem 1rem;
   background: var(--aviso-fondo);
-  border-left: 3px solid var(--aviso);
-  border-radius: 0 var(--r-control) var(--r-control) 0;
+  border: 1px solid var(--aviso);
+  border-radius: var(--r-placa);
   color: var(--texto);
   line-height: 1.5;
 }
 .problema-etiqueta {
   flex: none;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
   color: var(--aviso);
 }

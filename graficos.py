@@ -7,7 +7,7 @@ La tabla componente por componente de cada uno está en docs/GRAFICOS.md.
 Regla de color (una sola paleta, en palette.py):
   * el color de las cuatro clases SIEMPRE es la clase de réplicas (ninguna / pocas / moderadas / muchas): donde el
     gráfico muestra secuencias o cantidades de réplicas, se pintan por su clase;
-  * lo que no es una clase usa dos acentos fijos: azul verdoso = lo adoptado / lo que usa el modelo; rosa = lo
+  * lo que no es una clase usa dos acentos fijos: verde liquen = lo adoptado / lo que usa el modelo; rosa = lo
     descartado tras probarlo. Lo demás (también lo que no puede entrar al modelo), en grises; los grupos de casos, con la forma.
 """
 import json
@@ -17,14 +17,18 @@ import numpy as np
 import pandas as pd
 
 from palette import (CLASES, COLOR_CLASE, COLOR_DATOS, COLOR_DESCARTE, COLOR_ELEGIDO, COLOR_NEUTRO, COLOR_PARTICION,
-                     COLOR_SEMAFORO, EJE, FONDO_GRAFICO, GRILLA, TEXTO_FUERTE, TEXTO_GRAFICO)
+                     COLOR_SEMAFORO, EJE, FONDO_GRAFICO, GRILLA, OCEANO, TEXTO_FUERTE, TEXTO_GRAFICO, TIERRA,
+                     BORDE_TIERRA, COLOR_CINTURON)
 
 alt.data_transformers.disable_max_rows()
 
 # la misma escala de color en todos los gráficos
 ESCALA_CLASE = alt.Scale(domain=CLASES, range=COLOR_CLASE)
 CORTE_ALTO = 2.5            # tramo (+2,5 a +3,0 sobre el umbral) que el título de H1 cita; se lee directo en el gráfico
-FUENTE = "'Instrument Sans Variable', system-ui, -apple-system, 'Segoe UI', sans-serif"
+# tipografías del design system Estratos: Alegreya para el relato; IBM Plex Mono para lo que lee un instrumento (las
+# cifras de los ejes cuantitativos, que así quedan alineadas y sin los números de estilo antiguo de Alegreya)
+FUENTE = "'Alegreya Variable', Alegreya, 'Palatino Linotype', Georgia, serif"
+FUENTE_MONO = "'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace"
 
 
 def es(valor, decimales=0):
@@ -37,6 +41,7 @@ def estilo(chart):
     return (chart.configure(font=FUENTE, background=FONDO_GRAFICO)
             .configure_axis(labelFontSize=13, titleFontSize=13, grid=True, gridColor=GRILLA, domainColor=EJE,
                             tickColor=EJE, labelColor=TEXTO_GRAFICO, titleColor=TEXTO_GRAFICO)
+            .configure_axisQuantitative(labelFont=FUENTE_MONO, labelFontSize=12)
             .configure_view(stroke=None)
             .configure_title(fontSize=13, fontWeight=600, color=TEXTO_FUERTE, anchor="start", offset=10)
             .configure_header(labelFontSize=13, labelColor=TEXTO_FUERTE, titleFontSize=13, titleColor=TEXTO_GRAFICO)
@@ -267,7 +272,7 @@ def grafico_movimientos(sem):
     t = t[t["clase"] == CLASES[3]].copy()
     t["rotulo"] = [es(v, 1) if v < 1 else es(v) for v in t["por_cien"]]
     x = alt.Scale(domain=[0, 75], nice=False)
-    VERDE = COLOR_CLASE[3]
+    MUCHAS = COLOR_CLASE[3]
 
     def barras(d, orden, alto, titulo=None, subtitulo=None, color_titulo=TEXTO_FUERTE, tamano=12):
         y = alt.Y("grupo:N", sort=orden, title=None, axis=alt.Axis(grid=False, domain=False, ticks=False, labelFontSize=13,
@@ -275,7 +280,7 @@ def grafico_movimientos(sem):
         base = alt.Chart(d).encode(y=y, x=alt.X("por_cien:Q", scale=x, axis=None))
         tooltip = [alt.Tooltip("grupo:N", title="Secuencias"), alt.Tooltip("sismos:Q", title="Cuántas hay", format=","),
                    alt.Tooltip("rotulo:N", title="De cada 100, con más de 10 réplicas")]
-        b = base.mark_bar(color=VERDE, cornerRadiusEnd=3, height=22).encode(tooltip=tooltip)
+        b = base.mark_bar(color=MUCHAS, cornerRadiusEnd=3, height=22).encode(tooltip=tooltip)
         n = base.mark_text(align="left", dx=8, fontSize=14, fontWeight=700, color=TEXTO_FUERTE).encode(text="rotulo:N")
         props = {"width": 420, "height": alto * len(orden)}
         if titulo:
@@ -331,11 +336,11 @@ def grafico_cinturon(regiones, tierra):
     linea = {"type": "Feature", "properties": {},
              "geometry": {"type": "MultiLineString", "coordinates": [[list(p) for p in tramo] for tramo in CINTURON]}}
 
-    fondo = alt.Chart(alt.Data(values=[{"type": "Sphere"}])).mark_geoshape(fill="#0c1424", stroke=EJE, strokeWidth=0.5)
+    fondo = alt.Chart(alt.Data(values=[{"type": "Sphere"}])).mark_geoshape(fill=OCEANO, stroke=EJE, strokeWidth=0.5)
     tierra_ = alt.Chart(alt.Data(values=tierra, format=alt.DataFormat(type="topojson", feature="land"))).mark_geoshape(
-        fill="#2a3a57", stroke="#3b4d6e", strokeWidth=0.5)
+        fill=TIERRA, stroke=BORDE_TIERRA, strokeWidth=0.5)
     cinturon = alt.Chart(alt.Data(values=[linea])).mark_geoshape(
-        filled=False, stroke=COLOR_SEMAFORO["rojo"], strokeWidth=14, strokeOpacity=0.45, strokeCap="round", strokeJoin="round")
+        filled=False, stroke=COLOR_CINTURON, strokeWidth=14, strokeOpacity=0.45, strokeCap="round", strokeJoin="round")
     recuadros = alt.Chart(alt.Data(values=cajas["features"])).mark_geoshape(
         fill=COLOR_ELEGIDO, fillOpacity=0.18, stroke=COLOR_ELEGIDO, strokeWidth=2.2).encode(
         tooltip=[alt.Tooltip("properties.nombre:N", title="Región"),
@@ -348,7 +353,7 @@ def grafico_cinturon(regiones, tierra):
             align=alinear, fontSize=12, fontWeight=700, color=TEXTO_FUERTE).encode(
             longitude="lon:Q", latitude="lat:Q", text="t:N"))
     leyenda = pd.DataFrame([{"lon": -150, "lat": -12, "t": "Cinturón de Fuego del Pacífico|(trazado aproximado)"}])
-    texto_cinturon = alt.Chart(leyenda).mark_text(fontSize=12, fontWeight=700, color=COLOR_SEMAFORO["rojo"],
+    texto_cinturon = alt.Chart(leyenda).mark_text(fontSize=12, fontWeight=700, color=COLOR_CINTURON,
                                                    lineBreak="|", align="center").encode(
         longitude="lon:Q", latitude="lat:Q", text="t:N")
     return (alt.layer(fondo, tierra_, cinturon, recuadros, *texto, texto_cinturon)
@@ -474,7 +479,7 @@ def grafico_atipicos(datos, anotaciones):
 # =================================================================== 3. EL MODELO
 def grafico_evolucion(pasos):
     """El camino de la Entrega 3: cada paso que se probó, en orden, con su f1 macro en validación (media ± desvío).
-    Lo que se adoptó va en azul verdoso y unido por una línea; lo que se probó y se dejó, en rosa y hueco."""
+    Lo que se adoptó va en verde liquen y unido por una línea; lo que se probó y se dejó, en rosa y hueco."""
     t = pasos.copy()
     t["bajo"], t["alto"] = t["f1"] - t["desvio"], t["f1"] + t["desvio"]
     orden = t.drop_duplicates("paso").sort_values("orden")["paso"].tolist()

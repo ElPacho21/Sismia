@@ -5,8 +5,8 @@
 //   * rectángulos de las cinco regiones         -> dónde se aplica cada Mc
 //   * anillos que laten en los sismos M7+       -> sólo para llamar la atención sobre los más grandes
 //   * una secuencia animada                      -> cada evento aparece en su momento (reloj logarítmico);
-//                                                  su anillo se expande una vez; el principal en rojo, un sismo
-//                                                  posterior mayor (si lo hay) en amarillo, las réplicas con el color
+//                                                  su anillo se expande una vez; el principal en azul, un sismo
+//                                                  posterior mayor (si lo hay) en blanco, las réplicas con el color
 //                                                  de la clase real de la secuencia
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
@@ -97,7 +97,7 @@ const VERT_ATMOSFERA = `
   void main() { vN = normalize(normalMatrix * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
 const FRAG_ATMOSFERA = `
   varying vec3 vN;
-  void main() { float i = pow(0.66 - dot(vN, vec3(0.0, 0.0, 1.0)), 3.0); gl_FragColor = vec4(0.25, 0.55, 0.95, 1.0) * max(i, 0.0); }`;
+  void main() { float i = pow(0.66 - dot(vN, vec3(0.0, 0.0, 1.0)), 3.0); gl_FragColor = vec4(0.62, 0.42, 0.29, 1.0) * max(i, 0.0); }`;
 
 // generador pseudoaleatorio con semilla: las estrellas y las fases de los anillos son siempre las mismas
 function azar(semilla) {
@@ -111,8 +111,8 @@ export class EscenaGlobo {
     this.datos = o.datos;
     this.regiones = o.regiones;
     this.colores = o.colores.map((c) => new THREE.Color(c));
-    this.colorPrincipal = new THREE.Color(o.colorPrincipal ?? "#ff3b3b"); // el sismo principal de la secuencia animada
-    this.colorMayor = new THREE.Color(o.colorMayor ?? "#ffe14d"); // un sismo posterior mayor que el principal, si lo hay
+    this.colorPrincipal = new THREE.Color(o.colorPrincipal ?? "#2ca2ff"); // el sismo principal de la secuencia animada
+    this.colorMayor = new THREE.Color(o.colorMayor ?? "#ffffff"); // un sismo posterior mayor que el principal, si lo hay
     this.reducirMovimiento = o.reducirMovimiento;
     this.alHover = o.alHover;
     this.alClickPunto = o.alClickPunto;
@@ -128,7 +128,7 @@ export class EscenaGlobo {
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     this.renderer.outputColorSpace = THREE.LinearSRGBColorSpace; // sin conversión: los colores ya están en sRGB (también en los shaders)
-    this.renderer.setClearColor(0x04070d);
+    this.renderer.setClearColor(0x0d0a08);
     this.canvas = this.renderer.domElement;
     this.canvas.tabIndex = 0;
     this.canvas.style.display = "block";
@@ -173,7 +173,7 @@ export class EscenaGlobo {
   // ------------------------------------------------------------ construcción
   #construirMundo(tierra) {
     // la esfera oscura y un halo en el borde
-    this.scene.add(new THREE.Mesh(new THREE.SphereGeometry(1, 64, 48), new THREE.MeshBasicMaterial({ color: 0x0a1424 })));
+    this.scene.add(new THREE.Mesh(new THREE.SphereGeometry(1, 64, 48), new THREE.MeshBasicMaterial({ color: 0x1a1410 })));
     const halo = new THREE.Mesh(
       new THREE.SphereGeometry(1, 64, 48),
       new THREE.ShaderMaterial({ vertexShader: VERT_ATMOSFERA, fragmentShader: FRAG_ATMOSFERA, side: THREE.BackSide, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false }),
@@ -185,7 +185,7 @@ export class EscenaGlobo {
     const grat = [];
     for (let lat = -60; lat <= 60; lat += 30) for (let lon = -180; lon < 180; lon += 4) grat.push(...latLonAVec3(lat, lon, 1.0015), ...latLonAVec3(lat, lon + 4, 1.0015));
     for (let lon = -180; lon < 180; lon += 30) for (let lat = -88; lat < 88; lat += 4) grat.push(...latLonAVec3(lat, lon, 1.0015), ...latLonAVec3(Math.min(lat + 4, 88), lon, 1.0015));
-    this.#lineas(grat, 0x1a2a42, 0.8);
+    this.#lineas(grat, 0x33281e, 0.8);
 
     // contorno de los continentes (Natural Earth, dominio público)
     const costa = [];
@@ -196,7 +196,7 @@ export class EscenaGlobo {
       const poligonos = g.type === "MultiPolygon" ? g.coordinates : [g.coordinates];
       for (const p of poligonos) for (const r of p) anillo(r);
     }
-    this.#lineas(costa, 0x5d7396, 0.75);
+    this.#lineas(costa, 0x5c4a3a, 0.75);
 
     // estrellas
     const rnd = azar(7);
@@ -207,7 +207,7 @@ export class EscenaGlobo {
     }
     const g = new THREE.BufferGeometry();
     g.setAttribute("position", new THREE.Float32BufferAttribute(est, 3));
-    this.scene.add(new THREE.Points(g, new THREE.PointsMaterial({ color: 0x4a5a78, size: 1.3, sizeAttenuation: false })));
+    this.scene.add(new THREE.Points(g, new THREE.PointsMaterial({ color: 0x5e5044, size: 1.3, sizeAttenuation: false })));
   }
 
   #lineas(vertices, color, opacidad) {
@@ -255,7 +255,7 @@ export class EscenaGlobo {
         for (let i = 0; i < pasos; i++) v.push(...latLonAVec3(lat0 + ((lat1 - lat0) * i) / pasos, lon0 + ((lon1 - lon0) * i) / pasos, 1.004), ...latLonAVec3(lat0 + ((lat1 - lat0) * (i + 1)) / pasos, lon0 + ((lon1 - lon0) * (i + 1)) / pasos, 1.004));
       };
       borde(r.sur, r.oeste, r.sur, r.este); borde(r.sur, r.este, r.norte, r.este); borde(r.norte, r.este, r.norte, r.oeste); borde(r.norte, r.oeste, r.sur, r.oeste);
-      this.cajas.set(r.nombre, this.#lineas(v, 0x8fa6c9, 0.55));
+      this.cajas.set(r.nombre, this.#lineas(v, 0xc6b39d, 0.55));
       const e = document.createElement("div");
       e.className = "globo-etiqueta";
       this.contenedor.appendChild(e);
@@ -326,7 +326,7 @@ export class EscenaGlobo {
   resaltarRegion(nombre) {
     for (const [n, l] of this.cajas) {
       l.material.opacity = n === nombre ? 1 : 0.5;
-      l.material.color.set(n === nombre ? 0xffffff : 0x8fa6c9);
+      l.material.color.set(n === nombre ? 0xffffff : 0xc6b39d);
     }
     for (const [n, e] of this.etiquetas) e.el.classList.toggle("elegida", n === nombre);
   }
@@ -375,8 +375,8 @@ export class EscenaGlobo {
     const pos = new Float32Array(m * 3), mag = new Float32Array(m), s = new Float32Array(m), col = new Float32Array(m * 3);
     const c = this.colores[claseIdx];
     const centro = new THREE.Vector3();
-    // el evento 0 es el sismo principal (el que abre la secuencia): en rojo. Si después vino uno mayor, el más grande de
-    // ellos va en amarillo. Los dos se dibujan al final, encima de las réplicas (que van con el color de la clase).
+    // el evento 0 es el sismo principal (el que abre la secuencia): en azul. Si después vino uno mayor, el más grande de
+    // ellos va en blanco. Los dos se dibujan al final, encima de las réplicas (que van con el color de la clase).
     let mayor = -1;
     for (let i = 1; i < m; i++) if (ev.mag[i] > ev.mag[0] && (mayor < 0 || ev.mag[i] > ev.mag[mayor])) mayor = i;
     const orden = [];
