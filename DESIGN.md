@@ -79,7 +79,7 @@ components:
 
 **Creative North Star: «Estratos»** (design system *Sisimia Estratos*, tema **basalto**)
 
-La página se lee como un corte de terreno: marrones de tierra, placas planas separadas por vetas de 1px y un único acento, la arcilla. La interfaz es monocroma; **el color vivo es dato**: sólo las cuatro clases de réplicas, el modelo elegido y lo descartado llevan croma. El design system define dos temas, **basalto** (oscuro, por defecto) y **loess** (claro); se eligen con el botón de ícono de la barra (sol en el tema oscuro, luna en el claro: muestra adónde se pasa; es el único ícono de la interfaz), que se recuerda en el navegador (`localStorage`, clave `sisimia-tema`; `index.html` lo aplica antes de dibujar para que no parpadee). El globo es el espacio: queda oscuro en los dos.
+La página se lee como un corte de terreno: marrones de tierra, placas planas separadas por vetas de 1px y un único acento, la arcilla. La interfaz es monocroma; **el color vivo es dato**: sólo las cuatro clases de réplicas, el modelo elegido y lo descartado llevan croma. El design system define dos temas, **basalto** (oscuro, por defecto) y **loess** (claro); se eligen con el botón de ícono del testigo (sol en el tema oscuro, luna en el claro: muestra adónde se pasa; es el único ícono de la interfaz), que se recuerda en el navegador (`localStorage`, clave `sisimia-tema`; `index.html` lo aplica antes de dibujar para que no parpadee). El globo es el espacio: queda oscuro en los dos.
 
 La única firma decorativa es una traza de sismograma que se dibuja una vez en la portada (ornamental, sin datos). Sin sombras, sin degradados decorativos, sin tarjetas idénticas.
 
@@ -95,7 +95,7 @@ La única firma decorativa es una traza de sismograma que se dibuja una vez en l
 Los tokens viven en `:root` de `app/src/estilos.css` con los nombres del design system. Los nombres anteriores (`--hielo`, `--placa-alta`, `--trazo`, `--texto`…) quedan como alias hasta renombrar las reglas.
 
 ### Acento
-- **Arcilla** (#e2946a): foco, enlaces, resumen de «Cómo lo sabemos», marcadores de sección, deslizadores, estado activo de la barra. Nunca como relleno de botones o bloques: los resaltes son tonales (`estrato-alto`).
+- **Arcilla** (#e2946a): foco, enlaces, resumen de «Cómo lo sabemos», marcadores de sección, deslizadores, el marcador del testigo y la capa de la sección actual. Nunca como relleno de botones o bloques: los resaltes son tonales (`estrato-alto`).
 
 ### Neutros
 - **Suelo** (#16110d): fondo de página. **Estrato** (#211912) y **Estrato alto** (#2b2119): paneles, campos, chips. **Placa** (#211912): fondo de los gráficos. **Veta** (#45362a) y **Veta fuerte** (#7d6853, ≥3:1): filetes y bordes de controles.
@@ -132,11 +132,11 @@ Los tokens viven en `:root` de `app/src/estilos.css` con los nombres del design 
 
 ## Layout
 
-Columna de 1180px. Portada a ancho completo con la franja de tres cifras. El tallo es una grilla de 250px + resto (gap 2,2rem) bajo 960px pasa a bloque. La copa va a ancho completo, con filete superior y un tramo de acento de 56px. Barra sticky de 56px; `scroll-padding-top` de 72px. En móvil: padding reducido, globo de 520px, cifras apiladas.
+Columna de 1180px. Portada a ancho completo con la franja de tres cifras. El tallo es una grilla de 250px + resto (gap 2,2rem) bajo 960px pasa a bloque. La copa va a ancho completo, con filete superior y un tramo de acento de 56px. La navegación es el testigo: en pantallas de más de 960px, una columna fija de 64px a la izquierda (el cuerpo le deja ese ancho; `scroll-padding-top` de 24px); hasta 960px, una cabecera sticky de 61px arriba (`scroll-padding-top` de 72px). En móvil: padding reducido, globo de 520px, cifras apiladas.
 
 ## Elevation & Depth
 
-Plano. La profundidad es tonal: Suelo → Estrato → Estrato alto, separadas por filetes de 1px. Excepciones funcionales: desenfoque de fondo en la barra y paneles translúcidos sobre el globo. Nada se eleva en hover; los estados cambian borde o fondo.
+Plano. La profundidad es tonal: Suelo → Estrato → Estrato alto, separadas por filetes de 1px. Excepción funcional: paneles translúcidos sobre el globo. Nada se eleva en hover; los estados cambian borde o fondo.
 
 ## Shapes
 
@@ -148,7 +148,7 @@ Radios chicos, como piedra cortada: 3px controles, 4px placas, 10px globo, píld
 - **«Cómo lo sabemos»:** `details` cerrado por defecto; chevron que rota y apertura animada de altura.
 - **Campos y chips:** fondo Estrato alto; foco arcilla de 2px; el chip elegido (`aria-pressed`) toma la arcilla en borde y texto; campo inválido con borde `error`.
 - **Respuesta del modelo:** veredicto de 2,1rem con borde del color de la clase; barras que animan su ancho, con marcas de escala; alto mínimo para que el panel no salte.
-- **Barra:** subrayado arcilla que entra en la sección activa.
+- **Testigo (navegación):** un testigo de perforación. Cada sección del relato es una capa con su color de horizonte (`horizonte-1` a `horizonte-4`) y un alto proporcional a lo que mide en la página; Explorá y Probá son capas huecas, tras el borde de la copa. Un marcador de arcilla baja por las capas con la lectura, y al cambiar de sección su rótulo aparece un momento. Con el mouse o el foco se despliega el corte con el título de cada sección; Escape lo cierra. «Sisimia» va en vertical arriba y el botón de tema abajo. Hasta 960px se acuesta: una franja de capas de 8px con el marcador, la sección actual como botón que abre la lista, y el tema. Componente `Testigo.jsx`.
 - **Globo:** caja `globo-espacio` con paneles translúcidos; en pantallas táctiles un dedo desplaza la página y dos giran.
 - **Movimiento:** `prefers-reduced-motion` desactiva todo; las transiciones usan propiedades explícitas.
 

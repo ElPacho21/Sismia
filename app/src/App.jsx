@@ -11,32 +11,8 @@ import ComoModelo from "./componentes/ComoModelo.jsx";
 import Problema from "./componentes/Problema.jsx";
 import GloboPuerta from "./componentes/GloboPuerta.jsx";
 import ProbaModelo, { EJEMPLOS, usePrediccion } from "./componentes/ProbaModelo.jsx";
+import Testigo from "./componentes/Testigo.jsx";
 
-const NAV = [
-  ["proyecto", "El proyecto"],
-  ["datos", "Los datos"],
-  ["encontramos", "Lo que encontramos"],
-  ["modelo", "El modelo"],
-  ["explora", "Explorá"],
-  ["proba", "Probá el modelo"],
-];
-
-// íconos del botón de tema: trazo de 1,8px con el color del texto, decorativos (el botón lleva su aria-label)
-function IconoSol() {
-  return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
-      <circle cx="12" cy="12" r="4.2" />
-      <path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6" />
-    </svg>
-  );
-}
-function IconoLuna() {
-  return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" aria-hidden="true">
-      <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" />
-    </svg>
-  );
-}
 
 export default function App() {
   const [d, setD] = useState(null);
@@ -68,25 +44,6 @@ export default function App() {
   }, []);
 
   const prediccion = usePrediccion(d?.modelo ?? null, entrada);
-
-  // la barra marca la sección que se está leyendo
-  const [actual, setActual] = useState("proyecto");
-  const listoParaMirar = Boolean(d && filtros);
-  useEffect(() => {
-    if (!listoParaMirar) return;
-    const ojo = new IntersectionObserver(
-      (entradas) => {
-        const visible = entradas.filter((e) => e.isIntersecting).sort((x, y) => y.intersectionRatio - x.intersectionRatio)[0];
-        if (visible) setActual(visible.target.id);
-      },
-      { rootMargin: "-30% 0px -55% 0px", threshold: [0, 0.01, 0.5] },
-    );
-    for (const [id] of NAV) {
-      const el = document.getElementById(id);
-      if (el) ojo.observe(el);
-    }
-    return () => ojo.disconnect();
-  }, [listoParaMirar]);
 
   if (error) return <p className="error centro">No se pudo cargar la aplicación: {error}</p>;
   if (!d || !filtros) return <p className="cargando centro">Cargando…</p>;
@@ -120,27 +77,18 @@ export default function App() {
 
   return (
     <TemaContexto.Provider value={{ tema, claro: d.paleta.tema_claro }}>
-      <nav className="barra" aria-label="Secciones">
-        <a className="marca" href="#proyecto" translate="no">
-          Sisimia
-        </a>
-        {NAV.map(([id, nombre]) => (
-          <a key={id} href={`#${id}`} aria-current={actual === id ? "true" : undefined}>
-            {nombre}
-          </a>
-        ))}
-        {/* el tema: oscuro (basalto) o claro (loess); se recuerda en este navegador. El ícono muestra adónde se pasa:
-            el sol en el tema oscuro, la luna en el claro */}
-        {(() => {
-          const otro = tema === "loess" ? "basalto" : "loess";
-          const rotulo = otro === "loess" ? "Pasar al tema claro" : "Pasar al tema oscuro";
-          return (
-            <button type="button" className="tema" onClick={() => elegirTema(otro)} aria-label={rotulo} title={rotulo}>
-              {otro === "loess" ? <IconoSol /> : <IconoLuna />}
-            </button>
-          );
-        })()}
-      </nav>
+      <Testigo
+        tema={tema}
+        alElegirTema={elegirTema}
+        secciones={[
+          { id: "proyecto", rotulo: "El proyecto", titulo: textos.pregunta },
+          { id: "datos", rotulo: "1 · Los datos", titulo: textos.titulo_datos },
+          { id: "encontramos", rotulo: "2 · Lo que encontramos", titulo: textos.titulo_hallazgo },
+          { id: "modelo", rotulo: "3 · El modelo", titulo: textos.titulo_modelo },
+          { id: "explora", rotulo: "Explorá", titulo: `Recorré las ${n(total)} secuencias y mirá qué dijo el modelo sobre cada una`, copa: true },
+          { id: "proba", rotulo: "Probá el modelo", titulo: "Cargá un sismo nuevo y mirá cuántas réplicas espera el modelo", copa: true },
+        ]}
+      />
 
       <main>
         {/* la pregunta es lo más grande de la portada; la respuesta y el título del proyecto van en chico */}
