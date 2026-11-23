@@ -1124,7 +1124,7 @@ tr.resaltada td {
   color: var(--suave);
 }
 .ejemplos button,
-.globo-teclas button,
+.globo-pad button,
 .globo-reproductor button {
   border: 1px solid var(--trazo-fuerte);
   background: var(--placa-alta);
@@ -1141,13 +1141,13 @@ tr.resaltada td {
   padding: 0.3rem 0.8rem;
 }
 .ejemplos button:hover,
-.globo-teclas button:hover,
+.globo-pad button:hover,
 .globo-reproductor button:hover {
   background: var(--hielo-fondo);
   border-color: var(--hielo);
 }
 .ejemplos button:active,
-.globo-teclas button:active,
+.globo-pad button:active,
 .globo-reproductor button:active {
   transform: scale(0.96);
 }
@@ -1554,23 +1554,21 @@ tr.resaltada td {
     max-width: none;
   }
 }
-.globo-teclas {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  align-items: center;
-  margin-top: 0.8rem;
-  font-size: 0.9rem;
-  color: var(--suave);
+/* la cabecera del globo: filtros y resultado de la región, pegados al borde de arriba como la cabeza de la misma tarjeta */
+.globo-cabecera {
+  padding: 0.8rem 1rem 0.7rem;
+  background: var(--placa-alta);
+  border: 1px solid var(--trazo);
+  border-bottom: none;
+  border-radius: var(--r-globo) var(--r-globo) 0 0;
 }
-.globo-teclas button {
-  min-width: 2.3rem;
-  padding: 0.3rem 0.55rem;
-  border-radius: var(--r-control);
+.globo-cabecera + .globo-caja {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
 }
 /* una línea con el resultado de la región, entre los filtros y el globo */
 .globo-region {
-  margin: 0 0 0.8rem;
+  margin: 0;
   font-size: 0.88rem;
   color: var(--suave);
 }
@@ -1587,6 +1585,11 @@ tr.resaltada td {
   gap: 0.6rem 1rem;
   align-items: flex-end;
   margin-bottom: 0.8rem;
+}
+.globo-cabecera .globo-filtros {
+  margin-bottom: 0.6rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--trazo);
 }
 .globo-filtros label {
   display: block;
@@ -1674,6 +1677,102 @@ tr.resaltada td {
   bottom: 76px;
 }
 
+/* el pad para mover el globo, abajo a la derecha (encima del reproductor, como la leyenda a la izquierda): una cruz de
+   flechas con «volver a la vista de partida» en el centro y, debajo, el zoom */
+.globo-pad {
+  --celda: 34px;
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  z-index: 2;
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  opacity: 0.78;
+  transition: opacity 160ms ease;
+}
+.globo-caja:has(.globo-reproductor) .globo-pad {
+  bottom: 76px;
+}
+.globo-pad:hover,
+.globo-pad:focus-within {
+  opacity: 1;
+}
+.globo-pad .cruz {
+  display: grid;
+  grid-template-columns: repeat(3, var(--celda));
+  grid-template-rows: repeat(3, var(--celda));
+  grid-template-areas: ". arriba ." "izquierda centro derecha" ". abajo .";
+  padding: 4px;
+  background: rgba(13, 10, 8, 0.82);
+  border: 1px solid var(--trazo);
+  border-radius: 50%;
+}
+.globo-pad .cruz button {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border-color: transparent;
+  background: transparent;
+  border-radius: 50%;
+}
+.globo-pad .cruz svg {
+  width: 15px;
+  height: 15px;
+  fill: currentColor;
+  stroke: currentColor;
+  stroke-width: 1.4;
+}
+.globo-pad .arriba {
+  grid-area: arriba;
+}
+.globo-pad .izquierda {
+  grid-area: izquierda;
+}
+.globo-pad .izquierda svg {
+  transform: rotate(-90deg);
+}
+.globo-pad .derecha {
+  grid-area: derecha;
+}
+.globo-pad .derecha svg {
+  transform: rotate(90deg);
+}
+.globo-pad .abajo {
+  grid-area: abajo;
+}
+.globo-pad .abajo svg {
+  transform: rotate(180deg);
+}
+.globo-pad .centro {
+  grid-area: centro;
+  color: var(--tinta-suave);
+}
+.globo-pad .centro svg {
+  width: 14px;
+  height: 14px;
+}
+.globo-pad .zoom {
+  display: flex;
+  overflow: hidden;
+  background: rgba(13, 10, 8, 0.82);
+  border: 1px solid var(--trazo);
+  border-radius: var(--r-pildora);
+}
+.globo-pad .zoom button {
+  width: 2.6rem;
+  height: 2rem;
+  padding: 0;
+  font-size: 1.15rem;
+  line-height: 1;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+.globo-pad .zoom button + button {
+  border-left: 1px solid var(--trazo);
+}
+
 /* ---------- táctil: objetivos de 44px, y el globo deja pasar el desplazamiento de un dedo ---------- */
 @media (pointer: coarse) {
   .formulario input,
@@ -1681,7 +1780,6 @@ tr.resaltada td {
   .globo-filtros select,
   .vega-bind select,
   .ejemplos button,
-  .globo-teclas button,
   .globo-reproductor button,
   .globo-reproductor .selector {
     min-height: 44px;
@@ -1699,6 +1797,14 @@ tr.resaltada td {
   .globo-caja,
   .globo-caja canvas {
     touch-action: pan-x pan-y;
+  }
+  .globo-pad {
+    --celda: 40px;
+    opacity: 1;
+  }
+  .globo-pad .zoom button {
+    width: 3.2rem;
+    height: 44px;
   }
 }
 
@@ -1725,8 +1831,9 @@ tr.resaltada td {
     padding-bottom: 1rem;
   }
   .globo-caja {
-    /* en el celular los filtros y la línea de la región ocupan más alto */
-    height: clamp(340px, calc(100svh - 330px), 520px);
+    /* en el celular los filtros y la línea de la región ocupan más alto; el mínimo deja lugar para el resumen de la
+       secuencia arriba y la leyenda y el pad abajo sin que se pisen */
+    height: clamp(530px, calc(100svh - 300px), 560px);
   }
   /* los filtros en dos columnas, pegados al globo */
   .globo-filtros {
@@ -1741,6 +1848,27 @@ tr.resaltada td {
   .globo-filtros .titulo-filtros {
     grid-column: 1 / -1;
     padding-bottom: 0;
+  }
+  .globo-cabecera {
+    padding: 0.7rem 0.75rem 0.6rem;
+  }
+  /* el pad y la leyenda comparten la franja de abajo: el pad se achica, la leyenda deja las pistas (con el dedo se
+     arrastra solo) y achica la letra */
+  .globo-pad {
+    --celda: 32px;
+    right: 10px;
+  }
+  .globo-pad .zoom button {
+    width: 2.6rem;
+    height: 36px;
+  }
+  .globo-leyenda {
+    left: 10px;
+    padding: 0.45rem 0.6rem;
+    font-size: 0.76rem;
+  }
+  .globo-leyenda .chico {
+    display: none;
   }  /* en el celular, sólo lo esencial sobre el globo: elegir; o reproducir, el tiempo y la ✕ */
   .globo-reproductor .encuadre,
   .globo-reproductor .titulo-barra,

@@ -174,3 +174,12 @@ Cambios pedidos por el docente después de la Entrega 4. El hilo: que cada secci
   Los recuadros van agrupados por el motivo de salida, con una llave y «n motivo» debajo de la última fila, y las tres del modelo
   van en verde liquen en las tres filas para seguirlas. Se descartó dibujar tres rectángulos separados de 27, 15 y 3 recuadros:
   volvía la escalera y se perdía cuáles salen y por qué.
+- **El globo, en una sola pieza.** Los botones para mover el globo (seis sueltos debajo, con una línea de ayuda) pasaron
+  adentro, abajo a la derecha, como en los mapas: un pad redondo con las cuatro flechas, un botón en el centro que vuelve a la
+  vista de partida (la secuencia entera, la región elegida o el panorama) y, debajo, − y +. Sigue siendo la alternativa a
+  arrastrar, así que cada flecha es un botón con su nombre; la pista «Arrastrá para girar · rueda para acercar» pasó a la
+  leyenda (en el celular no va). Los filtros no se pusieron encima del globo: con una secuencia animada ya tiene reloj,
+  resumen, leyenda, reproductor y pad, y los filtros también mueven las barras de abajo, así que esconderlos en un panel del
+  globo los hacía parecer propios del globo y ocultaba qué está filtrado. Pasaron a ser la cabecera de la misma tarjeta,
+  junto con la línea de la región, pegada al borde de arriba. En el celular el globo tiene al menos 530 px de alto para que
+  el resumen de arriba no pise la leyenda y el pad de abajo.

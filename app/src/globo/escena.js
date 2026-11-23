@@ -135,7 +135,7 @@ export class EscenaGlobo {
     this.canvas.setAttribute("role", "img");
     this.canvas.setAttribute(
       "aria-label",
-      "Globo terrestre con los sismos del dataset. Flechas para girar, más y menos para acercar. Los controles de abajo hacen lo mismo con botones.",
+      "Globo terrestre con los sismos del dataset. Flechas para girar, más y menos para acercar. Los botones de la esquina hacen lo mismo.",
     );
     contenedor.appendChild(this.canvas);
 
