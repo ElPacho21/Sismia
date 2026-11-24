@@ -58,6 +58,8 @@
   --aviso-fondo: var(--estrato-alto);
   --titulos: var(--serif);
   --cuerpo: var(--serif);
+  --tam-cuerpo: 20px; /* Alegreya tiene ojo chico */
+  --tam-cuerpo-chico: 17px; /* notas, «Cómo lo sabemos», avisos, pie */
 }
 
 /* tema loess (claro): sólo cambian los colores */
@@ -102,7 +104,7 @@ body {
   color: var(--texto);
   font-family: var(--cuerpo);
   line-height: 1.55;
-  font-size: 19px; /* cuerpo: Alegreya tiene ojo chico */
+  font-size: var(--tam-cuerpo);
   font-feature-settings: "tnum" 0;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
@@ -690,12 +692,12 @@ h2 {
   display: block;
   margin-top: 0.5rem;
   max-width: 22em;
-  font-size: 1rem;
+  font-size: var(--tam-cuerpo-chico);
   color: var(--suave);
   line-height: 1.45;
 }
 .nota {
-  font-size: 0.95rem;
+  font-size: var(--tam-cuerpo-chico);
   color: var(--suave);
   max-width: 62em;
 }
@@ -867,7 +869,7 @@ h2 {
 .como-cuerpo {
   padding: 0.3rem 1.4rem 1.3rem;
   border-top: 1px solid var(--trazo);
-  font-size: 0.97rem;
+  font-size: var(--tam-cuerpo-chico);
 }
 .como-cuerpo h4 {
   margin: 1.7rem 0 0.4rem;
@@ -946,7 +948,7 @@ tr.resaltada td {
   padding-left: 1.2rem;
   max-width: 44em;
   margin: 0 0 1.6rem;
-  font-size: 0.97rem;
+  font-size: var(--tam-cuerpo-chico);
   color: var(--tinta-suave);
 }
 .guia li {
@@ -1359,7 +1361,7 @@ tr.resaltada td {
 }
 .avisos {
   padding: 0.75rem 1rem 0.75rem 2.1rem;
-  font-size: 0.9rem;
+  font-size: var(--tam-cuerpo-chico);
   margin: 0.9rem 0;
 }
 .avisos ul {
@@ -1383,7 +1385,7 @@ tr.resaltada td {
 }
 .origen {
   margin: 0.9rem 0 0;
-  font-size: 0.88rem;
+  font-size: var(--tam-cuerpo-chico);
   color: var(--suave);
 }
 .origen.navegador {
@@ -1394,7 +1396,7 @@ tr.resaltada td {
   margin-top: 5rem;
   padding: 2rem 1.25rem 3.5rem;
   text-align: center;
-  font-size: 0.85rem;
+  font-size: var(--tam-cuerpo-chico);
   color: var(--suave);
   border-top: 1px solid var(--trazo);
 }
@@ -1926,8 +1928,10 @@ tr.resaltada td {
 
 /* ---------- pantallas chicas ---------- */
 @media (max-width: 640px) {
-  body {
-    font-size: 17px;
+  :root,
+  .globo-caja {
+    --tam-cuerpo: 18px;
+    --tam-cuerpo-chico: 16px;
   }
   section,
   header {

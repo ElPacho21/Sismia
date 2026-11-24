@@ -37,7 +37,7 @@ typography:
     letterSpacing: "-0.005em"
   body:
     fontFamily: "Alegreya Variable, Georgia, serif"
-    fontSize: "19px"
+    fontSize: "20px"
     fontWeight: 400
     lineHeight: 1.55
   label:
@@ -125,7 +125,8 @@ Los tokens viven en `:root` de `app/src/estilos.css` con los nombres del design 
 ### Hierarchy
 - **Display** (800, 2.2–3.7rem, 1.06, -0.01em): la pregunta de la portada y cifras grandes.
 - **Headline** (700, 1.6–2.125rem, 1.12, -0.005em): h2; en el tallo, 1.45–1.8rem y sticky.
-- **Body** (400, 19px, 1.55; 17px en móvil): Alegreya tiene ojo chico.
+- **Body** (400, 20px, 1.55; 18px en móvil): Alegreya tiene ojo chico. Tokens `--tam-cuerpo` y `--tam-cuerpo-chico`.
+- **Body chico** (400, 17px; 16px en móvil): notas, «Cómo lo sabemos», guía, avisos, fuente de la placa, pie.
 - **Label** (Plex Mono 500, 13px, 0.02em, en minúscula de oración): etiqueta de sección con marcador (punto lleno en el tallo, anillo en la copa).
 - **Cifras**: Alegreya trae números de estilo antiguo; en cifras, tablas, barras y el reloj del globo se fuerza `lining-nums tabular-nums`.
 
