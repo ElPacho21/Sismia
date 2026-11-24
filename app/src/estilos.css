@@ -169,7 +169,12 @@ canvas:focus-visible,
   z-index: -1;
   left: 0;
   top: 0;
+  width: 100%;
+  overflow: hidden;
   pointer-events: none;
+}
+.grieta-fondo svg {
+  display: block;
 }
 .grieta-hueco {
   fill: var(--grieta-hueco);
