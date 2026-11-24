@@ -1,31 +1,92 @@
-/* Sisimia · «sala de registro sísmico».
-   Tema oscuro: la interfaz es casi monocromática y el color queda para los datos (las cuatro clases de réplicas
-   salen de palette.py y no se redefinen acá). El único acento de interfaz es el hielo. */
+/* Sisimia · design system «Estratos», tema basalto (oscuro).
+   La página se lee como un corte de terreno: marrones de tierra, interfaz monocroma y el color vivo reservado para los
+   datos (las cuatro clases de réplicas salen de palette.py y no se redefinen acá). El único acento de interfaz es la
+   arcilla. Los nombres y valores son los tokens del design system Sisimia Estratos.
+   Hay un segundo tema, loess (claro), que se elige en el testigo (la navegación): data-theme="loess" en <html>.
+   El globo es el espacio: .globo-caja declara los tokens de basalto y queda oscuro en los dos temas. */
 
-:root {
+:root,
+.globo-caja {
   color-scheme: dark;
   interpolate-size: allow-keywords;
 
-  --noche: #070b12;
-  --placa: #111a2b;
-  --placa-alta: #182338;
-  --trazo: #2a3b5c;
-  --trazo-fuerte: #3a4f78;
-  --texto: #e8edf5;
-  --suave: #b7c3d6;
-  --hielo: #7fd0e0;
-  --hielo-fondo: rgba(127, 208, 224, 0.1);
-  --aviso: #e0a04a;
-  --aviso-fondo: rgba(224, 160, 74, 0.1);
-  --error: #ff8f85;
+  /* ---- color (tema basalto) ---- */
+  --suelo: #16110d; /* fondo de página */
+  --estrato: #211912; /* paneles, barra, «Cómo lo sabemos» */
+  --estrato-alto: #2b2119; /* campos, chips, veredicto; fondo de avisos */
+  --placa: #211912; /* fondo de cada gráfico (= FONDO_GRAFICO) */
+  --veta: #45362a; /* filetes de 1px y grilla: separa, no comunica */
+  --veta-fuerte: #7d6853; /* bordes de controles y ejes (≥3:1) */
+  --tinta: #f0e4d3; /* texto principal */
+  --tinta-suave: #c6b39d; /* texto secundario (≥5,8:1) */
+  --sobre-tinta: #16110d; /* texto sobre un relleno de tinta */
+  --arcilla: #e2946a; /* único acento: enlaces, foco, marcador de sección */
+  --aviso: #e0aa55;
+  --error: #f08a7a;
+  --elegido: #7cc0bd; /* el modelo elegido / lo adoptado (turquesa) */
+  --globo-espacio: #0d0a08; /* el fondo del globo 3D */
+  /* horizontes: las capas del testigo (la navegación), de arriba abajo; en basalto se aclaran con la profundidad */
+  --horizonte-1: #3a2c20;
+  --horizonte-2: #4e3a29;
+  --horizonte-3: #654a33;
+  --horizonte-4: #80603f;
+  /* la grieta de fondo: el hueco, apenas distinto del suelo, y su labio de luz */
+  --grieta-hueco: #090604;
+  --grieta-labio: #3a2c20;
 
-  --ancho: 1180px;
-  --titulos: "Schibsted Grotesk Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --cuerpo: "Instrument Sans Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* ---- tipografía ---- */
+  --serif: "Alegreya Variable", "Alegreya", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  /* ---- forma ---- */
+  --ancho: 1180px; /* ancho-copa */
   --suave-salida: cubic-bezier(0.22, 1, 0.36, 1);
-  --r-control: 5px;
-  --r-placa: 9px;
-  --r-globo: 14px;
+  --r-control: 3px; /* radio-control */
+  --r-placa: 4px; /* radio-placa */
+  --r-globo: 10px; /* radio-globo */
+  --r-pildora: 999px;
+
+  /* ---- nombres anteriores, como alias (se retiran al renombrar las reglas) ---- */
+  --noche: var(--suelo);
+  --placa-alta: var(--estrato-alto);
+  --trazo: var(--veta);
+  --trazo-fuerte: var(--veta-fuerte);
+  --texto: var(--tinta);
+  --suave: var(--tinta-suave);
+  --hielo: var(--arcilla);
+  --hielo-fondo: var(--estrato-alto); /* la arcilla nunca va de relleno: el resalte es tonal */
+  --aviso-fondo: var(--estrato-alto);
+  --titulos: var(--serif);
+  --cuerpo: var(--serif);
+  --tam-cuerpo: 20px; /* Alegreya tiene ojo chico */
+  --tam-cuerpo-chico: 17px; /* notas, «Cómo lo sabemos», avisos, pie */
+}
+
+/* tema loess (claro): sólo cambian los colores */
+:root[data-theme="loess"] {
+  color-scheme: light;
+  --suelo: #ece1cf;
+  --estrato: #e2d3bc;
+  --estrato-alto: #f6efe3;
+  --placa: #f6efe3;
+  --veta: #c7b293;
+  --veta-fuerte: #87694d;
+  --tinta: #2b1e15;
+  --tinta-suave: #5c4838;
+  --sobre-tinta: #f6efe3;
+  --arcilla: #8f3f1d;
+  --aviso: #7f520b;
+  --error: #9e2b20;
+  --elegido: #2d6a6c;
+  --horizonte-1: #d9c6a8;
+  --horizonte-2: #c4a37c;
+  --horizonte-3: #a67f58;
+  --horizonte-4: #7c5a3d;
+  --grieta-hueco: #d2bf9f;
+  --grieta-labio: #fbf6ee;
+}
+:root[data-theme="loess"] ::selection {
+  background: rgba(143, 63, 29, 0.2);
 }
 
 * {
@@ -33,22 +94,23 @@
 }
 html {
   scroll-behavior: smooth;
-  scroll-padding-top: 72px;
+  scroll-padding-top: 72px; /* el testigo acostado, arriba (en pantallas anchas va al costado: ver «testigo») */
   background: var(--noche);
 }
 body {
   margin: 0;
-  background: var(--noche);
+  /* sin fondo propio: el de html pinta la página y la grieta de fondo (z-index -1) queda entre los dos */
+  background: transparent;
   color: var(--texto);
   font-family: var(--cuerpo);
-  line-height: 1.62;
-  font-size: 17px;
+  line-height: 1.55;
+  font-size: var(--tam-cuerpo);
   font-feature-settings: "tnum" 0;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 ::selection {
-  background: rgba(127, 208, 224, 0.28);
+  background: rgba(226, 148, 106, 0.3);
 }
 a {
   color: var(--hielo);
@@ -101,69 +163,392 @@ canvas:focus-visible,
   outline-offset: 3px;
 }
 
-/* ---------- navegación ---------- */
-.barra {
-  position: sticky;
+/* ---------- la grieta de fondo: decorativa, detrás de todo; atraviesa el relato y se cierra en el borde de la copa ---------- */
+.grieta-fondo {
+  position: absolute;
+  z-index: -1;
+  left: 0;
   top: 0;
-  z-index: 10;
-  display: flex;
-  gap: 0.25rem 1.5rem;
-  align-items: center;
-  padding: 0 max(1.25rem, calc((100vw - var(--ancho)) / 2 + 1.25rem));
-  height: 56px;
-  background: rgba(7, 11, 18, 0.82);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--trazo);
-  font-size: 0.88rem;
-  overflow-x: auto;
-  scrollbar-width: none;
-  white-space: nowrap;
+  pointer-events: none;
 }
-.barra::-webkit-scrollbar {
-  display: none;
+.grieta-hueco {
+  fill: var(--grieta-hueco);
 }
-.barra a {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
+.grieta-labio {
+  fill: var(--grieta-labio);
+}
+.testigo-grieta {
+  position: absolute;
+  inset: 0;
+  width: 100%;
   height: 100%;
-  color: var(--suave);
-  text-decoration: none;
-  transition: color 160ms ease;
+  overflow: visible;
+  pointer-events: none;
 }
-.barra a::after {
-  content: "";
+.testigo-grieta path {
+  fill: none;
+  stroke: var(--grieta-labio);
+  stroke-width: 2.4;
+  vector-effect: non-scaling-stroke;
+}
+
+/* ---------- navegación: el testigo de perforación ---------- */
+/* pantallas anchas: una columna fija a la izquierda; la página le deja su ancho */
+.testigo {
+  position: fixed;
+  z-index: 10;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--estrato);
+  border-right: 1px solid var(--veta);
+}
+.testigo-marca {
+  padding: 20px 0 18px;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-weight: 800; /* la marca es la palabra «Sisimia» en Alegreya 800 */
+  font-size: 1.375rem;
+  line-height: 1;
+  color: var(--tinta);
+  text-decoration: none;
+}
+.testigo-corte {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 18px;
+  margin: 6px 0 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+/* cada capa: su alto es proporcional a lo que mide la sección en la página (flex-grow) */
+.capa {
+  display: block;
+  flex: 1 1 0;
+  min-height: 4px;
+  box-sizing: border-box;
+  border-radius: 2px;
+  transition: outline-color 160ms ease;
+}
+.capa.hueca {
+  border: 1.5px solid var(--veta-fuerte);
+}
+/* las capas van en dos tramos, el tallo y la copa; entre los dos, el borde de la copa: de leer a explorar */
+.testigo-tramo {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.testigo-tramo-copa {
+  margin-top: 6px; /* + los 2px del gap: 8px de borde de copa */
+}
+.testigo .capa:hover {
+  outline: 1px solid var(--tinta-suave);
+  outline-offset: 2px;
+}
+.testigo .capa[aria-current="location"] {
+  outline: 2px solid var(--arcilla);
+  outline-offset: 2px;
+}
+.testigo-marcador {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: -1px;
+  height: 0;
+  pointer-events: none;
+  transition: top 120ms linear;
+}
+.testigo-marcador::before {
+  content: "";
+  position: absolute;
+  left: -9px;
+  top: -1px;
+  width: 36px;
   height: 2px;
-  background: var(--hielo);
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 260ms var(--suave-salida);
+  background: var(--arcilla);
 }
-.barra a:hover,
-.barra a:focus-visible {
-  color: var(--texto);
+.testigo-marcador::after {
+  content: "";
+  position: absolute;
+  left: -15px;
+  top: -5px;
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-left: 7px solid var(--arcilla);
 }
-.barra a[aria-current="true"] {
-  color: var(--texto);
+/* el rótulo de la sección aparece un momento al cambiar de sección, junto al marcador */
+.testigo-rotulo {
+  position: absolute;
+  left: 50px;
+  top: -13px;
+  padding: 2px 7px;
+  white-space: nowrap;
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--tinta);
+  background: var(--estrato);
+  border: 1px solid var(--veta);
+  border-radius: var(--r-control);
+  opacity: 0;
+  transition: opacity 240ms ease;
 }
-.barra a[aria-current="true"]::after {
-  transform: scaleX(1);
+.testigo-rotulo[data-visible="true"] {
+  opacity: 1;
 }
-.barra .marca {
-  font-family: var(--titulos);
-  font-weight: 700;
-  font-size: 1.05rem;
-  letter-spacing: 0.01em;
-  color: var(--texto);
-  margin-right: auto;
-  padding-right: 1rem;
+.testigo > .tema {
+  width: 40px;
+  height: 40px;
+  margin: 0 0 14px;
 }
-.barra .marca::after {
-  display: none;
+/* el corte desplegado, al pasar el mouse o con el foco en el testigo */
+.testigo-panel {
+  position: absolute;
+  left: 64px;
+  top: 0;
+  bottom: 0;
+  width: 360px;
+  box-sizing: border-box;
+  padding: 1.4rem 1.1rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  background: var(--estrato);
+  border-right: 1px solid var(--veta);
+  visibility: hidden;
+  opacity: 0;
+  transform: translateX(-8px);
+  transition:
+    opacity 180ms ease,
+    transform 220ms var(--suave-salida),
+    visibility 0s linear 220ms;
+}
+.testigo[data-abierto="true"] .testigo-panel {
+  visibility: visible;
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 180ms ease,
+    transform 220ms var(--suave-salida);
+}
+.testigo-leido,
+.testigo-copa {
+  margin: 0 0 0.6rem;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--suave);
+}
+.testigo-copa {
+  margin: 0.6rem 0.6rem 0.3rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--veta-fuerte);
+}
+.testigo-fila {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 0.6rem;
+  border-radius: var(--r-placa);
+  color: inherit;
+  text-decoration: none;
+}
+.testigo-fila:hover {
+  background: var(--estrato-alto);
+}
+.testigo-fila[data-actual="true"] {
+  background: var(--estrato-alto);
+  outline: 1px solid var(--veta-fuerte);
+}
+.muestra {
+  flex: none;
+  width: 14px;
+  height: 28px;
+  margin-top: 2px;
+  box-sizing: border-box;
+  border-radius: 2px;
+}
+.muestra.hueca {
+  border: 1.5px solid var(--veta-fuerte);
+}
+.testigo-textos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+.testigo-nombre {
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--tinta);
+}
+.testigo-titulo {
+  font-size: 0.95rem;
+  line-height: 1.3;
+  color: var(--suave);
+}
+
+/* pantallas angostas: el testigo acostado, una franja de capas arriba con la sección actual y un menú */
+.testigo-movil {
+  position: sticky;
+  z-index: 10;
+  top: 0;
+  padding: 0; /* es un <header>: no hereda el aire de las secciones (section, header) */
+  background: var(--estrato);
+  border-bottom: 1px solid var(--veta);
+}
+.testigo-franja {
+  position: relative;
+  height: 8px;
+  display: flex;
+  gap: 2px;
+}
+.testigo-franja .capa {
+  min-height: 0;
+  min-width: 4px;
+  border-radius: 0;
+}
+.testigo-franja-marcador {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 3px; /* centrado en la posición y acotado a la franja desde Testigo.jsx, para no desbordar la página */
+  background: var(--arcilla);
+  transition: left 120ms linear;
+}
+.testigo-fila-movil {
+  position: relative;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.5rem 0 1rem;
+}
+.testigo-marca-movil {
+  flex: none;
+  font-weight: 800;
+  font-size: 1.25rem;
+  color: var(--tinta);
+  text-decoration: none;
+}
+.testigo-actual {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  padding: 0 0.5rem;
+  background: none;
+  border: none;
+  color: var(--tinta);
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+.testigo-actual span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.testigo-actual svg {
+  flex: none;
+  transition: transform 200ms var(--suave-salida);
+}
+.testigo-actual[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+.testigo-fila-movil > .tema {
+  width: 44px;
+  height: 44px;
+  margin: 0;
+}
+.testigo-lista {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  margin: 0;
+  padding: 0.5rem 0.75rem 1rem;
+  list-style: none;
+  background: var(--estrato);
+  border-bottom: 1px solid var(--veta-fuerte);
+}
+.testigo-lista .testigo-fila {
+  align-items: center;
+  min-height: 44px;
+  box-sizing: border-box;
+  padding: 0 0.5rem;
+}
+.testigo-lista .muestra {
+  width: 28px;
+  height: 10px;
+  margin: 0;
+}
+
+@media (min-width: 961px) {
+  html {
+    scroll-padding-top: 24px;
+  }
+  body {
+    padding-left: 64px; /* el ancho del testigo */
+  }
+  .testigo-movil {
+    display: none;
+  }
+}
+@media (max-width: 960px) {
+  .testigo {
+    display: none;
+  }
+}
+
+/* el tema: un botón con ícono (sol en el tema oscuro, luna en el claro: adónde se pasa) */
+.tema {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  margin-left: 0.5rem;
+  padding: 0;
+  border: 1px solid var(--veta-fuerte);
+  border-radius: var(--r-control);
+  background: none;
+  color: var(--tinta-suave);
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    border-color 160ms ease,
+    transform 160ms var(--suave-salida);
+}
+.tema:hover {
+  color: var(--tinta);
+  border-color: var(--tinta-suave);
+}
+.tema:active {
+  transform: scale(0.94);
+}
+.tema svg {
+  animation: gira 320ms var(--suave-salida);
+}
+@keyframes gira {
+  from {
+    opacity: 0;
+    transform: rotate(-60deg) scale(0.7);
+  }
 }
 
 main {
@@ -182,9 +567,11 @@ header {
   align-items: center;
   gap: 0.55rem;
   margin: 0 0 0.7rem;
-  font-size: 0.92rem;
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  letter-spacing: 0.02em;
   color: var(--suave);
-  font-weight: 550;
+  font-weight: 500;
 }
 .etiqueta::before {
   content: "";
@@ -201,10 +588,10 @@ header {
 h2 {
   margin: 0 0 1.4rem;
   font-family: var(--titulos);
-  font-weight: 650;
-  font-size: clamp(1.5rem, 2.6vw, 2.05rem);
-  line-height: 1.18;
-  letter-spacing: -0.015em;
+  font-weight: 700;
+  font-size: clamp(1.6rem, 2.8vw, 2.125rem);
+  line-height: 1.12;
+  letter-spacing: -0.005em;
   text-wrap: balance;
   max-width: 34em;
 }
@@ -224,12 +611,20 @@ h2 {
   right: 0;
   top: 2.2rem;
   height: 96px;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1180 96' preserveAspectRatio='none'%3E%3Cpath d='M0 48.0 L3 48.0 L6 48.0 L9 48.0 L12 48.0 L15 48.1 L18 47.9 L21 48.1 L24 47.9 L27 48.2 L30 47.8 L33 48.2 L36 47.7 L39 48.3 L42 47.6 L45 48.4 L48 47.6 L51 48.5 L54 47.5 L57 48.5 L60 47.5 L63 48.5 L66 47.5 L69 48.5 L72 47.5 L75 48.5 L78 47.5 L81 48.4 L84 47.6 L87 48.4 L90 47.7 L93 48.2 L96 47.8 L99 48.1 L102 48.0 L105 48.0 L108 48.1 L111 47.8 L114 48.3 L117 47.6 L120 48.5 L123 47.4 L126 48.7 L129 47.3 L132 48.8 L135 47.1 L138 49.0 L141 47.0 L144 49.1 L147 46.9 L150 49.2 L153 46.8 L156 49.2 L159 46.8 L162 49.2 L165 46.8 L168 49.2 L171 46.8 L174 49.1 L177 46.9 L180 49.0 L183 47.1 L186 48.8 L189 47.3 L192 48.6 L195 47.5 L198 48.4 L201 47.7 L204 48.1 L207 48.0 L210 47.9 L213 48.3 L216 47.6 L219 48.5 L222 47.3 L225 48.8 L228 47.1 L231 49.0 L234 46.9 L237 49.2 L240 46.7 L243 49.4 L246 46.5 L249 49.5 L252 46.5 L255 49.6 L258 46.4 L261 49.6 L264 46.4 L267 49.5 L270 46.5 L273 49.4 L276 46.6 L279 49.3 L282 46.8 L285 49.1 L288 47.0 L291 48.9 L294 47.2 L297 48.6 L300 47.5 L303 47.9 L306 48.6 L309 47.5 L312 47.5 L315 49.8 L318 45.8 L321 49.1 L324 49.4 L327 43.9 L330 53.3 L333 44.1 L336 48.4 L339 51.3 L342 91.3 L345 29.3 L348 44.0 L351 61.3 L354 34.9 L357 58.6 L360 43.0 L363 38.7 L366 77.5 L369 6.4 L372 81.8 L375 37.7 L378 36.0 L381 68.0 L384 32.6 L387 55.5 L390 47.5 L393 39.3 L396 69.0 L399 19.9 L402 68.8 L405 47.7 L408 28.3 L411 74.2 L414 29.1 L417 55.3 L420 49.0 L423 41.4 L426 60.4 L429 32.5 L432 57.1 L435 55.1 L438 24.5 L441 76.3 L444 28.4 L447 53.9 L450 51.3 L453 41.5 L456 55.5 L459 40.8 L462 50.0 L465 57.8 L468 25.9 L471 73.2 L474 31.9 L477 50.0 L480 55.5 L483 39.0 L486 54.5 L489 44.5 L492 47.2 L495 56.6 L498 31.2 L501 66.5 L504 37.9 L507 44.9 L510 60.1 L513 35.5 L516 55.5 L519 45.7 L522 46.4 L525 54.1 L528 37.2 L531 59.2 L534 43.8 L537 40.9 L540 62.9 L543 33.6 L546 55.8 L549 46.9 L552 45.4 L555 52.7 L558 41.6 L561 66.2 L564 35.8 L567 50.5 L570 52.8 L573 43.2 L576 46.8 L579 55.4 L582 38.3 L585 56.6 L588 41.4 L591 52.0 L594 49.1 L597 39.5 L600 61.9 L603 34.9 L606 54.5 L609 48.7 L612 44.2 L615 50.5 L618 48.2 L621 45.5 L624 53.3 L627 38.8 L630 59.9 L633 37.9 L636 51.4 L639 52.0 L642 40.7 L645 53.6 L648 46.2 L651 47.0 L654 50.8 L657 43.3 L660 53.9 L663 43.8 L666 46.8 L669 55.3 L672 38.2 L675 55.3 L678 45.6 L681 46.7 L684 50.7 L687 44.9 L690 51.2 L693 46.3 L696 45.7 L699 55.0 L702 39.2 L705 54.1 L708 47.2 L711 44.9 L714 52.1 L717 44.8 L720 50.0 L723 47.7 L726 45.4 L729 54.0 L732 40.7 L735 52.7 L738 48.2 L741 43.9 L744 52.6 L747 45.4 L750 48.4 L753 49.4 L756 44.8 L759 53.3 L762 46.4 L765 48.6 L768 50.7 L771 42.8 L774 52.5 L777 46.8 L780 45.5 L783 52.8 L786 41.9 L789 55.2 L792 40.7 L795 53.3 L798 46.6 L801 46.1 L804 50.2 L807 48.3 L810 44.7 L813 52.7 L816 43.5 L819 51.7 L822 45.4 L825 48.5 L828 50.8 L831 42.4 L834 53.8 L837 44.8 L840 47.9 L843 49.7 L846 46.8 L849 47.8 L852 49.5 L855 45.2 L858 52.8 L861 41.6 L864 54.0 L867 44.7 L870 47.7 L873 50.2 L876 46.4 L879 47.8 L882 49.7 L885 45.4 L888 51.5 L891 43.9 L894 51.5 L897 47.0 L900 45.7 L903 52.0 L906 44.8 L909 48.9 L912 49.0 L915 46.3 L918 49.8 L921 46.3 L924 49.0 L927 49.0 L930 39.8 L933 57.0 L936 40.7 L939 52.1 L942 46.8 L945 47.9 L948 48.2 L951 47.9 L954 47.7 L957 49.3 L960 45.1 L963 51.6 L966 45.7 L969 47.5 L972 50.9 L975 44.4 L978 50.6 L981 46.7 L984 48.3 L987 48.7 L990 46.0 L993 50.6 L996 46.3 L999 47.3 L1002 50.8 L1005 44.8 L1008 49.9 L1011 47.9 L1014 46.9 L1017 49.7 L1020 45.9 L1023 50.2 L1026 46.8 L1029 47.1 L1032 51.0 L1035 44.6 L1038 50.0 L1041 48.0 L1044 46.8 L1047 49.4 L1050 46.9 L1053 48.8 L1056 48.2 L1059 46.1 L1062 51.5 L1065 44.3 L1068 50.2 L1071 48.1 L1074 46.6 L1077 49.4 L1080 47.3 L1083 48.0 L1086 48.8 L1089 46.2 L1092 50.9 L1095 45.1 L1098 49.3 L1101 49.0 L1104 45.6 L1107 50.3 L1110 46.9 L1113 48.1 L1116 48.6 L1119 46.8 L1122 49.7 L1125 46.5 L1128 48.1 L1131 49.9 L1134 44.8 L1137 50.8 L1140 46.7 L1143 47.9 L1146 48.8 L1149 47.0 L1152 49.1 L1155 47.2 L1158 47.7 L1161 49.9 L1164 45.1 L1167 50.4 L1170 47.4 L1173 46.9 L1176 49.8 L1179 46.4' fill='none' stroke='%237fd0e0' stroke-width='1.4' vector-effect='non-scaling-stroke' stroke-linejoin='round'/%3E%3C/svg%3E")
-    center / 100% 100% no-repeat;
+  /* el trazo es una máscara y el color lo pone la arcilla del tema; el degradado desvanece los extremos */
+  background: var(--arcilla);
   opacity: 0.55;
   pointer-events: none;
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
-  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  --traza: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1180 96' preserveAspectRatio='none'%3E%3Cpath d='M0 48.0 L3 48.0 L6 48.0 L9 48.0 L12 48.0 L15 48.1 L18 47.9 L21 48.1 L24 47.9 L27 48.2 L30 47.8 L33 48.2 L36 47.7 L39 48.3 L42 47.6 L45 48.4 L48 47.6 L51 48.5 L54 47.5 L57 48.5 L60 47.5 L63 48.5 L66 47.5 L69 48.5 L72 47.5 L75 48.5 L78 47.5 L81 48.4 L84 47.6 L87 48.4 L90 47.7 L93 48.2 L96 47.8 L99 48.1 L102 48.0 L105 48.0 L108 48.1 L111 47.8 L114 48.3 L117 47.6 L120 48.5 L123 47.4 L126 48.7 L129 47.3 L132 48.8 L135 47.1 L138 49.0 L141 47.0 L144 49.1 L147 46.9 L150 49.2 L153 46.8 L156 49.2 L159 46.8 L162 49.2 L165 46.8 L168 49.2 L171 46.8 L174 49.1 L177 46.9 L180 49.0 L183 47.1 L186 48.8 L189 47.3 L192 48.6 L195 47.5 L198 48.4 L201 47.7 L204 48.1 L207 48.0 L210 47.9 L213 48.3 L216 47.6 L219 48.5 L222 47.3 L225 48.8 L228 47.1 L231 49.0 L234 46.9 L237 49.2 L240 46.7 L243 49.4 L246 46.5 L249 49.5 L252 46.5 L255 49.6 L258 46.4 L261 49.6 L264 46.4 L267 49.5 L270 46.5 L273 49.4 L276 46.6 L279 49.3 L282 46.8 L285 49.1 L288 47.0 L291 48.9 L294 47.2 L297 48.6 L300 47.5 L303 47.9 L306 48.6 L309 47.5 L312 47.5 L315 49.8 L318 45.8 L321 49.1 L324 49.4 L327 43.9 L330 53.3 L333 44.1 L336 48.4 L339 51.3 L342 91.3 L345 29.3 L348 44.0 L351 61.3 L354 34.9 L357 58.6 L360 43.0 L363 38.7 L366 77.5 L369 6.4 L372 81.8 L375 37.7 L378 36.0 L381 68.0 L384 32.6 L387 55.5 L390 47.5 L393 39.3 L396 69.0 L399 19.9 L402 68.8 L405 47.7 L408 28.3 L411 74.2 L414 29.1 L417 55.3 L420 49.0 L423 41.4 L426 60.4 L429 32.5 L432 57.1 L435 55.1 L438 24.5 L441 76.3 L444 28.4 L447 53.9 L450 51.3 L453 41.5 L456 55.5 L459 40.8 L462 50.0 L465 57.8 L468 25.9 L471 73.2 L474 31.9 L477 50.0 L480 55.5 L483 39.0 L486 54.5 L489 44.5 L492 47.2 L495 56.6 L498 31.2 L501 66.5 L504 37.9 L507 44.9 L510 60.1 L513 35.5 L516 55.5 L519 45.7 L522 46.4 L525 54.1 L528 37.2 L531 59.2 L534 43.8 L537 40.9 L540 62.9 L543 33.6 L546 55.8 L549 46.9 L552 45.4 L555 52.7 L558 41.6 L561 66.2 L564 35.8 L567 50.5 L570 52.8 L573 43.2 L576 46.8 L579 55.4 L582 38.3 L585 56.6 L588 41.4 L591 52.0 L594 49.1 L597 39.5 L600 61.9 L603 34.9 L606 54.5 L609 48.7 L612 44.2 L615 50.5 L618 48.2 L621 45.5 L624 53.3 L627 38.8 L630 59.9 L633 37.9 L636 51.4 L639 52.0 L642 40.7 L645 53.6 L648 46.2 L651 47.0 L654 50.8 L657 43.3 L660 53.9 L663 43.8 L666 46.8 L669 55.3 L672 38.2 L675 55.3 L678 45.6 L681 46.7 L684 50.7 L687 44.9 L690 51.2 L693 46.3 L696 45.7 L699 55.0 L702 39.2 L705 54.1 L708 47.2 L711 44.9 L714 52.1 L717 44.8 L720 50.0 L723 47.7 L726 45.4 L729 54.0 L732 40.7 L735 52.7 L738 48.2 L741 43.9 L744 52.6 L747 45.4 L750 48.4 L753 49.4 L756 44.8 L759 53.3 L762 46.4 L765 48.6 L768 50.7 L771 42.8 L774 52.5 L777 46.8 L780 45.5 L783 52.8 L786 41.9 L789 55.2 L792 40.7 L795 53.3 L798 46.6 L801 46.1 L804 50.2 L807 48.3 L810 44.7 L813 52.7 L816 43.5 L819 51.7 L822 45.4 L825 48.5 L828 50.8 L831 42.4 L834 53.8 L837 44.8 L840 47.9 L843 49.7 L846 46.8 L849 47.8 L852 49.5 L855 45.2 L858 52.8 L861 41.6 L864 54.0 L867 44.7 L870 47.7 L873 50.2 L876 46.4 L879 47.8 L882 49.7 L885 45.4 L888 51.5 L891 43.9 L894 51.5 L897 47.0 L900 45.7 L903 52.0 L906 44.8 L909 48.9 L912 49.0 L915 46.3 L918 49.8 L921 46.3 L924 49.0 L927 49.0 L930 39.8 L933 57.0 L936 40.7 L939 52.1 L942 46.8 L945 47.9 L948 48.2 L951 47.9 L954 47.7 L957 49.3 L960 45.1 L963 51.6 L966 45.7 L969 47.5 L972 50.9 L975 44.4 L978 50.6 L981 46.7 L984 48.3 L987 48.7 L990 46.0 L993 50.6 L996 46.3 L999 47.3 L1002 50.8 L1005 44.8 L1008 49.9 L1011 47.9 L1014 46.9 L1017 49.7 L1020 45.9 L1023 50.2 L1026 46.8 L1029 47.1 L1032 51.0 L1035 44.6 L1038 50.0 L1041 48.0 L1044 46.8 L1047 49.4 L1050 46.9 L1053 48.8 L1056 48.2 L1059 46.1 L1062 51.5 L1065 44.3 L1068 50.2 L1071 48.1 L1074 46.6 L1077 49.4 L1080 47.3 L1083 48.0 L1086 48.8 L1089 46.2 L1092 50.9 L1095 45.1 L1098 49.3 L1101 49.0 L1104 45.6 L1107 50.3 L1110 46.9 L1113 48.1 L1116 48.6 L1119 46.8 L1122 49.7 L1125 46.5 L1128 48.1 L1131 49.9 L1134 44.8 L1137 50.8 L1140 46.7 L1143 47.9 L1146 48.8 L1149 47.0 L1152 49.1 L1155 47.2 L1158 47.7 L1161 49.9 L1164 45.1 L1167 50.4 L1170 47.4 L1173 46.9 L1176 49.8 L1179 46.4' fill='none' stroke='%23e2946a' stroke-width='1.4' vector-effect='non-scaling-stroke' stroke-linejoin='round'/%3E%3C/svg%3E");
+  --desvanece: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  -webkit-mask-image: var(--traza), var(--desvanece);
+  mask-image: var(--traza), var(--desvanece);
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
   animation: traza 3.2s cubic-bezier(0.45, 0, 0.2, 1) 0.2s both;
 }
 @keyframes traza {
@@ -240,19 +635,25 @@ h2 {
     clip-path: inset(0 0 0 0);
   }
 }
+/* la pregunta es lo más grande de la portada; la respuesta (la idea central) va debajo, más chica */
 .portada .pregunta {
-  margin: 0 0 0.9rem;
-  color: var(--suave);
-  font-size: 1.15rem;
-}
-.portada h1 {
-  margin: 0 0 1.1rem;
+  margin: 0 0 1.3rem;
   font-family: var(--titulos);
-  font-size: clamp(1.9rem, 4vw, 3.15rem);
-  line-height: 1.1;
-  font-weight: 700;
-  letter-spacing: -0.025em;
-  max-width: 21em;
+  font-size: clamp(2.2rem, 5vw, 3.7rem);
+  line-height: 1.06;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  max-width: 17em;
+  text-wrap: balance;
+}
+.portada .respuesta {
+  margin: 0 0 0.7rem;
+  font-family: var(--titulos);
+  font-size: clamp(1.15rem, 1.8vw, 1.4rem);
+  line-height: 1.35;
+  font-weight: 600;
+  color: var(--texto);
+  max-width: 34em;
   text-wrap: balance;
 }
 .portada .aclaracion {
@@ -284,19 +685,19 @@ h2 {
   font-size: clamp(2rem, 3.6vw, 2.9rem);
   font-weight: 700;
   line-height: 1.1;
-  letter-spacing: -0.02em;
-  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  font-variant-numeric: lining-nums tabular-nums; /* Alegreya trae números de estilo antiguo */
 }
 .numeros .texto {
   display: block;
   margin-top: 0.5rem;
   max-width: 22em;
-  font-size: 1rem;
+  font-size: var(--tam-cuerpo-chico);
   color: var(--suave);
   line-height: 1.45;
 }
 .nota {
-  font-size: 0.95rem;
+  font-size: var(--tam-cuerpo-chico);
   color: var(--suave);
   max-width: 62em;
 }
@@ -310,37 +711,58 @@ h2 {
   border-bottom: 1px solid var(--trazo);
   padding-bottom: 3.5rem;
 }
-.tallo > .etiqueta {
+/* el título queda fijo a la izquierda mientras se lee la historia de la derecha */
+.tallo-lado {
   grid-column: 1;
-  grid-row: 1;
-}
-.tallo > h2 {
-  grid-column: 1;
-  grid-row: 2 / span 3;
   align-self: start;
   position: sticky;
-  top: 88px;
+  top: 32px;
+}
+.tallo-lado h2 {
   font-size: clamp(1.45rem, 2.2vw, 1.8rem);
   max-width: none;
   margin: 0;
 }
-.tallo > .grafico {
+.tallo-cuerpo {
   grid-column: 2;
-  grid-row: 1 / span 2;
+  min-width: 0;
 }
-.tallo > .que-mirar {
-  grid-column: 2;
-  grid-row: 3;
+.tallo-cuerpo > .extra {
+  margin-top: 1.6rem;
 }
-.tallo > .como {
-  grid-column: 2;
-  grid-row: 4;
+/* los pasos que llevan al gráfico principal: separados por un filete, con el número como marca */
+.paso {
+  padding-bottom: 1.6rem;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid var(--trazo);
+}
+.paso-numero {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--hielo);
+}
+/* el segundo gráfico de una sección sigue la historia del primero: subtítulo más chico que el título que afirma */
+.subtitulo {
+  margin: 0 0 0.9rem;
+  font-family: var(--titulos);
+  font-size: clamp(1.1rem, 1.6vw, 1.3rem);
+  font-weight: 650;
+  line-height: 1.3;
+  max-width: 36em;
+  text-wrap: balance;
+}
+.resultado-explora {
+  margin-top: 2.2rem;
 }
 @media (max-width: 960px) {
   .tallo {
     display: block;
   }
-  .tallo > h2 {
+  .tallo-lado {
     position: static;
     margin-bottom: 1.4rem;
   }
@@ -360,7 +782,7 @@ h2 {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(100deg, transparent 30%, rgba(127, 208, 224, 0.07) 50%, transparent 70%) 0 0 / 220% 100%;
+  background: linear-gradient(100deg, transparent 30%, rgba(226, 148, 106, 0.07) 50%, transparent 70%) 0 0 / 220% 100%;
   animation: barrido 1.6s linear infinite;
   pointer-events: none;
 }
@@ -387,7 +809,7 @@ h2 {
 }
 .que-mirar {
   max-width: 44em;
-  color: #cbd5e4;
+  color: var(--tinta-suave);
 }
 .que-mirar p {
   margin: 0 0 1rem;
@@ -447,7 +869,7 @@ h2 {
 .como-cuerpo {
   padding: 0.3rem 1.4rem 1.3rem;
   border-top: 1px solid var(--trazo);
-  font-size: 0.97rem;
+  font-size: var(--tam-cuerpo-chico);
 }
 .como-cuerpo h4 {
   margin: 1.7rem 0 0.4rem;
@@ -471,8 +893,8 @@ h2 {
 table {
   border-collapse: collapse;
   width: 100%;
-  font-size: 0.88rem;
-  font-variant-numeric: tabular-nums;
+  font-size: 0.92rem;
+  font-variant-numeric: lining-nums tabular-nums;
 }
 caption {
   text-align: left;
@@ -493,6 +915,8 @@ th {
 }
 .num {
   text-align: right;
+  font-family: var(--mono);
+  font-size: 0.92em;
 }
 tr.resaltada td {
   background: var(--hielo-fondo);
@@ -522,9 +946,10 @@ tr.resaltada td {
 .guia {
   max-width: 48em;
   padding-left: 1.2rem;
+  max-width: 44em;
   margin: 0 0 1.6rem;
-  font-size: 0.97rem;
-  color: #cbd5e4;
+  font-size: var(--tam-cuerpo-chico);
+  color: var(--tinta-suave);
 }
 .guia li {
   margin-bottom: 0.4rem;
@@ -639,7 +1064,7 @@ tr.resaltada td {
 /* ---------- probá el modelo ---------- */
 .proba {
   display: grid;
-  grid-template-columns: minmax(280px, 360px) 1fr;
+  grid-template-columns: minmax(300px, 360px) 1fr;
   gap: 1.5rem;
   align-items: start;
 }
@@ -647,6 +1072,111 @@ tr.resaltada td {
   .proba {
     grid-template-columns: 1fr;
   }
+}
+
+/* los sliders: la pista es un dato (la clase que contesta el modelo en cada punto), con tramos de color plano */
+.deslizador {
+  display: block;
+  margin-bottom: 1.1rem;
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+.deslizador .rotulo {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+.deslizador .valor {
+  font-family: var(--mono);
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-variant-numeric: lining-nums tabular-nums;
+  color: var(--texto);
+}
+.deslizador .riel {
+  position: relative;
+  display: block;
+  height: 28px;
+  margin-top: 0.35rem;
+}
+/* la pista va del centro del pulgar en un extremo al centro en el otro (9px = medio pulgar) */
+.deslizador .pista {
+  position: absolute;
+  left: 9px;
+  right: 9px;
+  top: 9px;
+  height: 10px;
+  overflow: hidden;
+  border-radius: var(--r-control);
+  outline: 1px solid var(--trazo);
+}
+.deslizador .fuera,
+.muestra-fuera {
+  background: repeating-linear-gradient(-45deg, var(--placa) 0 2px, transparent 2px 5px);
+}
+.deslizador .fuera {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  opacity: 0.85;
+}
+.muestra-fuera {
+  display: inline-block;
+  width: 1.5em;
+  height: 0.75em;
+  margin-right: 0.35em;
+  vertical-align: -0.05em;
+  background-color: var(--suave);
+  border-radius: 2px;
+}
+.formulario .deslizador input[type="range"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+.formulario .deslizador input[type="range"]:focus-visible {
+  outline: 2px solid var(--hielo);
+  outline-offset: 3px;
+}
+.deslizador input[type="range"]::-webkit-slider-runnable-track {
+  height: 28px;
+  background: transparent;
+}
+.deslizador input[type="range"]::-moz-range-track {
+  height: 28px;
+  background: transparent;
+}
+.deslizador input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: var(--tinta);
+  border: 3px solid var(--placa);
+  outline: 1px solid var(--tinta);
+}
+.deslizador input[type="range"]::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--tinta);
+  border: 3px solid var(--placa);
+  outline: 1px solid var(--tinta);
+}
+.nota-pista {
+  margin: -0.3rem 0 1rem;
+  font-size: 0.85rem;
+  color: var(--suave);
 }
 .formulario,
 .resultado {
@@ -701,7 +1231,7 @@ tr.resaltada td {
   color: var(--suave);
 }
 .ejemplos button,
-.globo-teclas button,
+.globo-pad button,
 .globo-reproductor button {
   border: 1px solid var(--trazo-fuerte);
   background: var(--placa-alta);
@@ -714,17 +1244,17 @@ tr.resaltada td {
     transform 160ms var(--suave-salida);
 }
 .ejemplos button {
-  border-radius: 999px;
+  border-radius: var(--r-pildora);
   padding: 0.3rem 0.8rem;
 }
 .ejemplos button:hover,
-.globo-teclas button:hover,
+.globo-pad button:hover,
 .globo-reproductor button:hover {
   background: var(--hielo-fondo);
   border-color: var(--hielo);
 }
 .ejemplos button:active,
-.globo-teclas button:active,
+.globo-pad button:active,
 .globo-reproductor button:active {
   transform: scale(0.96);
 }
@@ -807,13 +1337,15 @@ tr.resaltada td {
 }
 .barras .valor {
   text-align: right;
-  font-variant-numeric: tabular-nums;
+  font-family: var(--mono);
+  font-size: 0.88rem;
+  font-variant-numeric: lining-nums tabular-nums;
 }
 .avisos,
 .globo-aviso {
   position: relative;
   background: var(--aviso-fondo);
-  border: 1px solid rgba(224, 160, 74, 0.45);
+  border: 1px solid var(--aviso);
   border-radius: var(--r-control);
 }
 .avisos::before,
@@ -829,7 +1361,7 @@ tr.resaltada td {
 }
 .avisos {
   padding: 0.75rem 1rem 0.75rem 2.1rem;
-  font-size: 0.9rem;
+  font-size: var(--tam-cuerpo-chico);
   margin: 0.9rem 0;
 }
 .avisos ul {
@@ -853,7 +1385,7 @@ tr.resaltada td {
 }
 .origen {
   margin: 0.9rem 0 0;
-  font-size: 0.88rem;
+  font-size: var(--tam-cuerpo-chico);
   color: var(--suave);
 }
 .origen.navegador {
@@ -864,7 +1396,7 @@ tr.resaltada td {
   margin-top: 5rem;
   padding: 2rem 1.25rem 3.5rem;
   text-align: center;
-  font-size: 0.85rem;
+  font-size: var(--tam-cuerpo-chico);
   color: var(--suave);
   border-top: 1px solid var(--trazo);
 }
@@ -896,7 +1428,7 @@ tr.resaltada td {
   /* el globo se achica en pantallas bajas para que entre junto con los filtros y la línea de la región
      (190px = barra de navegación + filtros + línea de la región + márgenes) */
   height: clamp(400px, calc(100svh - 190px), 640px);
-  background: #04070d;
+  background: var(--globo-espacio);
   border: 1px solid var(--trazo);
   border-radius: var(--r-globo);
   overflow: hidden;
@@ -915,8 +1447,8 @@ tr.resaltada td {
   top: 0;
   pointer-events: none;
   font-size: 0.8rem;
-  color: #c3d0e6;
-  background: rgba(4, 7, 13, 0.62);
+  color: var(--tinta-suave);
+  background: rgba(13, 10, 8, 0.62);
   padding: 2px 7px;
   border-radius: 4px;
   white-space: nowrap;
@@ -930,8 +1462,8 @@ tr.resaltada td {
   z-index: 3;
   max-width: 300px;
   pointer-events: none;
-  background: rgba(10, 16, 28, 0.94);
-  color: #e6edf8;
+  background: rgba(33, 25, 18, 0.95);
+  color: var(--tinta);
   border: 1px solid var(--trazo-fuerte);
   border-radius: var(--r-placa);
   padding: 0.65rem 0.85rem;
@@ -948,10 +1480,10 @@ tr.resaltada td {
 }
 .globo-detalle em {
   margin-top: 0.3rem;
-  color: #8fc8d2;
+  color: var(--elegido);
 }
 .globo-detalle .ojo {
-  color: #f1b36b;
+  color: var(--aviso);
 }
 .globo-detalle i,
 .globo-leyenda i {
@@ -968,15 +1500,19 @@ tr.resaltada td {
   margin: 0;
   padding: 0.6rem 0.8rem;
   list-style: none;
-  background: rgba(4, 7, 13, 0.72);
+  background: rgba(13, 10, 8, 0.72);
   border: 1px solid var(--trazo);
   border-radius: var(--r-placa);
-  color: #c3d0e6;
+  color: var(--tinta-suave);
   font-size: 0.82rem;
+}
+.globo-leyenda .principal {
+  margin-top: 0.3rem;
+  color: var(--texto);
 }
 .globo-leyenda .chico {
   margin-top: 0.3rem;
-  color: #a3b0c5;
+  color: var(--tinta-suave);
 }
 /* franja de arriba del globo: reloj al centro y resumen a la derecha; el espacio vacío deja pasar el mouse al globo */
 .globo-arriba {
@@ -1003,10 +1539,10 @@ tr.resaltada td {
   width: 100%;
   max-width: 19rem;
   padding: 0.6rem 0.8rem;
-  background: rgba(4, 7, 13, 0.82);
+  background: rgba(13, 10, 8, 0.82);
   border: 1px solid var(--trazo);
   border-radius: var(--r-placa);
-  color: #e6edf8;
+  color: var(--tinta);
   font-size: 0.84rem;
   line-height: 1.4;
 }
@@ -1014,7 +1550,7 @@ tr.resaltada td {
   margin: 0 0 0.4rem;
 }
 .globo-resumen .lugar span {
-  color: #a3b0c5;
+  color: var(--tinta-suave);
 }
 .globo-resumen dl {
   display: grid;
@@ -1023,7 +1559,7 @@ tr.resaltada td {
   margin: 0;
 }
 .globo-resumen dt {
-  color: #a3b0c5;
+  color: var(--tinta-suave);
 }
 .globo-resumen dd {
   margin: 0;
@@ -1036,38 +1572,38 @@ tr.resaltada td {
   margin: 0 0.3rem 0 0.15rem;
 }
 .globo-resumen .acerto {
-  color: #8fd4a8;
+  color: var(--elegido);
 }
 .globo-resumen .fallo {
-  color: #f1b36b;
+  color: var(--aviso);
 }
 .globo-resumen .globo-aviso-mayor {
   margin-top: 0.55rem;
 }
 .globo-reloj {
   text-align: center;
-  background: rgba(4, 7, 13, 0.75);
+  background: rgba(13, 10, 8, 0.75);
   border: 1px solid var(--trazo);
   border-radius: var(--r-placa);
   padding: 0.45rem 1.1rem;
-  color: #fff;
+  color: var(--tinta);
 }
 .globo-reloj strong {
   display: block;
   font-family: var(--titulos);
   font-size: 1.5rem;
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: lining-nums tabular-nums;
 }
 .globo-reloj span {
   font-size: 0.82rem;
-  color: #c3d0e6;
+  color: var(--tinta-suave);
 }
 /* el aviso del sismo mayor: una línea bajo el reloj; se despliega para leer la explicación */
 .globo-aviso-mayor {
-  background: rgba(20, 14, 6, 0.9);
-  border: 1px solid rgba(224, 160, 74, 0.6);
+  background: rgba(43, 33, 25, 0.95);
+  border: 1px solid var(--aviso);
   border-radius: var(--r-placa);
-  color: #f3e3cc;
+  color: var(--tinta);
   font-size: 0.85rem;
   line-height: 1.45;
 }
@@ -1088,7 +1624,7 @@ tr.resaltada td {
   width: 0.5rem;
   height: 0.5rem;
   border-radius: 50%;
-  background: var(--aviso);
+  background: var(--mayor, #ffffff); /* el mismo blanco con que el globo marca ese sismo (COLOR_MAYOR) */
 }
 .globo-aviso-mayor .mas,
 .globo-aviso-mayor .menos {
@@ -1125,23 +1661,21 @@ tr.resaltada td {
     max-width: none;
   }
 }
-.globo-teclas {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  align-items: center;
-  margin-top: 0.8rem;
-  font-size: 0.9rem;
-  color: var(--suave);
+/* la cabecera del globo: filtros y resultado de la región, pegados al borde de arriba como la cabeza de la misma tarjeta */
+.globo-cabecera {
+  padding: 0.8rem 1rem 0.7rem;
+  background: var(--placa-alta);
+  border: 1px solid var(--trazo);
+  border-bottom: none;
+  border-radius: var(--r-globo) var(--r-globo) 0 0;
 }
-.globo-teclas button {
-  min-width: 2.3rem;
-  padding: 0.3rem 0.55rem;
-  border-radius: var(--r-control);
+.globo-cabecera + .globo-caja {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
 }
 /* una línea con el resultado de la región, entre los filtros y el globo */
 .globo-region {
-  margin: 0 0 0.8rem;
+  margin: 0;
   font-size: 0.88rem;
   color: var(--suave);
 }
@@ -1149,7 +1683,7 @@ tr.resaltada td {
   color: var(--texto);
 }
 .globo-region .aclaracion {
-  color: #8f9bb0;
+  color: var(--tinta-suave);
 }
 /* filtros en una fila, justo arriba del globo */
 .globo-filtros {
@@ -1158,6 +1692,11 @@ tr.resaltada td {
   gap: 0.6rem 1rem;
   align-items: flex-end;
   margin-bottom: 0.8rem;
+}
+.globo-cabecera .globo-filtros {
+  margin-bottom: 0.6rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--trazo);
 }
 .globo-filtros label {
   display: block;
@@ -1200,7 +1739,7 @@ tr.resaltada td {
   gap: 0.45rem;
   align-items: center;
   padding: 0.5rem 0.6rem;
-  background: rgba(4, 7, 13, 0.82);
+  background: rgba(13, 10, 8, 0.82);
   border: 1px solid var(--trazo);
   border-radius: var(--r-placa);
 }
@@ -1220,7 +1759,7 @@ tr.resaltada td {
 .globo-reproductor .titulo-barra {
   font-size: 0.9rem;
   font-weight: 600;
-  color: #c3d0e6;
+  color: var(--tinta-suave);
   white-space: nowrap;
 }
 .globo-reproductor .selector {
@@ -1245,17 +1784,115 @@ tr.resaltada td {
   bottom: 76px;
 }
 
+/* el pad para mover el globo, abajo a la derecha (encima del reproductor, como la leyenda a la izquierda): una cruz de
+   flechas con «volver a la vista de partida» en el centro y, debajo, el zoom */
+.globo-pad {
+  --celda: 34px;
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  z-index: 2;
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  opacity: 0.78;
+  transition: opacity 160ms ease;
+}
+.globo-caja:has(.globo-reproductor) .globo-pad {
+  bottom: 76px;
+}
+.globo-pad:hover,
+.globo-pad:focus-within {
+  opacity: 1;
+}
+.globo-pad .cruz {
+  display: grid;
+  grid-template-columns: repeat(3, var(--celda));
+  grid-template-rows: repeat(3, var(--celda));
+  grid-template-areas: ". arriba ." "izquierda centro derecha" ". abajo .";
+  padding: 4px;
+  background: rgba(13, 10, 8, 0.82);
+  border: 1px solid var(--trazo);
+  border-radius: 50%;
+}
+.globo-pad .cruz button {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border-color: transparent;
+  background: transparent;
+  border-radius: 50%;
+}
+.globo-pad .cruz svg {
+  width: 15px;
+  height: 15px;
+  fill: currentColor;
+  stroke: currentColor;
+  stroke-width: 1.4;
+}
+.globo-pad .arriba {
+  grid-area: arriba;
+}
+.globo-pad .izquierda {
+  grid-area: izquierda;
+}
+.globo-pad .izquierda svg {
+  transform: rotate(-90deg);
+}
+.globo-pad .derecha {
+  grid-area: derecha;
+}
+.globo-pad .derecha svg {
+  transform: rotate(90deg);
+}
+.globo-pad .abajo {
+  grid-area: abajo;
+}
+.globo-pad .abajo svg {
+  transform: rotate(180deg);
+}
+.globo-pad .centro {
+  grid-area: centro;
+  color: var(--tinta-suave);
+}
+.globo-pad .centro svg {
+  width: 14px;
+  height: 14px;
+}
+.globo-pad .zoom {
+  display: flex;
+  overflow: hidden;
+  background: rgba(13, 10, 8, 0.82);
+  border: 1px solid var(--trazo);
+  border-radius: var(--r-pildora);
+}
+.globo-pad .zoom button {
+  width: 2.6rem;
+  height: 2rem;
+  padding: 0;
+  font-size: 1.15rem;
+  line-height: 1;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+.globo-pad .zoom button + button {
+  border-left: 1px solid var(--trazo);
+}
+
 /* ---------- táctil: objetivos de 44px, y el globo deja pasar el desplazamiento de un dedo ---------- */
 @media (pointer: coarse) {
-  .formulario input,
   .formulario select,
   .globo-filtros select,
   .vega-bind select,
   .ejemplos button,
-  .globo-teclas button,
   .globo-reproductor button,
   .globo-reproductor .selector {
     min-height: 44px;
+  }
+  .tema {
+    width: 44px;
+    height: 44px;
   }
   .vega-bind input[type="range"],
   .globo-filtros input[type="range"],
@@ -1263,20 +1900,38 @@ tr.resaltada td {
     min-height: 44px;
     margin: 0;
   }
-  .barra a {
-    min-width: 44px;
-    justify-content: center;
-  }
   .globo-caja,
   .globo-caja canvas {
     touch-action: pan-x pan-y;
+  }
+  .globo-pad {
+    --celda: 40px;
+    opacity: 1;
+  }
+  .deslizador .riel {
+    height: 44px;
+  }
+  .deslizador .pista {
+    top: 17px;
+  }
+  .deslizador input[type="range"]::-webkit-slider-runnable-track {
+    height: 44px;
+  }
+  .deslizador input[type="range"]::-webkit-slider-thumb {
+    margin-top: 13px;
+  }
+  .globo-pad .zoom button {
+    width: 3.2rem;
+    height: 44px;
   }
 }
 
 /* ---------- pantallas chicas ---------- */
 @media (max-width: 640px) {
-  body {
-    font-size: 16px;
+  :root,
+  .globo-caja {
+    --tam-cuerpo: 18px;
+    --tam-cuerpo-chico: 16px;
   }
   section,
   header {
@@ -1296,8 +1951,9 @@ tr.resaltada td {
     padding-bottom: 1rem;
   }
   .globo-caja {
-    /* en el celular los filtros y la línea de la región ocupan más alto */
-    height: clamp(340px, calc(100svh - 330px), 520px);
+    /* en el celular los filtros y la línea de la región ocupan más alto; el mínimo deja lugar para el resumen de la
+       secuencia arriba y la leyenda y el pad abajo sin que se pisen */
+    height: clamp(530px, calc(100svh - 300px), 560px);
   }
   /* los filtros en dos columnas, pegados al globo */
   .globo-filtros {
@@ -1312,6 +1968,27 @@ tr.resaltada td {
   .globo-filtros .titulo-filtros {
     grid-column: 1 / -1;
     padding-bottom: 0;
+  }
+  .globo-cabecera {
+    padding: 0.7rem 0.75rem 0.6rem;
+  }
+  /* el pad y la leyenda comparten la franja de abajo: el pad se achica, la leyenda deja las pistas (con el dedo se
+     arrastra solo) y achica la letra */
+  .globo-pad {
+    --celda: 32px;
+    right: 10px;
+  }
+  .globo-pad .zoom button {
+    width: 2.6rem;
+    height: 36px;
+  }
+  .globo-leyenda {
+    left: 10px;
+    padding: 0.45rem 0.6rem;
+    font-size: 0.76rem;
+  }
+  .globo-leyenda .chico {
+    display: none;
   }  /* en el celular, sólo lo esencial sobre el globo: elegir; o reproducir, el tiempo y la ✕ */
   .globo-reproductor .encuadre,
   .globo-reproductor .titulo-barra,
@@ -1339,4 +2016,44 @@ tr.resaltada td {
 /* sin controles de Vega no hay barra de controles */
 .vega-bindings:empty {
   display: none;
+}
+
+/* la línea que enlaza cada sección con la anterior: la historia no arranca de cero en cada una */
+.puente {
+  max-width: 44em;
+  margin: 0 0 1.6rem;
+  padding: 0.2rem 0 0.2rem 1rem;
+  border-left: 3px solid var(--hielo);
+  font-size: 1.08rem;
+  line-height: 1.6;
+  color: var(--suave);
+}
+
+/* un problema del proyecto, en una línea, justo antes de la parte que lo resuelve */
+.problema {
+  display: flex;
+  gap: 0.8rem;
+  align-items: baseline;
+  max-width: 44em;
+  margin: 2rem 0 0.9rem;
+  padding: 0.65rem 1rem;
+  background: var(--aviso-fondo);
+  border: 1px solid var(--error);
+  border-radius: var(--r-placa);
+  color: var(--texto);
+  line-height: 1.5;
+}
+.problema-etiqueta {
+  flex: none;
+  white-space: nowrap;
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--error);
+}
+/* línea como el sol y la luna del Testigo; bajado para que se centre en la altura de la etiqueta */
+.problema-icono {
+  margin-right: 0.4rem;
+  vertical-align: -0.25em;
 }

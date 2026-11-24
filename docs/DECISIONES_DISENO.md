@@ -64,3 +64,136 @@ Sólo cambios **reales**, con el motivo. Si un gráfico no cambió, no figura.
   agrandaba y seguían tapándose. Ahora el tamaño se multiplica por un factor que baja con la distancia a la superficie
   (`uK`): al acercarse, los puntos se achican en el mundo y el zoom los *separa*. La velocidad de giro baja igual, para
   que arrastrar no «salte» cuando se está cerca.
+
+## Devolución de la Entrega 4 — contar la historia
+Cambios pedidos por el docente después de la Entrega 4. El hilo: que cada sección cuente cómo se llegó a lo que afirma.
+
+- **Portada: la pregunta, lo más grande.** La v2 tenía la respuesta («El modelo sirve para priorizar…») como título grande y la
+  pregunta en chico, arriba. La v3 invierte: la pregunta es el `h1` y la respuesta va debajo, más chica.
+- **Los datos: de 27 columnas a 3 (`grafico_columnas`, nuevo).** Antes, cuántas columnas tenía el dataset y por qué el modelo usa
+  tres sólo se podía reconstruir leyendo la tabla de fuga del «Cómo lo sabemos». Ahora un gráfico en el flujo principal muestra
+  las 27 columnas en filas según el motivo (identifican, son la respuesta, fuga, constantes, correlación casi nula en el análisis exploratorio, existen al predecir y no se probaron, probadas, usadas).
+  El texto técnico de cada columna de fuga sigue en «Cómo lo sabemos».
+- **Lo que encontramos: eje lineal además del logarítmico.** La v2 tenía sólo el eje logarítmico, que muestra el factor constante
+  pero esconde la forma: no se ve que el crecimiento es explosivo. La v3 pone los dos paneles lado a lado con los mismos puntos y
+  la misma curva. La curva ahora se calcula en Python: `transform_regression` de Vega-Lite devuelve sólo los dos extremos de la
+  recta, y en el panel lineal la curva exponencial habría quedado como un segmento recto.
+- **Lo que encontramos: los casos atípicos (`grafico_atipicos`, nuevo).** Magnitud contra réplicas de todas las secuencias, con los
+  atípicos por forma: los principales a los que después les siguió un sismo mayor (triángulos) y los M7 o más casi sin réplicas
+  (cuadrados). Por forma y no por color, porque el color es siempre la clase. Los rótulos salen por regla, no elegidos a mano.
+- **El modelo: la historia en vez de la tabla (`grafico_evolucion` reemplaza a `grafico_modelo`).** La v2 mostraba los 12 modelos
+  ordenados por f1, que es una tabla dibujada: no decía en qué orden se probaron ni por qué se adoptó cada cosa. La v3 sigue el orden
+  del notebook y une con una línea lo que se adoptó; lo que se probó y se dejó queda en gris y hueco al lado del paso en que se probó.
+- **El modelo: las dos variables (`grafico_variables`, nuevo).** Lo que contesta el modelo para cada combinación de magnitud sobre el
+  umbral y profundidad, con los sismos de entrenamiento encima. Se eligió este gráfico y no dos curvas de réplicas esperadas porque la
+  pregunta era por la *predicción* (la clase): se ve cuánto corre cada eje los cortes entre clases donde de verdad hay sismos.
+- **«Cómo lo sabemos» del modelo, sin tablas salvo una.** Folds, alpha, empuje, reporte por clase, matriz de confusión, acierto por
+  tramo e importancia por permutación pasan a gráficos. La comparación de modelos queda como tabla porque la consigna la pide así.
+- **Explorá: sólo el globo.** El mapa de Altair y el globo mostraban prácticamente lo mismo. Se sacó el mapa; el globo es el panorama
+  y sus filtros mueven también las barras de Altair con el resultado del modelo, que quedaron debajo. Como el detalle a pedido del
+  mapa tenía las probabilidades y las réplicas esperadas, se agregaron al detalle del globo. Si el navegador no tiene WebGL, los
+  filtros siguen visibles y las barras siguen respondiendo.
+- **El modelo: la historia en pasos (segunda vuelta).** Con un solo gráfico la sección seguía siendo un resumen: el notebook de la
+  Entrega 3 cuenta el camino con varios gráficos. Ahora, antes del camino completo, hay seis pasos en el orden del notebook, cada uno con
+  lo que hicimos, por qué y su gráfico: por qué intervalos, de la logística a Poisson, el sesgo por región, las dos columnas probadas de a
+  una, familias / alpha / empuje y los otros cortes. El gráfico del empuje pasó del «Cómo lo sabemos» al paso 5.
+- **Casos atípicos: puntos más grandes.** En la v1 los puntos del «resto» (10 px², opacidad 0,45) casi no se veían sobre el fondo
+  oscuro. La v2 los agranda (24 / 75 / 120 px² según el grupo) y sube la opacidad del resto a 0,6.
+- **Color.** La v2 tenía casi todo en grises y blanco: el color estaba reservado a las clases y el resto iba neutro. La v3
+  agrega color sin romper esa regla: donde el gráfico muestra secuencias o réplicas, se pintan por su clase (paso 1, casos
+  atípicos, promedios del hallazgo), y lo que no es una clase usa dos acentos fijos (azul verdoso = adoptado / lo usa el
+  modelo; rosa = descartado / no puede entrar). Se probó también un violeta y un amarillo como acentos, y se descartaron
+  con el validador: el violeta se confunde con el azul de «pocas» y el amarillo con el naranja de «moderadas».
+- **El modelo, paso 4: todas las columnas probadas (rama `columnas-probadas`).** Ocho columnas que existen en el momento del sismo no
+  se habían probado porque el dataset con el que se empezó no las tenía, y la latitud y la longitud se habían descartado sólo por su
+  correlación. Se probaron después con el método de la celda 54 (notebook del dataset final) y ninguna mejora el f1 por más que el
+  desvío. El gráfico del paso 4 pasa de las tres líneas por fold (que no entraban con doce columnas) a un punto por columna contra la
+  banda de un desvío del modelo sin agregar nada: se lee de un vistazo que ninguna sale de la banda. En el gráfico de las columnas, las
+  12 probadas pasan a un solo grupo, en rosa (se probaron y se descartaron), y lo que no puede entrar pasa a gris.
+- **Las columnas, con el semáforo de la Entrega 2.** El gráfico de cuadrados («De las 27 columnas, el modelo usa 3») sólo decía
+  cuántas quedaban, y para saber por qué había que pasar el mouse por cada cuadrado. Lo reemplaza el semáforo de las 15 columnas que
+  existen en el momento del sismo, en «Lo que encontramos» (la sección que cierra la Entrega 2), con el antes y el después del
+  movimiento de las que quedaron: la magnitud pasa de 0,214 a 0,590 y la profundidad sale del rojo (0,051 → 0,216) en los sismos de
+  M6 o más. «Los datos» queda sólo con el filtro de fuga, y el paso 4 del modelo, con una idea: el modelo confirma el semáforo.
+  Una primera versión ponía las tres medidas sobre una regla común, con puntos huecos y llenos: no se entendía. Quedó como una
+  tabla de cuadrados del color del semáforo con el valor adentro: «todas las secuencias» → movimiento 1 («sólo M6 o
+  más») → movimiento 2 («M6 o más y someros», sólo la magnitud).
+  La profundidad muestra sus dos movimientos (tres franjas con η², que sigue en rojo, y sólo M6 o más). Debajo, un gráfico de
+  apoyo sin medidas: de cada 100 sismos de cada grupo, cuántos dejan ninguna, pocas, moderadas o muchas réplicas, antes y
+  después de cada movimiento, para que se entienda sin saber qué es Spearman.
+  Las otras 12 columnas salieron del gráfico del semáforo: no se exploraron con movimientos sino probándolas directamente en el
+  modelo (paso 4), y mostrarlas como «en rojo, sin movimiento» daba a entender que no se habían probado.
+  El gráfico de cuadrados de «Los datos» pasa a ser un embudo de verdad, centrado y que se angosta (27 → 15 → 3), con cada grupo que sale a la
+  derecha y su propio tooltip, que se lee
+  sin pasar el mouse; ahí cuenta qué columnas existen y cuáles pueden entrar,
+  y el semáforo de «Lo que encontramos» se queda sólo con las tres que sirvieron, para no perder el foco.
+  Cada bloque del semáforo y del gráfico de apoyo lleva de título la hipótesis de la Entrega 2 (H1, H3): sin ella no se entendía
+  qué se estaba buscando.
+- **El gráfico de apoyo, más simple.** Los seis paneles de barras apiladas no se entendían a simple vista. Quedó un solo número
+  por grupo: de cada 100 sismos, cuántos dejan más de 10 réplicas.
+- **Mapa del Cinturón de Fuego en «Los datos».** Explica por qué esas cinco regiones: son zonas de subducción del cinturón, donde
+  ocurre la mayoría de los sismos grandes. Cada región va recuadrada con el rectángulo exacto de su consulta a USGS.
+- **La importancia por permutación pasa al tallo de «El modelo».** Estaba en «Cómo lo sabemos» como «cuánto baja el f1». Ahora
+  muestra el f1 que queda (con todo, y desordenando cada columna) contra la línea del piso: desordenando la magnitud, el modelo
+  cae casi al piso, que es lo que se quería mostrar.
+- **Los pasos del modelo, con la decisión en el título y dos líneas de texto.** Los números que había en cada párrafo pasaron a
+  «Los números de cada paso», en «Cómo lo sabemos». El gráfico del paso 2 (tres sismos inventados con lo que contesta Poisson)
+  explicaba cómo funciona Poisson pero no la decisión: lo reemplaza el f1 de la logística contra Poisson, con el piso.
+- **«Las dos variables», simplificado.** El mapa de colores de magnitud × profundidad con los sismos de entrenamiento encima era
+  confuso. Quedan tres franjas (30, 100 y 300 km) con lo que contesta el modelo a lo largo de la magnitud sobre el umbral.
+  Después pasó a «Cómo lo sabemos» del modelo: en el tallo, la importancia por permutación ya cuenta que el modelo se apoya en
+  la magnitud, y se entiende sin explicación.
+  Al final se sacó: no aportaba a la historia, y la importancia por permutación ya muestra que el modelo se apoya en la magnitud
+  mucho más que en la profundidad.
+- **«Lo que encontramos», reordenado.** El tallo cuenta la historia sin medidas: el hallazgo principal, las barras «de cada 100
+  secuencias» con la H1 y la H3 en palabras, y los atípicos al final como el «pero». El semáforo (Spearman, η², movimientos) pasó a
+  «Cómo lo sabemos», que es donde la consigna pide las hipótesis con su número; en el tallo era el notebook con otra ropa.
+- **Las decisiones del proyecto, en el lugar donde pasaron.** Los problemas que tuvimos estaban escondidos en «Cómo lo sabemos». Un
+  primer intento los juntó en bloques de tarjetas (problema → decisión → resultado), pero se leían como un listado aparte. Quedó un
+  aviso de una línea, «Problema: …», justo antes de la parte que lo resuelve, y lo que sigue empieza con la decisión: una sola región
+  no alcanzaba → el mapa de las cinco regiones; el principal como el sismo más grande era fuga → después del embudo de «Los datos»,
+  «Por eso el principal es el sismo que abre la secuencia» (su costo son los triángulos de los atípicos); sismos parecidos dejan cantidades muy distintas → paso 1 (intervalo); el error dependía de la
+  región → paso 3 (magnitud sobre el umbral). Los números del primer análisis son del notebook de los Andes (celdas 13, 90 y 104).
+- **«Los datos», reordenado.** Después del gráfico principal va primero de dónde salen los datos (el problema de los Andes y el
+  mapa de las cinco regiones), después qué columnas se pueden usar (el gráfico de columnas) y al final el problema de fuga del sismo principal,
+  al lado de ese gráfico, que también habla de fuga. Así los dos avisos de problema no quedan seguidos.
+- **El título de «Lo que encontramos».** Era «Las réplicas crecen con la magnitud: de 0,2 de media en los sismos que apenas superan
+  el umbral a 128 en los que lo superan por 2,5 a 3,0 puntos»: largo, técnico y repetía el título de las barras. Ahora afirma lo que
+  muestra el gráfico, la forma del crecimiento: «Las réplicas no crecen de a poco con la magnitud: se multiplican». Los números
+  pasaron al texto de debajo.
+- **El sismo principal, en rojo en el globo.** Al animar una secuencia, todos los eventos iban con el color de la clase y no se
+  distinguía el principal de sus réplicas. Ahora el principal (el primer evento: el que abre la secuencia) va en rojo
+  (`COLOR_PRINCIPAL` en `palette.py`) y se dibuja encima de las réplicas; la leyenda lo nombra mientras hay una secuencia animada.
+  El rojo no es una clase ni un acento: sólo aparece en el globo.
+  Si en la secuencia hay un sismo posterior mayor que el principal, el más grande va en amarillo claro (`COLOR_MAYOR`), también
+  encima de las réplicas, y la leyenda lo nombra sólo cuando existe; el punto del aviso «Luego hubo un M…, mayor que el principal»
+  usa el mismo amarillo.
+- **Las columnas, de embudo a recuadros.** El embudo (franjas de 27, 15 y 3 de ancho unidas por estrechamientos) se leía como
+  una escalera invertida: la forma pesaba más que los números, y no se veía qué columna salía en cada paso. Ahora son tres filas
+  del mismo ancho con un recuadro por columna, que no cambia de lugar de una fila a otra: lleno = sigue, sólo el borde = ya salió.
+  Los recuadros van agrupados por el motivo de salida, con una llave y «n motivo» debajo de la última fila, y las tres del modelo
+  van en turquesa en las tres filas para seguirlas. Se descartó dibujar tres rectángulos separados de 27, 15 y 3 recuadros:
+  volvía la escalera y se perdía cuáles salen y por qué.
+- **El globo, en una sola pieza.** Los botones para mover el globo (seis sueltos debajo, con una línea de ayuda) pasaron
+  adentro, abajo a la derecha, como en los mapas: un pad redondo con las cuatro flechas, un botón en el centro que vuelve a la
+  vista de partida (la secuencia entera, la región elegida o el panorama) y, debajo, − y +. Sigue siendo la alternativa a
+  arrastrar, así que cada flecha es un botón con su nombre; la pista «Arrastrá para girar · rueda para acercar» pasó a la
+  leyenda (en el celular no va). Los filtros no se pusieron encima del globo: con una secuencia animada ya tiene reloj,
+  resumen, leyenda, reproductor y pad, y los filtros también mueven las barras de abajo, así que esconderlos en un panel del
+  globo los hacía parecer propios del globo y ocultaba qué está filtrado. Pasaron a ser la cabecera de la misma tarjeta,
+  junto con la línea de la región, pegada al borde de arriba. En el celular el globo tiene al menos 530 px de alto para que
+  el resumen de arriba no pise la leyenda y el pad de abajo.
+- **Probá el modelo, con sliders.** La magnitud y la profundidad pasaron de cajas de texto a sliders. La pista de cada uno
+  se pinta con la clase que contestaría el modelo en cada punto, con lo demás fijo (tramos de color plano con bordes
+  netos, no un degradado: es un dato), así se ve antes de mover dónde cambia la respuesta. Lo que el modelo no vio al
+  entrenar va rayado en la pista (por debajo del umbral de la región o de M4,2, por encima de M9,1 y más allá de 640 km)
+  en lugar del texto «El modelo vio…». Mientras se arrastra, la respuesta se calcula en el navegador al instante y, cuando el
+  caso queda quieto 250 ms, la confirma el servidor. Se probó un mapa magnitud × profundidad pintado por clase, con el caso
+  como un punto arrastrable, y se descartó: la respuesta se lee mejor en las barras de probabilidad de siempre.
+- **Clases con cuatro tonos en lugar de la rampa de tierra.** La rampa (piedra, ocre, óxido, arena) separaba las clases sólo
+  por luminosidad: había que comparar en lugar de reconocer, y costaba en las barras de «Lo que dijo el modelo», en el empuje
+  (el f1 macro, en el color del texto, quedaba a ΔE 5 de «muchas») y en el hallazgo. La paleta azul de la primera versión se
+  reconocía de un vistazo, pero con deuteranopía o tritanopía dos clases quedaban a ΔE 5. Se comparó todo en una página con
+  los gráficos reales y simulación de daltonismo, y quedó gris piedra, celeste, naranja y lila (en loess, púrpura): tonos
+  distintos, ΔE ≥ 13 entre clases con cualquier daltonismo, y la luminosidad sigue el orden de las clases. Como consecuencia,
+  el sismo principal del globo pasó del azul (cerca del celeste) a verde lima, y la línea del empuje elegido, al neutro.

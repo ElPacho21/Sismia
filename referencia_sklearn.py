@@ -135,3 +135,176 @@ def candidatos(alpha, empuje):
         "Binomial Negativa (mag_sobre_mc + prof)": con_mc(BinomialNegativaIntervalos()),
         "Poisson elegido (alpha=0,001, empuje=0,4)": modelo_final(alpha, empuje),
     }
+
+
+# ---------------------------------------------------------------- columnas nuevas y sesgo por región
+# (celdas 43, 50 y 54 del notebook). Se copian sin cambiar la lógica.
+class ColumnasCandidatas(BaseEstimator, TransformerMixin):
+    """mag_sobre_mc + profundidad (siempre), con interruptores para probar columnas nuevas."""
+    def __init__(self, con_region=False, con_previos=False):
+        self.con_region = con_region
+        self.con_previos = con_previos
+
+    def fit(self, X, y=None):
+        self.regiones_ = sorted(X["region"].unique())          # se aprende sólo del train
+        return self
+
+    def transform(self, X):
+        salida = pd.DataFrame({"mag_sobre_mc": X["mainshock_mag"] - X["region_mc"],
+                               "profundidad": X["mainshock_depth"]}, index=X.index)
+        if self.con_region:
+            for r in self.regiones_[1:]:                          # una columna 0/1 por región
+                salida[f"region_{r}"] = (X["region"] == r).astype(float)
+        if self.con_previos:
+            salida["log_previos_30d"] = np.log1p(X["n_prior_30d"])  # sismos en los 30 días anteriores
+        return salida
+
+
+def con_columnas(**interruptores):
+    return Pipeline([("columnas", ColumnasCandidatas(**interruptores)), ("escalar", StandardScaler()),
+                     ("modelo", PoissonIntervalos())])
+
+
+def esperadas_de_validacion(pipeline, X_train, y_train, cv):
+    """Réplicas esperadas para cada sismo, calculadas cuando ese sismo estaba en validación."""
+    esperadas = pd.Series(np.nan, index=X_train.index)
+    for entrena, valida in cv.split(X_train):
+        pipeline.fit(X_train.iloc[entrena], y_train.iloc[entrena])
+        columnas = pipeline[:-1].transform(X_train.iloc[valida])          # todo menos el modelo
+        esperadas.iloc[valida] = pipeline[-1].replicas_esperadas(columnas)
+    return esperadas.dropna()
+
+
+def real_sobre_predicho(esperadas, X_train, y_train):
+    t = pd.DataFrame({"real": y_train.loc[esperadas.index], "esperadas": esperadas,
+                      "region": X_train.loc[esperadas.index, "region"],
+                      "Mc": X_train.loc[esperadas.index, "region_mc"],
+                      "mag": X_train.loc[esperadas.index, "mainshock_mag"]})
+    t = t[t["mag"] < 6.5]          # sin los megasismos, que en una suma tapan todo lo demás
+    r = t.groupby("region").agg(Mc=("Mc", "first"), real=("real", "sum"), esperadas=("esperadas", "sum"))
+    r["real / esperadas"] = r["real"] / r["esperadas"]
+    return r.sort_values("Mc")
+
+
+# ---------------------------------------------------------------- otros cortes de los intervalos
+# (celda 70 del notebook). Se copian sin cambiar la lógica.
+ESQUEMAS = {"0 | 1–5 | 6+": [0, 5],
+            "0 | 1–10 | 11+": [0, 10],
+            "0 | 1–2 | 3–10 | 11+ (el elegido)": [0, 2, 10],
+            "0 | 1 | 2–5 | 6+": [0, 1, 5],
+            "0 | 1 | 2–5 | 6–20 | 21+": [0, 1, 5, 20]}
+
+
+class PoissonCortes(PoissonIntervalos):
+    """La misma PoissonIntervalos, pero con otros cortes."""
+    def __init__(self, alpha=1.0, empuje=0.0, cortes=(0, 2, 10), clases=None):
+        super().__init__(alpha, empuje)
+        self.cortes = cortes
+        self.clases = clases
+
+    def fit(self, X, y):
+        self.regresion_ = PoissonRegressor(alpha=self.alpha, max_iter=1000).fit(X, y)
+        self.classes_ = np.array(self.clases)
+        inter = np.array(self.clases)[np.searchsorted(self.cortes, np.asarray(y), side="left")]
+        self.frecuencia_ = np.array([(inter == c).mean() for c in self.clases])
+        return self
+
+    def predict_proba(self, X):
+        mu = self.replicas_esperadas(X)
+        acum = [poisson.cdf(k, mu) for k in self.cortes]
+        return np.column_stack([acum[0]] + [acum[i] - acum[i - 1] for i in range(1, len(self.cortes))] + [1 - acum[-1]])
+
+
+class ClasificadorCortes(BaseEstimator, ClassifierMixin):
+    def __init__(self, modelo=None, intervalo=None):
+        self.modelo = modelo
+        self.intervalo = intervalo
+
+    def fit(self, X, y):
+        self.modelo_ = clone(self.modelo).fit(X, self.intervalo(y))
+        return self
+
+    def predict(self, X):
+        return self.modelo_.predict(X)
+
+
+def f1_con_cortes(cortes, pipeline_de, X_train, y_train, cv):
+    from sklearn.metrics import f1_score
+    clases = [str(i) for i in range(len(cortes) + 1)]
+    intervalo = lambda n: np.array(clases)[np.searchsorted(cortes, np.asarray(n), side="left")]  # noqa: E731
+    notas = []
+    for e, v in cv.split(X_train):
+        pred = pipeline_de(cortes, clases, intervalo).fit(X_train.iloc[e], y_train.iloc[e]).predict(X_train.iloc[v])
+        notas.append(f1_score(intervalo(y_train.iloc[v]), pred, average="macro", labels=clases))
+    return np.mean(notas)
+
+
+def tabla_cortes(alpha, empuje, X_train, y_train, cv):
+    filas = {}
+    for nombre, cortes in ESQUEMAS.items():
+        filas[nombre] = {
+            "intervalos": len(cortes) + 1,
+            "piso": f1_con_cortes(cortes, lambda c, cl, it: con_mc(ClasificadorCortes(DummyClassifier(strategy="most_frequent"), it)),
+                                  X_train, y_train, cv),
+            "logística (balanced)": f1_con_cortes(cortes, lambda c, cl, it: con_mc(ClasificadorCortes(
+                LogisticRegression(max_iter=3000, class_weight="balanced"), it)), X_train, y_train, cv),
+            "Poisson": f1_con_cortes(cortes, lambda c, cl, it: con_mc(PoissonCortes(alpha=alpha, empuje=empuje, cortes=c, clases=cl)),
+                                     X_train, y_train, cv),
+        }
+    return filas
+
+
+# ---------------------------------------------------------------- las columnas que la Entrega 3 no probó
+# (notebook «Análisis Exploratorio (dataset final)», sección «¿Ayudan al modelo las columnas que no se probaron?»).
+# Se copian sin cambiar la lógica.
+COLUMNAS_NUEVAS = ["n_prior_2d", "n_prior_365d", "prior_max_mag_365d", "days_since_prior", "prior_window_truncated",
+                   "region_log10_eta0", "dist_to_border_km", "near_border", "mainshock_lat", "mainshock_lon"]
+
+
+def candidatas(X):
+    """Cada columna, transformada como tiene sentido en una regresión con enlace log."""
+    sobre_mc = X["prior_max_mag_365d"] - X["region_mc"]
+    dias = X["days_since_prior"]
+    return {
+        "n_prior_30d": pd.DataFrame({"log_n_prior_30d": np.log1p(X["n_prior_30d"])}),
+        "n_prior_2d": pd.DataFrame({"log_n_prior_2d": np.log1p(X["n_prior_2d"])}),
+        "n_prior_365d": pd.DataFrame({"log_n_prior_365d": np.log1p(X["n_prior_365d"])}),
+        "prior_max_mag_365d": pd.DataFrame({"prior_max_sobre_mc": sobre_mc.fillna(-0.5),
+                                            "sin_previos_365d": sobre_mc.isna().astype(float)}),
+        "days_since_prior": pd.DataFrame({"log_dias": np.log1p(dias.fillna(dias.max())),
+                                          "sin_previo": dias.isna().astype(float)}),
+        "prior_window_truncated": pd.DataFrame({"ventana_truncada": X["prior_window_truncated"].astype(float)}),
+        "region_log10_eta0": pd.DataFrame({"eta0": X["region_log10_eta0"]}),
+        "dist_to_border_km": pd.DataFrame({"log_dist_borde": np.log1p(X["dist_to_border_km"])}),
+        "near_border": pd.DataFrame({"cerca_del_borde": X["near_border"].astype(float)}),
+        "mainshock_lat": pd.DataFrame({"lat": X["mainshock_lat"]}),
+        "mainshock_lon": pd.DataFrame({"lon": X["mainshock_lon"]}),
+    }
+
+
+class ConExtras(BaseEstimator, TransformerMixin):
+    """mag_sobre_mc + profundidad, más las columnas candidatas que se pidan."""
+    def __init__(self, extras=()):
+        self.extras = extras
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        base = pd.DataFrame({"mag_sobre_mc": X["mainshock_mag"] - X["region_mc"],
+                             "profundidad": X["mainshock_depth"]}, index=X.index)
+        t = candidatas(X)
+        return pd.concat([base] + [t[c].set_index(X.index) for c in self.extras], axis=1)
+
+
+def validar_extras(extras, alpha, empuje, X_train, y_train, cv):
+    """f1 macro y deviance de Poisson de cada fold."""
+    from sklearn.metrics import f1_score, mean_poisson_deviance
+    f1s, devs = [], []
+    for e, v in cv:
+        m = Pipeline([("columnas", ConExtras(tuple(extras))), ("escalar", StandardScaler()),
+                      ("modelo", PoissonIntervalos(alpha=alpha, empuje=empuje))]).fit(X_train.iloc[e], y_train.iloc[e])
+        f1s.append(f1_score(a_intervalo(y_train.iloc[v]), m.predict(X_train.iloc[v]), average="macro", labels=CLASES))
+        mu = m[-1].replicas_esperadas(m[:-1].transform(X_train.iloc[v]))
+        devs.append(mean_poisson_deviance(y_train.iloc[v], np.maximum(mu, 1e-9)))
+    return np.array(f1s), np.array(devs)

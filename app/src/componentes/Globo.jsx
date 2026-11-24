@@ -6,7 +6,7 @@ import { centroRegion, eventosHasta, horasATexto, horasDeTiempoLog, tiempoLog } 
 import { fecha, n } from "../lib/formato.js";
 import { NOMBRE_REGION } from "./ProbaModelo.jsx";
 
-// El globo (extra de la copa): los mismos datos de Explorá en 3D, con la animación de una secuencia.
+// El globo: el panorama de Explorá, con los filtros, el detalle de cada secuencia y su animación.
 // Se carga recién cuando el usuario llega hasta acá (ver GloboPuerta).
 const DURACION_S = 14; // lo que tarda en correr toda la secuencia
 const escapar = (t) => String(t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -36,7 +36,7 @@ export default function Globo({ d, filtros, setFiltros }) {
   const datosRef = useRef(null);
   datosRef.current = datos;
 
-  // datos del globo y, aparte, las filas con el detalle de cada secuencia (el mismo archivo de Explorá)
+  // datos del globo y, aparte, las filas con el detalle de cada secuencia (el mismo archivo que usan las barras)
   useEffect(() => {
     Promise.all([pedirJson("data/globo.json"), pedirJson("data/explora_filas.json")])
       .then(([g, filas]) => {
@@ -56,6 +56,8 @@ export default function Globo({ d, filtros, setFiltros }) {
       datos,
       regiones,
       colores: paleta.color_clase,
+      colorPrincipal: paleta.color_principal,
+      colorMayor: paleta.color_mayor,
       tierra: TIERRA,
       reducirMovimiento: reducirMovimiento(),
       alHover: mostrarDetalle,
@@ -88,7 +90,7 @@ export default function Globo({ d, filtros, setFiltros }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [datos, sinWebgl]);
 
-  // filtros compartidos con Explorá -> el globo; si cambió la región, la cámara vuela hasta ella
+  // filtros (compartidos con las barras) -> el globo; si cambió la región, la cámara vuela hasta ella
   useEffect(() => {
     const escena = escenaRef.current;
     if (!escena) return;
@@ -102,6 +104,16 @@ export default function Globo({ d, filtros, setFiltros }) {
     regionPrevia.current = filtros.region;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [datos, filtros, soloTest, colorPorReal]);
+
+  // el centro del pad: vuelve a la vista de partida (la secuencia entera, la región elegida o el panorama)
+  function recentrar() {
+    const escena = escenaRef.current;
+    if (!escena) return;
+    if (secuencia) return escena.encuadrar("todo");
+    const r = regiones.find((x) => x.nombre === filtros.region);
+    if (r) escena.volarA(centroRegion(r).lat, centroRegion(r).lon, 2.2);
+    else escena.volarA(12, 120, 3.1);
+  }
 
   // ---- detalle a pedido: se arma a mano sobre el DOM para no re-renderizar con cada movimiento del mouse
   function mostrarDetalle(i, x, y) {
@@ -119,6 +131,9 @@ export default function Globo({ d, filtros, setFiltros }) {
       <span>${fecha(fila.fecha)} · M${n(fila.mag, 1)} · ${n(fila.prof, 0)} km · ${escapar(NOMBRE_REGION[fila.region] ?? fila.region)}</span>
       <span>Réplicas reales: <b>${n(fila.replicas)}</b> · <i style="background:${color(fila.real_i)}"></i>${escapar(fila.real)}</span>
       <span>El modelo dijo: <i style="background:${color(fila.pred_i)}"></i>${escapar(fila.pred)} (${fila.real_i === fila.pred_i ? "acertó" : "no acertó"})</span>
+      <span>Réplicas esperadas: ${n(fila.mu, 2)} · probabilidades: ${[fila.p_ninguna, fila.p_pocas, fila.p_moderadas, fila.p_muchas]
+        .map((p, k) => `<i style="background:${color(k)}"></i>${n(p * 100, 0)} %`)
+        .join(" ")}</span>
       <span class="${fila.test ? "" : "ojo"}">${fila.test ? "Sismo de test: el modelo no lo vio al entrenar" : "De entrenamiento: el modelo ya lo vio"}</span>
       <em>${animable ? "Click para animar su secuencia" : "Sin réplicas registradas: no hay secuencia para animar"}</em>`;
     el.style.display = "block";
@@ -194,61 +209,73 @@ export default function Globo({ d, filtros, setFiltros }) {
   const region = regiones.find((r) => r.nombre === filtros.region);
   const destacadas = datos?.destacadas ?? [];
 
+  // los filtros (también mueven las barras de abajo): se muestran aunque el globo no pueda dibujarse
+  const filtrosUi = (
+    <div className="globo-filtros" role="group" aria-labelledby="globo-filtros-titulo">
+      <span id="globo-filtros-titulo" className="titulo-filtros">Filtros</span>
+      <label>
+        Región
+        <select name="region" autoComplete="off" value={filtros.region} onChange={(e) => setFiltros((f) => ({ ...f, region: e.target.value }))}>
+          <option value="todas">todas</option>
+          {regiones.map((r) => (
+            <option key={r.nombre} value={r.nombre}>
+              {NOMBRE_REGION[r.nombre] ?? r.nombre}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="rango">
+        Magnitud mínima: {n(filtros.magMin, 1)}
+        <input name="magnitud-minima" type="range" min="4" max="8" step="0.1" value={filtros.magMin} onChange={(e) => setFiltros((f) => ({ ...f, magMin: Number(e.target.value) }))} />
+      </label>
+      <label>
+        Secuencias
+        <select name="ver" autoComplete="off" value={filtros.ver} onChange={(e) => setFiltros((f) => ({ ...f, ver: e.target.value }))}>
+          {opciones.ver.map((o) => (
+            <option key={o}>{o}</option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Pintar según
+        <select name="pintar-segun" autoComplete="off" value={filtros.colorPor} onChange={(e) => setFiltros((f) => ({ ...f, colorPor: e.target.value }))}>
+          {opciones.color.map((o) => (
+            <option key={o}>{o}</option>
+          ))}
+        </select>
+      </label>
+    </div>
+  );
+
   if (sinWebgl)
-    return <p className="globo-aviso">Tu navegador no tiene WebGL activado, así que el globo no puede dibujarse. Explorá muestra los mismos datos en 2D.</p>;
+    return (
+      <>
+        {filtrosUi}
+        <p className="globo-aviso">Tu navegador no tiene WebGL activado, así que el globo no puede dibujarse. Las barras de abajo siguen respondiendo a los filtros.</p>
+      </>
+    );
   if (error) return <p className="error">No se pudo cargar el globo: {error}</p>;
 
   return (
     <div className="globo-grilla">
       <div className="globo-escena">
-        {/* los filtros, justo arriba del globo para ver el efecto sin desplazarse (son los mismos de Explorá) */}
-        <div className="globo-filtros" role="group" aria-labelledby="globo-filtros-titulo">
-          <span id="globo-filtros-titulo" className="titulo-filtros">Filtros</span>
-          <label>
-            Región
-            <select name="region" autoComplete="off" value={filtros.region} onChange={(e) => setFiltros((f) => ({ ...f, region: e.target.value }))}>
-              <option value="todas">todas</option>
-              {regiones.map((r) => (
-                <option key={r.nombre} value={r.nombre}>
-                  {NOMBRE_REGION[r.nombre] ?? r.nombre}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="rango">
-            Magnitud mínima: {n(filtros.magMin, 1)}
-            <input name="magnitud-minima" type="range" min="4" max="8" step="0.1" value={filtros.magMin} onChange={(e) => setFiltros((f) => ({ ...f, magMin: Number(e.target.value) }))} />
-          </label>
-          <label>
-            Secuencias
-            <select name="ver" autoComplete="off" value={filtros.ver} onChange={(e) => setFiltros((f) => ({ ...f, ver: e.target.value }))}>
-              {opciones.ver.map((o) => (
-                <option key={o}>{o}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Pintar según
-            <select name="pintar-segun" autoComplete="off" value={filtros.colorPor} onChange={(e) => setFiltros((f) => ({ ...f, colorPor: e.target.value }))}>
-              {opciones.color.map((o) => (
-                <option key={o}>{o}</option>
-              ))}
-            </select>
-          </label>
+        {/* la cabecera del globo: los filtros (mueven también las barras de abajo) y el resultado de la región elegida,
+            pegados al borde de arriba para que globo, filtros y controles se lean como una sola pieza */}
+        <div className="globo-cabecera">
+          {filtrosUi}
+          <p className="globo-region" aria-live="polite">
+            {region ? (
+              <>
+                <strong>{NOMBRE_REGION[region.nombre]}</strong>: Mc {n(region.mc, 1)} · {n(region.secuencias)} secuencias ({n(region.secuencias_test)} de test) · en el test, f1{" "}
+                <strong>{n(region.f1_test, 2)}</strong> y acierta el intervalo en el {n(region.acierto_test * 100, 0)} % <span className="aclaracion">(un único modelo para todas las regiones)</span>
+              </>
+            ) : (
+              <>
+                <strong>Todas las regiones</strong>: f1 {n(metricas.final.f1_test, 2)} en el test. Elegí una región, o clickeá una en el globo, para ver su resultado.
+              </>
+            )}
+          </p>
         </div>
-        {/* el resultado de la región elegida, pegado al filtro que la cambia */}
-        <p className="globo-region" aria-live="polite">
-          {region ? (
-            <>
-              <strong>{NOMBRE_REGION[region.nombre]}</strong>: Mc {n(region.mc, 1)} · {n(region.secuencias)} secuencias ({n(region.secuencias_test)} de test) · en el test, f1{" "}
-              <strong>{n(region.f1_test, 2)}</strong> y acierta el intervalo en el {n(region.acierto_test * 100, 0)} % <span className="aclaracion">(un único modelo para todas las regiones)</span>
-            </>
-          ) : (
-            <>
-              <strong>Todas las regiones</strong>: f1 {n(metricas.final.f1_test, 2)} en el test. Elegí una región, o clickeá una en el globo, para ver su resultado.
-            </>
-          )}
-        </p>
         <div
           className="globo-caja"
           ref={caja}
@@ -268,7 +295,25 @@ export default function Globo({ d, filtros, setFiltros }) {
                 {c}
               </li>
             ))}
-            <li className="chico">Tamaño = magnitud · anillos = sismos M7+</li>
+            {reloj ? (
+              <>
+                <li className="principal">
+                  <i style={{ background: paleta.color_principal }} />
+                  sismo principal
+                </li>
+                {secuencia?.ev.mag.slice(1).some((x) => x > secuencia.ev.mag[0]) && (
+                  <li className="principal">
+                    <i style={{ background: paleta.color_mayor }} />
+                    sismo mayor que el principal
+                  </li>
+                )}
+              </>
+            ) : (
+              <>
+                <li className="chico">Tamaño = magnitud · anillos = sismos M7+</li>
+                <li className="chico">Arrastrá para girar · rueda para acercar</li>
+              </>
+            )}
           </ul>
           {reloj && (
             // arriba: el reloj al centro y el resumen de la secuencia a la derecha (en pantallas chicas, uno debajo del otro)
@@ -304,7 +349,7 @@ export default function Globo({ d, filtros, setFiltros }) {
                   </dl>
                 )}
                 {resumenSecuencia.mayorVinoDespues && (
-                  <details className="globo-aviso-mayor" key={secuencia.indice}>
+                  <details className="globo-aviso-mayor" key={secuencia.indice} style={{ "--mayor": paleta.color_mayor }}>
                     <summary>
                       Luego hubo un M{n(resumenSecuencia.mayor, 1)}, mayor que el principal
                       <span className="mas">¿Qué implica?</span>
@@ -318,6 +363,33 @@ export default function Globo({ d, filtros, setFiltros }) {
                   </details>
                 )}
               </section>
+            </div>
+          )}
+          {datos && (
+            // mover el globo: un pad con las cuatro flechas y, en el centro, volver a la vista de partida; abajo, el zoom.
+            // Es la alternativa a arrastrar (y a las flechas del teclado con el globo enfocado).
+            <div className="globo-pad" role="group" aria-label="Mover el globo">
+              <div className="cruz">
+                <button type="button" className="arriba" onClick={() => escenaRef.current?.girar(0, 0.3)} aria-label="Girar hacia arriba" title="Girar hacia arriba">
+                  <Flecha />
+                </button>
+                <button type="button" className="izquierda" onClick={() => escenaRef.current?.girar(-0.3, 0)} aria-label="Girar a la izquierda" title="Girar a la izquierda">
+                  <Flecha />
+                </button>
+                <button type="button" className="centro" onClick={recentrar} aria-label="Volver a la vista de partida" title="Volver a la vista de partida">
+                  <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="2.2" /><circle cx="8" cy="8" r="5.6" fill="none" /></svg>
+                </button>
+                <button type="button" className="derecha" onClick={() => escenaRef.current?.girar(0.3, 0)} aria-label="Girar a la derecha" title="Girar a la derecha">
+                  <Flecha />
+                </button>
+                <button type="button" className="abajo" onClick={() => escenaRef.current?.girar(0, -0.3)} aria-label="Girar hacia abajo" title="Girar hacia abajo">
+                  <Flecha />
+                </button>
+              </div>
+              <div className="zoom">
+                <button type="button" onClick={() => escenaRef.current?.acercar(1.25)} aria-label="Alejar" title="Alejar">−</button>
+                <button type="button" onClick={() => escenaRef.current?.acercar(0.8)} aria-label="Acercar" title="Acercar">+</button>
+              </div>
             </div>
           )}
           {datos && (
@@ -359,16 +431,16 @@ export default function Globo({ d, filtros, setFiltros }) {
             </div>
           )}
         </div>
-        <div className="globo-teclas" role="group" aria-label="Mover el globo">
-          <button type="button" onClick={() => escenaRef.current?.girar(-0.3, 0)} aria-label="Girar a la izquierda">←</button>
-          <button type="button" onClick={() => escenaRef.current?.girar(0.3, 0)} aria-label="Girar a la derecha">→</button>
-          <button type="button" onClick={() => escenaRef.current?.girar(0, 0.3)} aria-label="Girar hacia arriba">↑</button>
-          <button type="button" onClick={() => escenaRef.current?.girar(0, -0.3)} aria-label="Girar hacia abajo">↓</button>
-          <button type="button" onClick={() => escenaRef.current?.acercar(0.8)} aria-label="Acercar">+</button>
-          <button type="button" onClick={() => escenaRef.current?.acercar(1.25)} aria-label="Alejar">−</button>
-          <span>Arrastrá para girar, rueda para acercar, o usá las flechas con el globo enfocado.{secuencia && " Esc quita la secuencia."}</span>
-        </div>
       </div>
     </div>
+  );
+}
+
+// la flecha del pad: apunta hacia arriba y cada botón la gira con CSS
+function Flecha() {
+  return (
+    <svg viewBox="0 0 16 16" aria-hidden="true">
+      <path d="M8 3.5 13 10H3z" />
+    </svg>
   );
 }

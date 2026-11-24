@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { LOCALE_VEGA } from "../lib/formato.js";
+import { specEnTema, useTema } from "../lib/tema.js";
 
 // Las cajas que ocupan las leyendas y los ejes en el lienzo, recorriendo el árbol de dibujo de Vega
 // (cada grupo suma su desplazamiento a lo que tiene adentro). Los ejes marcan hasta dónde llegan los gráficos.
@@ -64,6 +65,8 @@ export default function Grafico({ url, descripcion, senales, alCambiarSenal, con
   const [listo, setListo] = useState(false);
   const [hayMas, setHayMas] = useState(false);
   const figura = useRef(null);
+  const contextoTema = useTema();
+  const { tema } = contextoTema;
 
   useEffect(() => {
     let cancelado = false;
@@ -72,16 +75,16 @@ export default function Grafico({ url, descripcion, senales, alCambiarSenal, con
         const [{ default: embed }, , spec] = await Promise.all([
           import("vega-embed"),
           // el lienzo no espera a las fuentes: se las pide antes de dibujar
-          document.fonts?.load("12px 'Instrument Sans Variable'").catch(() => null),
+          Promise.all([document.fonts?.load("12px 'Alegreya Variable'"), document.fonts?.load("12px 'IBM Plex Mono'")]).catch(() => null),
           fetch(url).then((r) => {
             if (!r.ok) throw new Error(`${url}: ${r.status}`);
             return r.json();
           }),
         ]);
         if (cancelado) return;
-        const opciones = { actions: false, formatLocale: LOCALE_VEGA, renderer: "canvas", tooltip: { theme: "dark" } };
+        const opciones = { actions: false, formatLocale: LOCALE_VEGA, renderer: "canvas", tooltip: { theme: tema === "loess" ? "light" : "dark" } };
         if (controles && enlaces.current) opciones.bind = enlaces.current;
-        const resultado = await embed(contenedor.current, spec, opciones);
+        const resultado = await embed(contenedor.current, specEnTema(spec, contextoTema), opciones);
         const vista = resultado.view;
         if (cancelado) return vista.finalize();
         vistaRef.current = vista;
@@ -100,7 +103,7 @@ export default function Grafico({ url, descripcion, senales, alCambiarSenal, con
       vistaRef.current?.finalize();
       vistaRef.current = null;
     };
-  }, [url]);
+  }, [url, tema]); // al cambiar el tema el gráfico se vuelve a dibujar con los colores del otro
 
   // cuando la aplicación cambia un valor (por ejemplo desde el globo), se lo pasa al gráfico
   useEffect(() => {

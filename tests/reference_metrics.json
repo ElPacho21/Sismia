@@ -174,5 +174,306 @@
       0.317,
       0.478
     ]
+  },
+  "columnas_probadas": {
+    "_fuente": "Celda 54 del notebook (Poisson con mag_sobre_mc + profundidad, probando columnas de a una): f1 macro medio y desvío.",
+    "base": [
+      0.444,
+      0.021
+    ],
+    "region": [
+      0.444,
+      0.015
+    ],
+    "previos": [
+      0.46,
+      0.033
+    ]
+  },
+  "real_sobre_esperadas": {
+    "_fuente": "Celda 50 del notebook: réplicas reales / esperadas en validación por región, sin sismos de M6,5 o más.",
+    "crudo": {
+      "mexico_ca": 1.36,
+      "andes": 0.24,
+      "japan": 0.33,
+      "sumatra_java": 0.41,
+      "philippines": 0.5
+    },
+    "mag_sobre_mc": {
+      "mexico_ca": 0.83,
+      "andes": 0.26,
+      "japan": 0.43,
+      "sumatra_java": 0.53,
+      "philippines": 0.77
+    }
+  },
+  "columnas_probadas_folds": {
+    "_fuente": "Celda 54 del notebook: f1 macro de cada fold.",
+    "base": [
+      0.443,
+      0.465,
+      0.461,
+      0.445,
+      0.406
+    ],
+    "region": [
+      0.428,
+      0.462,
+      0.461,
+      0.444,
+      0.428
+    ],
+    "previos": [
+      0.449,
+      0.461,
+      0.516,
+      0.459,
+      0.413
+    ]
+  },
+  "intervalos_por_tramo": {
+    "_fuente": "Celda 9 del notebook: réplicas por tramo de magnitud (redondeadas a un decimal).",
+    "4–5": {
+      "sismos": 16232,
+      "media": 0.2,
+      "var_media": 112.8,
+      "minimo": 0,
+      "maximo": 555
+    },
+    "5–6": {
+      "sismos": 4570,
+      "media": 0.7,
+      "var_media": 56.4,
+      "minimo": 0,
+      "maximo": 321
+    },
+    "6–7": {
+      "sismos": 431,
+      "media": 4.3,
+      "var_media": 15.3,
+      "minimo": 0,
+      "maximo": 69
+    },
+    "7 o más": {
+      "sismos": 59,
+      "media": 138.2,
+      "var_media": 1110.3,
+      "minimo": 0,
+      "maximo": 2544
+    }
+  },
+  "ejemplo_poisson": {
+    "_fuente": "Celda 39 del notebook: probabilidad de cada intervalo (%) y réplicas esperadas para tres sismos inventados a 30 km.",
+    "M4,5": {
+      "probs": [
+        79.3,
+        20.5,
+        0.2,
+        0.0
+      ],
+      "mu": 0.2,
+      "respuesta": "ninguna (0)"
+    },
+    "M6,0": {
+      "probs": [
+        2.3,
+        24.8,
+        72.8,
+        0.2
+      ],
+      "mu": 3.8,
+      "respuesta": "moderadas (3–10)"
+    },
+    "M7,5": {
+      "probs": [
+        0.0,
+        0.0,
+        0.0,
+        100.0
+      ],
+      "mu": 62.0,
+      "respuesta": "muchas (11+)"
+    }
+  },
+  "cortes": {
+    "_fuente": "Celda 70 del notebook: f1 macro medio en validación con otros cortes de los intervalos.",
+    "0 | 1–5 | 6+": {
+      "intervalos": 3,
+      "piso": 0.313,
+      "logística (balanced)": 0.438,
+      "Poisson": 0.533
+    },
+    "0 | 1–10 | 11+": {
+      "intervalos": 3,
+      "piso": 0.313,
+      "logística (balanced)": 0.432,
+      "Poisson": 0.542
+    },
+    "0 | 1–2 | 3–10 | 11+ (el elegido)": {
+      "intervalos": 4,
+      "piso": 0.235,
+      "logística (balanced)": 0.355,
+      "Poisson": 0.44
+    },
+    "0 | 1 | 2–5 | 6+": {
+      "intervalos": 4,
+      "piso": 0.235,
+      "logística (balanced)": 0.344,
+      "Poisson": 0.439
+    },
+    "0 | 1 | 2–5 | 6–20 | 21+": {
+      "intervalos": 5,
+      "piso": 0.188,
+      "logística (balanced)": 0.279,
+      "Poisson": 0.404
+    }
+  },
+  "columnas_nuevas": {
+    "_fuente": "Notebook «Análisis Exploratorio (dataset final)», sección «¿Ayudan al modelo las columnas que no se probaron?»: f1 macro medio y desvío en validación agregando cada columna, y diferencia de f1 de las columnas juntas.",
+    "celda54": {
+      "base": [
+        0.444,
+        0.021
+      ],
+      "columnas": {
+        "n_prior_30d": [
+          0.46,
+          0.033
+        ],
+        "n_prior_2d": [
+          0.443,
+          0.018
+        ],
+        "n_prior_365d": [
+          0.446,
+          0.022
+        ],
+        "prior_max_mag_365d": [
+          0.444,
+          0.019
+        ],
+        "days_since_prior": [
+          0.445,
+          0.023
+        ],
+        "prior_window_truncated": [
+          0.443,
+          0.024
+        ],
+        "region_log10_eta0": [
+          0.449,
+          0.014
+        ],
+        "dist_to_border_km": [
+          0.441,
+          0.016
+        ],
+        "near_border": [
+          0.445,
+          0.024
+        ],
+        "mainshock_lat": [
+          0.459,
+          0.02
+        ],
+        "mainshock_lon": [
+          0.448,
+          0.017
+        ]
+      },
+      "juntas_dif": {
+        "actividad_previa": 0.003,
+        "las_diez": 0.003
+      }
+    },
+    "elegido": {
+      "base": [
+        0.44,
+        0.024
+      ],
+      "columnas": {
+        "n_prior_30d": [
+          0.447,
+          0.049
+        ],
+        "n_prior_2d": [
+          0.442,
+          0.028
+        ],
+        "n_prior_365d": [
+          0.438,
+          0.032
+        ],
+        "prior_max_mag_365d": [
+          0.43,
+          0.023
+        ],
+        "days_since_prior": [
+          0.436,
+          0.04
+        ],
+        "prior_window_truncated": [
+          0.429,
+          0.023
+        ],
+        "region_log10_eta0": [
+          0.429,
+          0.022
+        ],
+        "dist_to_border_km": [
+          0.437,
+          0.024
+        ],
+        "near_border": [
+          0.441,
+          0.02
+        ],
+        "mainshock_lat": [
+          0.434,
+          0.02
+        ],
+        "mainshock_lon": [
+          0.432,
+          0.018
+        ]
+      },
+      "juntas_dif": {
+        "actividad_previa": -0.018,
+        "las_diez": -0.031
+      }
+    },
+    "n_prior_2d_pct": 10.3
+  },
+  "semaforo": {
+    "_fuente": "Notebook «Análisis Exploratorio (dataset final)»: celdas 49 y 50 (Spearman y η² de las 15 columnas que existen al predecir), 46 (magnitud en M6 o más y en M6 o más someros) y 39 (separación someros/profundos y η² con tres franjas) y 41 (separación en M6 o más). Redondeados como en el notebook.",
+    "columnas": {
+      "mainshock_mag": 0.214,
+      "mainshock_depth": -0.173,
+      "region_log10_eta0": 0.088,
+      "mainshock_lon": -0.053,
+      "days_since_prior": -0.05,
+      "n_prior_30d": 0.049,
+      "n_prior_365d": 0.046,
+      "n_prior_2d": 0.042,
+      "region_mc": -0.041,
+      "mainshock_lat": 0.039,
+      "dist_to_border_km": -0.016,
+      "prior_max_mag_365d": 0.012,
+      "region": 0.0001,
+      "near_border": 0.0,
+      "prior_window_truncated": 0.0
+    },
+    "movimientos": {
+      "mainshock_mag": [
+        0.214,
+        0.504,
+        0.59
+      ],
+      "mainshock_depth": [
+        0.051,
+        0.0004,
+        0.216
+      ]
+    }
   }
 }

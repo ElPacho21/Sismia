@@ -8,8 +8,9 @@ export function despertarApi() {
   fetch(`${BASE}/api/health`).catch(() => {});
 }
 
-// La misma cuenta, en el navegador, con los coeficientes de model.json.
-function calcularEnNavegador(modelo, { magnitud, profundidad, region }) {
+// La misma cuenta, en el navegador, con los coeficientes de model.json. También da el anticipo mientras se arrastra un
+// slider: es instantánea y da lo mismo que el servidor, que contesta después.
+export function calcularEnNavegador(modelo, { magnitud, profundidad, region }, origen = "navegador") {
   const r = predecir(modelo, magnitud, profundidad, region);
   return {
     clase: r.clase,
@@ -21,7 +22,7 @@ function calcularEnNavegador(modelo, { magnitud, profundidad, region }) {
     mc_region: modelo.mc_por_region[region],
     avisos: avisos(modelo, magnitud, profundidad, region),
     version_modelo: modelo.version,
-    origen: "navegador",
+    origen,
   };
 }
 
