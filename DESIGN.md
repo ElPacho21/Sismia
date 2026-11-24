@@ -108,7 +108,7 @@ Los tokens viven en `:root` de `app/src/estilos.css` con los nombres del design 
 
 ### Datos (fuente: palette.py, no se redefinen en CSS)
 - Clases, cuatro tonos distintos: gris piedra #6b6662 (ninguna) → celeste #2483c6 (pocas) → naranja #ce8730 (moderadas) → lila #c2a6fb (muchas). Se reconocen por el tono y, además, la luminosidad sube con la clase (en loess baja: #888279 → #036ba7 → #803b18 → #46127c), así que el orden se lee también en gris. ΔE ≥ 13 entre clases con cualquier daltonismo.
-- **Elegido** (#7cc0bd): lo adoptado / el modelo elegido; el texto lo nombra «verde liquen». **Descarte** (#c66f76): lo que se probó y se dejó; el texto lo nombra «rosa».
+- **Elegido** (#7cc0bd): lo adoptado / el modelo elegido; el texto lo nombra «turquesa». **Descarte** (#c66f76): lo que se probó y se dejó; el texto lo nombra «rosa».
 - Globo: **sismo principal** verde lima #7cff4f y **sismo mayor** blanco, lejos de los cuatro colores de las clases.
 - Tema claro en los gráficos: los specs se generan en basalto y `Grafico.jsx` cambia cada color por su par de `TEMA_CLARO` (palette.py → `paleta.json`), validado con daltonismo igual que basalto. El semáforo y los colores del globo no cambian.
 - Neutros de gráficos (`FONDO_GRAFICO`, `TEXTO_GRAFICO`, `GRILLA`, `EJE`, `OCEANO`, `TIERRA`) también en palette.py, con los valores de placa, tinta-suave, veta, veta-fuerte, suelo y horizonte-1.

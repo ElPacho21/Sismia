@@ -7,7 +7,7 @@ La tabla componente por componente de cada uno está en docs/GRAFICOS.md.
 Regla de color (una sola paleta, en palette.py):
   * el color de las cuatro clases SIEMPRE es la clase de réplicas (ninguna / pocas / moderadas / muchas): donde el
     gráfico muestra secuencias o cantidades de réplicas, se pintan por su clase;
-  * lo que no es una clase usa dos acentos fijos: verde liquen = lo adoptado / lo que usa el modelo; rosa = lo
+  * lo que no es una clase usa dos acentos fijos: turquesa = lo adoptado / lo que usa el modelo; rosa = lo
     descartado tras probarlo. Lo demás (también lo que no puede entrar al modelo), en grises; los grupos de casos, con la forma.
 """
 import json
@@ -504,7 +504,7 @@ def grafico_atipicos(datos, anotaciones):
 # =================================================================== 3. EL MODELO
 def grafico_evolucion(pasos):
     """El camino de la Entrega 3: cada paso que se probó, en orden, con su f1 macro en validación (media ± desvío).
-    Lo que se adoptó va en verde liquen y unido por una línea; lo que se probó y se dejó, en rosa y hueco."""
+    Lo que se adoptó va en turquesa y unido por una línea; lo que se probó y se dejó, en rosa y hueco."""
     t = pasos.copy()
     t["bajo"], t["alto"] = t["f1"] - t["desvio"], t["f1"] + t["desvio"]
     orden = t.drop_duplicates("paso").sort_values("orden")["paso"].tolist()
@@ -775,7 +775,7 @@ def grafico_empuje(trade_off, elegido):
         x=x, y=y, tooltip=[alt.Tooltip("empuje:Q", title="Empuje"), alt.Tooltip("valor:Q", title="f1 macro", format=".3f")])
     rotulo = alt.Chart(f1.tail(1)).mark_text(align="left", dx=8, fontSize=12, color=TEXTO_FUERTE).encode(
         x=x, y=y, text=alt.value("f1 macro"))
-    # el empuje elegido en el neutro, no en el verde liquen: comparte gráfico con el celeste de «pocas»
+    # el empuje elegido en el neutro, no en el turquesa: comparte gráfico con el celeste de «pocas»
     marca = alt.Chart(pd.DataFrame({"empuje": [elegido]})).mark_rule(strokeDash=[5, 4], color=COLOR_NEUTRO).encode(x="empuje:Q")
     return (marca + recall + macro + rotulo).properties(width=440, height=240)
 

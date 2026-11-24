@@ -327,7 +327,7 @@ export default function App() {
                     confirma el análisis exploratorio.</strong>
                   </p>
                   <p className="nota">
-                    Un agregado sirve si su punto sale de la banda verde liquen por la derecha. Los cuadrados se probaron al armar el modelo; los círculos
+                    Un agregado sirve si su punto sale de la banda turquesa por la derecha. Los cuadrados se probaron al armar el modelo; los círculos
                     huecos, después, con el dataset final.
                   </p>
                 </Paso>
@@ -365,7 +365,7 @@ export default function App() {
             queMirar={
               <>
                 <p>
-                  Cada fila es un paso: en verde liquen lo que adoptamos, en rosa lo que dejamos; la línea punteada es el piso. Pasá el mouse por un punto
+                  Cada fila es un paso: en turquesa lo que adoptamos, en rosa lo que dejamos; la línea punteada es el piso. Pasá el mouse por un punto
                   para ver qué pasó en ese paso.
                 </p>
                 <p>

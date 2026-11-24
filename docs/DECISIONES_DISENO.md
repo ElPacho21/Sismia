@@ -172,7 +172,7 @@ Cambios pedidos por el docente después de la Entrega 4. El hilo: que cada secci
   una escalera invertida: la forma pesaba más que los números, y no se veía qué columna salía en cada paso. Ahora son tres filas
   del mismo ancho con un recuadro por columna, que no cambia de lugar de una fila a otra: lleno = sigue, sólo el borde = ya salió.
   Los recuadros van agrupados por el motivo de salida, con una llave y «n motivo» debajo de la última fila, y las tres del modelo
-  van en verde liquen en las tres filas para seguirlas. Se descartó dibujar tres rectángulos separados de 27, 15 y 3 recuadros:
+  van en turquesa en las tres filas para seguirlas. Se descartó dibujar tres rectángulos separados de 27, 15 y 3 recuadros:
   volvía la escalera y se perdía cuáles salen y por qué.
 - **El globo, en una sola pieza.** Los botones para mover el globo (seis sueltos debajo, con una línea de ayuda) pasaron
   adentro, abajo a la derecha, como en los mapas: un pad redondo con las cuatro flechas, un botón en el centro que vuelve a la

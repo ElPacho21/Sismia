@@ -6,7 +6,7 @@ Vega-Lite en `app/public/specs/`. **Regla de color** (una sola paleta, en `palet
 - El color de las cuatro clases **siempre** es la *clase de réplicas* (escala `ESCALA_CLASE`). Donde un gráfico muestra
   secuencias o cantidades de réplicas, se pintan por su clase: los puntos del paso 1, los de los casos atípicos y los
   promedios del hallazgo.
-- Lo que no es una clase usa dos acentos con significado fijo: **verde liquen** `#7cc0bd` = lo que se adoptó o usa el
+- Lo que no es una clase usa dos acentos con significado fijo: **turquesa** `#7cc0bd` = lo que se adoptó o usa el
   modelo; **rosa** `#c66f76` = lo que se probó y se descartó. Lo demás va en el neutro `#7d6853` (también lo que no puede entrar al modelo), y los grupos de casos, con la forma.
 - Colores del design system *Sisimia Estratos*, tema basalto, validados simulando protanopía, deuteranopía y tritanopía
   sobre el fondo de los gráficos (`#211912`): entre las cuatro clases ΔE ≥ 13 y entre los dos acentos ΔE ≥ 12 con
@@ -14,7 +14,7 @@ Vega-Lite en `app/public/specs/`. **Regla de color** (una sola paleta, en `palet
   las clases, para que cada color signifique una sola cosa.
 
 Clases (cuatro tonos, de oscura a clara en basalto): `ninguna (0)` gris piedra · `pocas (1–2)` celeste · `moderadas (3–10)` naranja · `muchas (11+)` lila.
-La línea del empuje elegido va en el neutro, no en verde liquen: es el único gráfico donde el acento comparte espacio con las clases.
+La línea del empuje elegido va en el neutro, no en turquesa: es el único gráfico donde el acento comparte espacio con las clases.
 
 Cada sección del tallo tiene un gráfico principal (el que prueba el título) y un segundo gráfico que sigue la historia.
 Los del «Cómo lo sabemos» del modelo reemplazan a las tablas (salvo la de comparación de modelos, que la consigna pide como tabla).
@@ -39,7 +39,7 @@ Los del «Cómo lo sabemos» del modelo reemplazan a las tablas (salvo la de com
 | Datos | Una fila por columna del dataset (27): nombre, grupo y motivo. El inventario está en `build_app.py` (`COLUMNAS`) y el build falla si el dataset trae una columna que no está ahí | Cuenta de dónde salen las 3 columnas del modelo sin mostrar la tabla técnica de fuga (que queda en «Cómo lo sabemos»). |
 | Mapeo | Un recuadro por columna, siempre en el mismo `x` (en píxeles), agrupadas por motivo de salida con un hueco entre grupos; `y` = la fila del paso (dataset → existen en el momento del sismo → usa el modelo) | Las tres filas tienen el mismo ancho: la cantidad se cuenta en recuadros llenos (27, 15, 3), no en un ancho que se achica como una escalera. Cada columna se sigue de una fila a otra. |
 | Marca | `rect` lleno = la columna sigue en ese paso; con sólo el borde = ya salió. Arriba de cada fila, su rótulo con la cantidad; debajo de la última, una llave por grupo con «n motivo» (en dos alturas alternadas para no pisarse) | Se lee sin pasar el mouse. |
-| Escala | gris = las columnas que siguen; verde liquen = las que usa el modelo (en las tres filas, para seguirlas); borde gris = salieron porque no pueden entrar; borde rosa = se probaron y se descartaron | Los mismos dos acentos que el resto de la aplicación. |
+| Escala | gris = las columnas que siguen; turquesa = las que usa el modelo (en las tres filas, para seguirlas); borde gris = salieron porque no pueden entrar; borde rosa = se probaron y se descartaron | Los mismos dos acentos que el resto de la aplicación. |
 | Detalle | tooltip de cada recuadro: la columna, el paso, si sigue o por qué salió, y qué es; tooltip de cada rótulo de grupo: sus columnas y por qué salen | |
 
 ## 2. Lo que encontramos
@@ -80,7 +80,7 @@ Dos paneles lado a lado (`hconcat`) con los mismos datos y el mismo eje horizont
 |---|---|---|
 | Datos | continentes: Natural Earth 110m (`data/land-110m.json`, de `world-atlas`, con su licencia al lado); rectángulos: los de la consulta a USGS de cada región (`pipeline/include/sismos/regions.yaml`) con sus secuencias; el cinturón: un trazado aproximado a mano (`CINTURON` en `graficos.py`) | Muestra por qué esas cinco regiones sin necesidad de explicar el método. |
 | Mapeo | `geoshape` con proyección Natural Earth centrada en el Pacífico (`rotate` −160°) | Centrado en el Pacífico para que el cinturón no quede partido en los bordes. |
-| Marca | esfera y continentes de fondo; el cinturón como una franja ancha en arcilla y semitransparente; cada región, un rectángulo verde liquen (los lados se densifican para seguir la curvatura) con su nombre y sus secuencias | El cinturón se rotula «trazado aproximado»: es una guía, no el límite de las placas. |
+| Marca | esfera y continentes de fondo; el cinturón como una franja ancha en arcilla y semitransparente; cada región, un rectángulo turquesa (los lados se densifican para seguir la curvatura) con su nombre y sus secuencias | El cinturón se rotula «trazado aproximado»: es una guía, no el límite de las placas. |
 | Detalle | tooltip de cada rectángulo: región y secuencias | |
 ### `grafico_atipicos` → `specs/atipicos.json` («Pero la magnitud sola no alcanza: hay casos que se salen de la regla»)
 | Componente | Qué es | Por qué |
@@ -101,11 +101,11 @@ camino completo. Los números salen de `pasos_entrega3` en `build_app.py` y se v
 | Paso | Gráfico | Datos | Mapeo y marca | Escala |
 |---|---|---|---|---|
 | 1 · Un intervalo, no un número | `grafico_intervalos` → `intervalos.json` | las 21.292 secuencias por URL; media, varianza / media, mínimo y máximo por tramo (celda 9) | un punto por secuencia, `x` = tramo de magnitud y `xOffset` = desparramo al azar (`random()`) para que no se tapen; una raya con la media; texto con sismos y varianza / media | `y` symlog (incluye el 0) |
-| 2 · Pasamos de la logística a Poisson | `grafico_logistica_poisson` → `logistica_poisson.json` | f1 macro en validación de la regresión logística, la logística balanceada y la primera Poisson, con las mismas dos entradas (tabla de comparación del notebook) | barra por modelo (verde liquen = adoptado, rosa = descartado) + valor; línea punteada = el piso | `x` de 0 a 0,55: muestra la decisión, no sólo cómo funciona Poisson |
-| 3 · El error tenía un patrón | `grafico_sesgo_region` → `sesgo_region.json` | réplicas reales / esperadas por región, con la magnitud cruda y sobre el umbral (celdas 43 y 50) | dos puntos por región (hueco rosa = cruda, la que se dejó; lleno verde liquen = la que se adoptó) unidos por una línea; regla punteada en 1 | `x` lineal 0–1,5; regiones ordenadas por Mc |
-| 4 · Más columnas, de a una | `grafico_columnas_probadas` → `columnas_probadas.json` | f1 medio y desvío agregando cada columna: región y sismos de 30 días (celda 54 de la Entrega 3) y las otras diez, probadas después con el mismo método (notebook del dataset final) | un punto por columna con su desvío; una banda verde liquen de un desvío alrededor del modelo sin agregar nada; cuadrado = se probó al armar el modelo, círculo hueco = después | `x` 0,38–0,52; una columna sirve si su punto sale de la banda por la derecha |
+| 2 · Pasamos de la logística a Poisson | `grafico_logistica_poisson` → `logistica_poisson.json` | f1 macro en validación de la regresión logística, la logística balanceada y la primera Poisson, con las mismas dos entradas (tabla de comparación del notebook) | barra por modelo (turquesa = adoptado, rosa = descartado) + valor; línea punteada = el piso | `x` de 0 a 0,55: muestra la decisión, no sólo cómo funciona Poisson |
+| 3 · El error tenía un patrón | `grafico_sesgo_region` → `sesgo_region.json` | réplicas reales / esperadas por región, con la magnitud cruda y sobre el umbral (celdas 43 y 50) | dos puntos por región (hueco rosa = cruda, la que se dejó; lleno turquesa = la que se adoptó) unidos por una línea; regla punteada en 1 | `x` lineal 0–1,5; regiones ordenadas por Mc |
+| 4 · Más columnas, de a una | `grafico_columnas_probadas` → `columnas_probadas.json` | f1 medio y desvío agregando cada columna: región y sismos de 30 días (celda 54 de la Entrega 3) y las otras diez, probadas después con el mismo método (notebook del dataset final) | un punto por columna con su desvío; una banda turquesa de un desvío alrededor del modelo sin agregar nada; cuadrado = se probó al armar el modelo, círculo hueco = después | `x` 0,38–0,52; una columna sirve si su punto sale de la banda por la derecha |
 | 5 · Familias, alpha y empuje | `grafico_empuje` → `empuje.json` | recall de cada clase y f1 macro según el empuje (celda 65) | ver más abajo | |
-| 6 · Mantuvimos los cortes | `grafico_cortes` → `cortes.json` | f1 macro de Poisson y de la logística balanceada con cinco esquemas de cortes (celda 70) | una fila por esquema (el nuestro, resaltado): punto rosa = logística, punto verde liquen = Poisson, unidos por una línea; el piso, en el tooltip | `x` de 0,2 a 0,6. Los f1 no se comparan entre filas (con menos intervalos todo sube): lo que se lee es que en cada fila Poisson queda a la derecha |
+| 6 · Mantuvimos los cortes | `grafico_cortes` → `cortes.json` | f1 macro de Poisson y de la logística balanceada con cinco esquemas de cortes (celda 70) | una fila por esquema (el nuestro, resaltado): punto rosa = logística, punto turquesa = Poisson, unidos por una línea; el piso, en el tooltip | `x` de 0,2 a 0,6. Los f1 no se comparan entre filas (con menos intervalos todo sube): lo que se lee es que en cada fila Poisson queda a la derecha |
 
 ### `grafico_evolucion` → `specs/evolucion.json` (prueba el título)
 **Título (generado):** «El modelo más que duplica al piso: f1 de 0,50 contra 0,24 en sismos que no vio».
@@ -114,7 +114,7 @@ camino completo. Los números salen de `pasos_entrega3` en `build_app.py` y se v
 |---|---|---|
 | Datos | Cada paso de la Entrega 3 en el orden del notebook (`pasos_del_modelo` en `build_app.py`): piso, logística, Poisson, magnitud sobre el umbral, las columnas y familias que se probaron y se dejaron, alpha, empuje y el test. f1 macro medio y desvío en validación (el test, sin desvío) | Cuenta la historia de cómo se llegó al modelo en vez de una tabla. Todos los números son los del notebook y el build los verifica. |
 | Mapeo | `y` = paso (N, orden del notebook); `x` = f1 macro; `x`/`x2` = media ± desvío; `color` y `shape` = estado (piso / se adoptó / se probó y se dejó / test) | |
-| Marca | línea (el camino de lo adoptado, en orden) + segmento (desvío) + punto lleno verde liquen (adoptado), hueco rosa (dejado), rombo (test) + texto con el valor + regla punteada (piso) | La línea une sólo lo que se adoptó: se ve dónde subió, dónde se quedó igual y dónde se cedió f1 (el empuje). |
+| Marca | línea (el camino de lo adoptado, en orden) + segmento (desvío) + punto lleno turquesa (adoptado), hueco rosa (dejado), rombo (test) + texto con el valor + regla punteada (piso) | La línea une sólo lo que se adoptó: se ve dónde subió, dónde se quedó igual y dónde se cedió f1 (el empuje). |
 | Escala | `x` de 0,20 a 0,56 | Empieza en 0,20 para que se distingan pasos que difieren en centésimas; el piso (0,235) queda marcado como referencia. |
 | Detalle | tooltip: modelo, f1, desvío y «qué pasó» (por qué se adoptó o se dejó) | |
 
@@ -122,12 +122,12 @@ camino completo. Los números salen de `pasos_entrega3` en `build_app.py` y se v
 | Gráfico | Datos | Mapeo y marca | Escala |
 |---|---|---|---|
 | `grafico_folds` → `folds.json` | los 5 folds de `TimeSeriesSplit` (fechas y filas) y el f1 del elegido en cada uno | barras horizontales `x`/`x2` = desde/hasta, `y` = fold, color = entrena / valida; texto con el f1 | `x` temporal |
-| `grafico_alpha` → `alpha.json` | f1 medio y desvío para alpha 0,001 a 10 (empuje 0) | punto + segmento vertical; el elegido en verde liquen | `x` logarítmica |
+| `grafico_alpha` → `alpha.json` | f1 medio y desvío para alpha 0,001 a 10 (empuje 0) | punto + segmento vertical; el elegido en turquesa | `x` logarítmica |
 | `grafico_empuje` → `empuje.json` (en el paso 5) | recall de cada clase y f1 macro para empuje 0 a 0,5 | líneas con puntos; color = clase (los recall) y blanco (f1 macro); regla punteada en el elegido | `y` de 0 a 1 |
 | `grafico_reporte` → `reporte.json` | precisión, recall y f1 de cada clase en el test | barras facetadas por medida; color = clase | `x` de 0 a 1 |
 | `grafico_confusion` → `confusion.json` | matriz de confusión del test | rectángulos con `opacity` = proporción de la fila y texto = cantidad | un solo color claro; la intensidad es la proporción (no se usan los colores de clase porque fila y columna ya son clases) |
 | `grafico_tramos_test` → `tramos.json` | acierto del intervalo por tramo de magnitud en el test | barras + texto con % y cantidad | `x` de 0 a 100 % |
-| `grafico_permutacion` → `permutacion.json` (pasó al tallo: «El modelo se apoya en la magnitud») | f1 macro del test con todas las columnas y desordenando cada una (importancia por permutación, media de 20 repeticiones; el desvío, en el tooltip) | barra por versión (verde liquen = el modelo, gris = con una columna desordenada) + valor y cuánto baja; línea rosa punteada = el piso | `x` de 0 a 0,6: desordenando la magnitud, la barra queda pegada al piso |
+| `grafico_permutacion` → `permutacion.json` (pasó al tallo: «El modelo se apoya en la magnitud») | f1 macro del test con todas las columnas y desordenando cada una (importancia por permutación, media de 20 repeticiones; el desvío, en el tooltip) | barra por versión (turquesa = el modelo, gris = con una columna desordenada) + valor y cuánto baja; línea rosa punteada = el piso | `x` de 0 a 0,6: desordenando la magnitud, la barra queda pegada al piso |
 
 La comparación de modelos queda como **tabla** (media y desvío), porque la consigna la pide así.
 

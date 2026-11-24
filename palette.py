@@ -15,7 +15,7 @@ COLOR_CLASE = ["#6b6662", "#2483c6", "#ce8730", "#c2a6fb"]
 COLOR_PARTICION = {"entrenamiento": "#7d6853", "test": "#f0e4d3"}
 # fuera de las clases, dos acentos con significado fijo en todos los gráficos. No comparten gráfico con los colores de
 # las clases, así que no se confunden con ellas. Entre sí, ΔE ≥ 12 con cualquier daltonismo (difieren en luminosidad).
-#   verde liquen   = lo que se adoptó, lo que usa el modelo, el modelo elegido (único tono frío del sistema)
+#   turquesa       = lo que se adoptó, lo que usa el modelo, el modelo elegido
 #   rosa de tierra = lo que se probó y se descartó (lo que no puede entrar al modelo va en el neutro)
 COLOR_ELEGIDO = "#7cc0bd"
 COLOR_DESCARTE = "#c66f76"
@@ -40,7 +40,7 @@ EJE = "#7d6853"             # veta-fuerte
 OCEANO = "#16110d"          # suelo: la esfera del mapa del Cinturón de Fuego
 TIERRA = "#3a2c20"          # horizonte-1: los continentes del mapa
 BORDE_TIERRA = "#4e3a29"    # horizonte-2: su contorno
-# el Cinturón de Fuego en el mapa: arcilla a 0,45 de opacidad (queda en L 0,45–0,51), lejos del verde liquen de los
+# el Cinturón de Fuego en el mapa: arcilla a 0,45 de opacidad (queda en L 0,45–0,51), lejos del turquesa de los
 # recuadros de las regiones (L 0,76): ΔE ≥ 25 con cualquier daltonismo
 COLOR_CINTURON = "#e2946a"
 # texto encima del amarillo del semáforo (oscuro en los dos temas: no está en TEMA_CLARO)
@@ -50,7 +50,7 @@ TEXTO_SOBRE_AMARILLO = "#1d1610"
 # por su par de loess al dibujar (Grafico.jsx). Lo que no está en la tabla (semáforo, sismo principal y mayor) no cambia.
 # El globo es el espacio: queda oscuro en los dos temas y no usa esta tabla.
 # Validados como los de basalto: clases ΔE ≥ 9, elegido/descarte ≥ 11 y elegido/neutro ≥ 10 con cualquier daltonismo. El
-# neutro de los gráficos es más claro que veta-fuerte del CSS (#87694d) para separarse del verde liquen con protanopía.
+# neutro de los gráficos es más claro que veta-fuerte del CSS (#87694d) para separarse del turquesa con protanopía.
 TEMA_CLARO = {
     COLOR_CLASE[0]: "#888279", COLOR_CLASE[1]: "#036ba7", COLOR_CLASE[2]: "#803b18", COLOR_CLASE[3]: "#46127c",
     COLOR_ELEGIDO: "#2d6a6c", COLOR_DESCARTE: "#71232f",
