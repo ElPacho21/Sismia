@@ -237,7 +237,10 @@ def grafico_semaforo(sem):
                 tooltip=[alt.Tooltip("fila:N", title="Columna"), alt.Tooltip("etapa:N", title="Sobre"),
                          alt.Tooltip("medida_nombre:N", title="Medida"), alt.Tooltip("texto:N", title="Valor"),
                          alt.Tooltip("significado:N", title="Zona")]),
-            alt.Chart(t).mark_text(fontSize=12, fontWeight=700, lineBreak="|", lineHeight=15).encode(
+            # Vega centra sólo la primera línea y apila el resto debajo: se sube media línea por cada línea extra
+            # para que el bloque quede centrado en el cuadrado (todas las celdas tienen dos líneas)
+            alt.Chart(t).mark_text(fontSize=12, fontWeight=700, lineBreak="|", lineHeight=15,
+                                   dy=float(-15 / 2 * t["rotulo"].str.count(r"\|").max())).encode(
                 x=alt.X("xm:Q", scale=x, axis=None), y=y, text="rotulo:N",
                 color=alt.condition("datum.zona == 'amarillo'", alt.value(TEXTO_SOBRE_AMARILLO), alt.value("#ffffff"))),
         ]
