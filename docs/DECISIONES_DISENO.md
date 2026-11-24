@@ -190,3 +190,10 @@ Cambios pedidos por el docente después de la Entrega 4. El hilo: que cada secci
   en lugar del texto «El modelo vio…». Mientras se arrastra, la respuesta se calcula en el navegador al instante y, cuando el
   caso queda quieto 250 ms, la confirma el servidor. Se probó un mapa magnitud × profundidad pintado por clase, con el caso
   como un punto arrastrable, y se descartó: la respuesta se lee mejor en las barras de probabilidad de siempre.
+- **Clases con cuatro tonos en lugar de la rampa de tierra.** La rampa (piedra, ocre, óxido, arena) separaba las clases sólo
+  por luminosidad: había que comparar en lugar de reconocer, y costaba en las barras de «Lo que dijo el modelo», en el empuje
+  (el f1 macro, en el color del texto, quedaba a ΔE 5 de «muchas») y en el hallazgo. La paleta azul de la primera versión se
+  reconocía de un vistazo, pero con deuteranopía o tritanopía dos clases quedaban a ΔE 5. Se comparó todo en una página con
+  los gráficos reales y simulación de daltonismo, y quedó gris piedra, celeste, naranja y lila (en loess, púrpura): tonos
+  distintos, ΔE ≥ 13 entre clases con cualquier daltonismo, y la luminosidad sigue el orden de las clases. Como consecuencia,
+  el sismo principal del globo pasó del azul (cerca del celeste) a verde lima, y la línea del empuje elegido, al neutro.

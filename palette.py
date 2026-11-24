@@ -6,9 +6,11 @@ Daltonismo: cada par de colores que comparte un gráfico se validó simulando pr
 (Machado 2009). La separación viene de la luminosidad, no sólo del tono; además del color, los gráficos usan forma
 (círculo, triángulo, cuadrado; lleno o hueco) o rótulo directo."""
 CLASES = ["ninguna (0)", "pocas (1–2)", "moderadas (3–10)", "muchas (11+)"]
-# rampa de tierra ordinal: piedra → ocre → óxido → arena clara. Cuantas más réplicas, más luminosa (más contraste sobre
-# el fondo oscuro). Entre las cuatro, ΔE OKLab ≥ 9 con cualquier daltonismo simulado; todas ≥ 3:1 sobre FONDO_GRAFICO.
-COLOR_CLASE = ["#746a61", "#aa843f", "#ff9262", "#ffd7b0"]
+# cuatro tonos distintos, para reconocer cada clase de un vistazo: gris piedra → celeste → naranja → lila. Además la
+# luminosidad sube con la clase (≥ 7 puntos de L entre vecinas), así que el orden se lee también en gris.
+# Entre las cuatro, ΔE OKLab ≥ 14 con visión normal y con protanopía, deuteranopía y tritanopía simuladas (la rampa de
+# tierra anterior bajaba a 9 y sólo se separaba por luminosidad); todas ≥ 3:1 sobre FONDO_GRAFICO.
+COLOR_CLASE = ["#6b6662", "#2483c6", "#ce8730", "#c2a6fb"]
 # partición de los datos: misma codificación en todos los gráficos (veta-fuerte y tinta: difieren en luminosidad)
 COLOR_PARTICION = {"entrenamiento": "#7d6853", "test": "#f0e4d3"}
 # fuera de las clases, dos acentos con significado fijo en todos los gráficos. No comparten gráfico con los colores de
@@ -22,11 +24,11 @@ COLOR_NEUTRO = "#7d6853"
 # distinguen con daltonismo: la palabra escrita en cada celda es la que lleva la información, no el color.
 COLOR_SEMAFORO = {"rojo": "#c94c4c", "amarillo": "#d4a72c", "verde": "#3f9b5a"}
 COLOR_DATOS = "#f0e4d3"
-# el sismo principal en el globo, cuando se anima una secuencia: azul, fuera de la rampa de tierra para distinguirlo de
-# sus réplicas (que van con el color de su clase; ΔE ≥ 21 contra todas, con cualquier daltonismo). La leyenda lo nombra.
-COLOR_PRINCIPAL = "#2ca2ff"
+# el sismo principal en el globo, cuando se anima una secuencia: verde lima, lejos de los cuatro colores de las clases
+# (ΔE ≥ 17 contra todas, con cualquier daltonismo) y del blanco del sismo mayor (≥ 16). La leyenda lo nombra.
+COLOR_PRINCIPAL = "#7cff4f"
 # si en la secuencia hay un sismo mayor que el principal (vino después), ese evento va en blanco: ΔE ≥ 11 contra las
-# clases y ≥ 30 contra el azul del principal, con cualquier daltonismo. También sólo en el globo.
+# clases y ≥ 16 contra el verde del principal, con cualquier daltonismo. También sólo en el globo.
 COLOR_MAYOR = "#ffffff"
 
 # neutros de los gráficos sobre el fondo oscuro (la «placa» donde se apoya cada gráfico)
@@ -50,7 +52,7 @@ TEXTO_SOBRE_AMARILLO = "#1d1610"
 # Validados como los de basalto: clases ΔE ≥ 9, elegido/descarte ≥ 11 y elegido/neutro ≥ 10 con cualquier daltonismo. El
 # neutro de los gráficos es más claro que veta-fuerte del CSS (#87694d) para separarse del verde liquen con protanopía.
 TEMA_CLARO = {
-    COLOR_CLASE[0]: "#968979", COLOR_CLASE[1]: "#9f6700", COLOR_CLASE[2]: "#903303", COLOR_CLASE[3]: "#561811",
+    COLOR_CLASE[0]: "#888279", COLOR_CLASE[1]: "#036ba7", COLOR_CLASE[2]: "#803b18", COLOR_CLASE[3]: "#46127c",
     COLOR_ELEGIDO: "#2d6a6c", COLOR_DESCARTE: "#71232f",
     COLOR_NEUTRO: "#9e7f63",        # también EJE y la partición «entrenamiento» (mismo valor en basalto)
     TEXTO_FUERTE: "#2b1e15",        # tinta; también COLOR_DATOS y la partición «test»

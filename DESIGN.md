@@ -13,13 +13,13 @@ colors:
   arcilla: "#e2946a"
   aviso: "#e0aa55"
   error: "#f08a7a"
-  clase-ninguna: "#746a61"
-  clase-pocas: "#aa843f"
-  clase-moderadas: "#ff9262"
-  clase-muchas: "#ffd7b0"
+  clase-ninguna: "#6b6662"
+  clase-pocas: "#2483c6"
+  clase-moderadas: "#ce8730"
+  clase-muchas: "#c2a6fb"
   elegido: "#7cc0bd"
   descarte: "#c66f76"
-  sismo-principal: "#2ca2ff"
+  sismo-principal: "#7cff4f"
   sismo-mayor: "#ffffff"
   globo-espacio: "#0d0a08"
 typography:
@@ -107,9 +107,9 @@ Los tokens viven en `:root` de `app/src/estilos.css` con los nombres del design 
 - **Aviso** (#e0aa55) y **error** (#f08a7a), en borde y texto sobre `estrato-alto`, nunca como relleno sólido.
 
 ### Datos (fuente: palette.py, no se redefinen en CSS)
-- Clases, rampa de tierra ordinal: piedra #746a61 (ninguna) → ocre #aa843f (pocas) → óxido #ff9262 (moderadas) → arena #ffd7b0 (muchas). Cuantas más réplicas, más luminosa.
+- Clases, cuatro tonos distintos: gris piedra #6b6662 (ninguna) → celeste #2483c6 (pocas) → naranja #ce8730 (moderadas) → lila #c2a6fb (muchas). Se reconocen por el tono y, además, la luminosidad sube con la clase (en loess baja: #888279 → #036ba7 → #803b18 → #46127c), así que el orden se lee también en gris. ΔE ≥ 13 entre clases con cualquier daltonismo.
 - **Elegido** (#7cc0bd): lo adoptado / el modelo elegido; el texto lo nombra «verde liquen». **Descarte** (#c66f76): lo que se probó y se dejó; el texto lo nombra «rosa».
-- Globo: **sismo principal** azul #2ca2ff y **sismo mayor** blanco, fuera de la rampa de tierra.
+- Globo: **sismo principal** verde lima #7cff4f y **sismo mayor** blanco, lejos de los cuatro colores de las clases.
 - Tema claro en los gráficos: los specs se generan en basalto y `Grafico.jsx` cambia cada color por su par de `TEMA_CLARO` (palette.py → `paleta.json`), validado con daltonismo igual que basalto. El semáforo y los colores del globo no cambian.
 - Neutros de gráficos (`FONDO_GRAFICO`, `TEXTO_GRAFICO`, `GRILLA`, `EJE`, `OCEANO`, `TIERRA`) también en palette.py, con los valores de placa, tinta-suave, veta, veta-fuerte, suelo y horizonte-1.
 

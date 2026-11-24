@@ -775,7 +775,8 @@ def grafico_empuje(trade_off, elegido):
         x=x, y=y, tooltip=[alt.Tooltip("empuje:Q", title="Empuje"), alt.Tooltip("valor:Q", title="f1 macro", format=".3f")])
     rotulo = alt.Chart(f1.tail(1)).mark_text(align="left", dx=8, fontSize=12, color=TEXTO_FUERTE).encode(
         x=x, y=y, text=alt.value("f1 macro"))
-    marca = alt.Chart(pd.DataFrame({"empuje": [elegido]})).mark_rule(strokeDash=[5, 4], color=COLOR_ELEGIDO).encode(x="empuje:Q")
+    # el empuje elegido en el neutro, no en el verde liquen: comparte gráfico con el celeste de «pocas»
+    marca = alt.Chart(pd.DataFrame({"empuje": [elegido]})).mark_rule(strokeDash=[5, 4], color=COLOR_NEUTRO).encode(x="empuje:Q")
     return (marca + recall + macro + rotulo).properties(width=440, height=240)
 
 

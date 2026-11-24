@@ -9,11 +9,12 @@ Vega-Lite en `app/public/specs/`. **Regla de color** (una sola paleta, en `palet
 - Lo que no es una clase usa dos acentos con significado fijo: **verde liquen** `#7cc0bd` = lo que se adoptó o usa el
   modelo; **rosa** `#c66f76` = lo que se probó y se descartó. Lo demás va en el neutro `#7d6853` (también lo que no puede entrar al modelo), y los grupos de casos, con la forma.
 - Colores del design system *Sisimia Estratos*, tema basalto, validados simulando protanopía, deuteranopía y tritanopía
-  sobre el fondo de los gráficos (`#211912`): entre las cuatro clases ΔE ≥ 9 y entre los dos acentos ΔE ≥ 12 con
-  cualquier daltonismo; se separan por luminosidad, no sólo por tono. Los acentos igual **nunca comparten un gráfico** con
+  sobre el fondo de los gráficos (`#211912`): entre las cuatro clases ΔE ≥ 13 y entre los dos acentos ΔE ≥ 12 con
+  cualquier daltonismo; las clases se separan por tono y por luminosidad. Los acentos igual **nunca comparten un gráfico** con
   las clases, para que cada color signifique una sola cosa.
 
-Clases (rampa de tierra, de oscura a clara): `ninguna (0)` piedra · `pocas (1–2)` ocre · `moderadas (3–10)` óxido · `muchas (11+)` arena.
+Clases (cuatro tonos, de oscura a clara en basalto): `ninguna (0)` gris piedra · `pocas (1–2)` celeste · `moderadas (3–10)` naranja · `muchas (11+)` lila.
+La línea del empuje elegido va en el neutro, no en verde liquen: es el único gráfico donde el acento comparte espacio con las clases.
 
 Cada sección del tallo tiene un gráfico principal (el que prueba el título) y un segundo gráfico que sigue la historia.
 Los del «Cómo lo sabemos» del modelo reemplazan a las tablas (salvo la de comparación de modelos, que la consigna pide como tabla).

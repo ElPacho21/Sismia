@@ -111,7 +111,7 @@ export class EscenaGlobo {
     this.datos = o.datos;
     this.regiones = o.regiones;
     this.colores = o.colores.map((c) => new THREE.Color(c));
-    this.colorPrincipal = new THREE.Color(o.colorPrincipal ?? "#2ca2ff"); // el sismo principal de la secuencia animada
+    this.colorPrincipal = new THREE.Color(o.colorPrincipal ?? "#7cff4f"); // el sismo principal de la secuencia animada
     this.colorMayor = new THREE.Color(o.colorMayor ?? "#ffffff"); // un sismo posterior mayor que el principal, si lo hay
     this.reducirMovimiento = o.reducirMovimiento;
     this.alHover = o.alHover;
@@ -375,7 +375,7 @@ export class EscenaGlobo {
     const pos = new Float32Array(m * 3), mag = new Float32Array(m), s = new Float32Array(m), col = new Float32Array(m * 3);
     const c = this.colores[claseIdx];
     const centro = new THREE.Vector3();
-    // el evento 0 es el sismo principal (el que abre la secuencia): en azul. Si después vino uno mayor, el más grande de
+    // el evento 0 es el sismo principal (el que abre la secuencia): en verde lima. Si después vino uno mayor, el más grande de
     // ellos va en blanco. Los dos se dibujan al final, encima de las réplicas (que van con el color de la clase).
     let mayor = -1;
     for (let i = 1; i < m; i++) if (ev.mag[i] > ev.mag[0] && (mayor < 0 || ev.mag[i] > ev.mag[mayor])) mayor = i;
