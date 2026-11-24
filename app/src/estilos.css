@@ -2035,16 +2035,22 @@ tr.resaltada td {
   margin: 2rem 0 0.9rem;
   padding: 0.65rem 1rem;
   background: var(--aviso-fondo);
-  border: 1px solid var(--aviso);
+  border: 1px solid var(--error);
   border-radius: var(--r-placa);
   color: var(--texto);
   line-height: 1.5;
 }
 .problema-etiqueta {
   flex: none;
+  white-space: nowrap;
   font-family: var(--mono);
   font-size: 0.8125rem;
   font-weight: 500;
   letter-spacing: 0.02em;
-  color: var(--aviso);
+  color: var(--error);
+}
+/* línea como el sol y la luna del Testigo; bajado para que se centre en la altura de la etiqueta */
+.problema-icono {
+  margin-right: 0.4rem;
+  vertical-align: -0.25em;
 }

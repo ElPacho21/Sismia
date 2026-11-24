@@ -142,7 +142,7 @@ Plano. La profundidad es tonal: Suelo → Estrato → Estrato alto, separadas po
 
 ## Shapes
 
-Radios chicos, como piedra cortada: 3px controles, 4px placas, 10px globo, píldora sólo en chips de ejemplo. Borde 1px; los avisos y los «Problema» llevan borde completo en `aviso` (no barra lateral).
+Radios chicos, como piedra cortada: 3px controles, 4px placas, 10px globo, píldora sólo en chips de ejemplo. Borde 1px; los avisos llevan borde completo en `aviso` y los «Problema» en `error`, con un triángulo de advertencia en línea antes de la etiqueta (no barra lateral).
 
 ## Components
 
