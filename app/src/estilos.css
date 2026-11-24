@@ -401,6 +401,7 @@ canvas:focus-visible,
   position: sticky;
   z-index: 10;
   top: 0;
+  padding: 0; /* es un <header>: no hereda el aire de las secciones (section, header) */
   background: var(--estrato);
   border-bottom: 1px solid var(--veta);
 }
