@@ -487,7 +487,7 @@ def grafico_atipicos(datos, anotaciones):
                       color=alt.Color("real:N", scale=ESCALA_CLASE,
                                       legend=alt.Legend(title="Réplicas", orient="bottom", direction="vertical")),
                       shape=alt.Shape("grupo:N", scale=alt.Scale(domain=GRUPO_ATIPICO, range=["circle", "triangle-up", "square"]),
-                                      legend=alt.Legend(title="Secuencia", orient="bottom", direction="vertical", labelLimit=420)),
+                                      legend=alt.Legend(title="Caso", orient="bottom", direction="vertical", labelLimit=420)),
                       size=alt.Size("tamano:Q", scale=None),
                       opacity=alt.Opacity("opacidad:Q", scale=None),
                       order=alt.Order("capa:Q"),
