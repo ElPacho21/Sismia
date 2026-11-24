@@ -361,12 +361,13 @@ export default function App() {
             }
             subtituloGrafico="El camino completo: todos los modelos, en el orden en que los probamos"
             spec="specs/evolucion.json"
-            descripcion="Cada paso del modelado, en orden, con su f1 macro en validación: lo adoptado unido por una línea y lo descartado en rosa."
+            descripcion="Cada paso del modelado, en orden, con su f1 macro en validación: lo adoptado numerado del 1 al 5 y unido por flechas, y lo descartado en rosa."
             queMirar={
               <>
                 <p>
-                  Cada fila es un paso: en turquesa lo que adoptamos, en rosa lo que dejamos; la línea punteada es el piso. Pasá el mouse por un punto
-                  para ver qué pasó en ese paso.
+                  Cada fila es un paso: en turquesa y numerado lo que adoptamos, en rosa lo que probamos y dejamos. Las flechas siguen el camino de
+                  una decisión a la siguiente, del piso (la línea vertical punteada) al elegido; el test va aparte, sin flecha, porque no es otro
+                  paso sino el mismo modelo medido en sismos que no vio. Pasá el mouse por un punto para ver qué pasó en ese paso.
                 </p>
                 <p>
                   <strong>¿Por qué este modelo, si varios dan parecido?</strong> Fueron tres decisiones distintas:

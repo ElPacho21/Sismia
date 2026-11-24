@@ -507,38 +507,75 @@ def grafico_atipicos(datos, anotaciones):
 # =================================================================== 3. EL MODELO
 def grafico_evolucion(pasos):
     """El camino de la Entrega 3: cada paso que se probó, en orden, con su f1 macro en validación (media ± desvío).
-    Lo que se adoptó va en turquesa y unido por una línea; lo que se probó y se dejó, en rosa y hueco."""
+    Lo que se adoptó va en turquesa, numerado (1 a 5, como los rótulos) y unido por flechas punteadas; lo que se probó
+    y se dejó, en rosa y hueco, queda fuera del camino. Las flechas terminan en el elegido: el test no es otro paso."""
+    ancho, alto = 420, 400
+    x0, x1 = 0.2, 0.56
     t = pasos.copy()
     t["bajo"], t["alto"] = t["f1"] - t["desvio"], t["f1"] + t["desvio"]
-    orden = t.drop_duplicates("paso").sort_values("orden")["paso"].tolist()
+    filas = t.drop_duplicates("paso").sort_values("orden")["paso"].tolist()
     piso = float(t.loc[t["estado"] == "piso", "f1"].iloc[0])
-    y = alt.Y("paso:N", sort=orden, title=None, axis=alt.Axis(labelLimit=330, grid=False, labelPadding=8))
-    x = alt.Scale(domain=[0.2, 0.56], nice=False)
+    # `y` cuantitativo (el orden de la fila) para poder dibujar las flechas entre filas; el eje escribe el nombre del paso.
+    # Todas las capas comparten el mismo eje: si alguna trae el suyo, Vega-Lite los fusiona y saltea rótulos.
+    escala_y = alt.Scale(domain=[-0.5, len(filas) - 0.5], reverse=True, nice=False, zero=False)
+    eje_y = alt.Axis(values=list(range(len(filas))), labelExpr=f"{json.dumps(filas, ensure_ascii=False)}[datum.value]",
+                     grid=False, ticks=False, labelLimit=330, labelPadding=8, labelOverlap=False, labelFont=FUENTE)
+    Y = lambda campo="orden": alt.Y(f"{campo}:Q", scale=escala_y, axis=eje_y, title=None)
+    x = alt.Scale(domain=[x0, x1], nice=False)
+    X = lambda campo="f1", **k: alt.X(f"{campo}:Q", scale=x, **k)
     tooltip = [alt.Tooltip("modelo:N", title="Modelo"), alt.Tooltip("f1:Q", title="f1 macro", format=".3f"),
                alt.Tooltip("desvio:Q", title="Desvío", format=".3f"), alt.Tooltip("nota:N", title="Qué pasó")]
     color = alt.Color("estado:N", scale=alt.Scale(domain=["piso", "se adoptó", "se probó y se dejó", "test"],
                                                   range=[TEXTO_GRAFICO, COLOR_ELEGIDO, COLOR_DESCARTE, COLOR_ELEGIDO]),
                       legend=None)
-    base = alt.Chart(t).encode(y=y, color=color)
-    camino = (alt.Chart(t).transform_filter("datum.estado != 'se probó y se dejó'")
-              .mark_line(color=COLOR_ELEGIDO, strokeWidth=2, opacity=0.55)
-              .encode(x=alt.X("f1:Q", scale=x), y=y, order="orden:Q"))
+
+    # el camino: de un adoptado al siguiente (desde el piso), en píxeles para que la punta apunte bien
+    px_x, px_y = ancho / (x1 - x0), alto / len(filas)
+    radio = 11                                              # la flecha arranca y termina en el borde del círculo
+    camino = t[t["estado"].isin(["piso", "se adoptó"])].sort_values("orden")
+    tramos = []
+    for (_, a), (_, b) in zip(camino.iterrows(), camino.iloc[1:].iterrows()):
+        dx, dy = (b["f1"] - a["f1"]) * px_x, (b["orden"] - a["orden"]) * px_y
+        largo = float(np.hypot(dx, dy))
+        ux, uy = dx / largo, dy / largo
+        desde = 6 if a["estado"] == "piso" else radio      # el piso es un punto chico
+        tramos.append({"x1": a["f1"] + ux * desde / px_x, "y1": a["orden"] + uy * desde / px_y,
+                       "x2": b["f1"] - ux * (radio + 4) / px_x, "y2": b["orden"] - uy * (radio + 4) / px_y,
+                       "angulo": float(np.degrees(np.arctan2(dx, -dy)))})   # el triángulo apunta arriba con 0°
+    tramos = pd.DataFrame(tramos)
+    flecha = alt.Chart(tramos).mark_rule(color=COLOR_ELEGIDO, strokeWidth=1.6, strokeDash=[4, 3]).encode(
+        x=X("x1"), y=Y("y1"), x2="x2:Q", y2="y2:Q")
+    punta = alt.Chart(tramos).mark_point(shape="triangle", filled=True, size=55, color=COLOR_ELEGIDO, opacity=1).encode(
+        x=X("x2"), y=Y("y2"), angle=alt.Angle("angulo:Q", scale=None))
+
+    base = alt.Chart(t).encode(y=Y(), color=color)
     rango = base.transform_filter("isValid(datum.desvio)").mark_rule(strokeWidth=2.5).encode(
-        x=alt.X("bajo:Q", scale=x, title="f1 macro en validación temporal (media ± desvío, 5 folds)"), x2="alto:Q")
-    adoptado = base.transform_filter("datum.estado != 'se probó y se dejó'").mark_point(
-        filled=True, size=110, opacity=1).encode(
-        x=alt.X("f1:Q", scale=x), tooltip=tooltip,
-        shape=alt.Shape("estado:N", scale=alt.Scale(domain=["piso", "se adoptó", "se probó y se dejó", "test"],
-                                                    range=["circle", "circle", "circle", "diamond"]),
-                        legend=None))
+        x=X("bajo", title="f1 macro en validación temporal (media ± desvío, 5 folds)"), x2="alto:Q")
     dejado = base.transform_filter("datum.estado == 'se probó y se dejó'").mark_point(
-        filled=False, size=80, strokeWidth=1.8, opacity=1).encode(x=alt.X("f1:Q", scale=x), tooltip=tooltip)
-    valor = base.transform_filter("datum.estado != 'se probó y se dejó'").mark_text(
-        align="left", dx=10, dy=-10, fontSize=12, fontWeight=600).encode(
-        x=alt.X("f1:Q", scale=x), text=alt.Text("f1:Q", format=".3f"))
+        filled=False, size=80, strokeWidth=1.8, opacity=1).encode(x=X(), tooltip=tooltip)
+    piso_pt = base.transform_filter("datum.estado == 'piso'").mark_point(filled=True, size=110, opacity=1).encode(
+        x=X(), tooltip=tooltip)
+    test_pt = base.transform_filter("datum.estado == 'test'").mark_point(
+        shape="diamond", filled=True, size=160, opacity=1).encode(x=X(), tooltip=tooltip)
+    # lo adoptado: un círculo con el número de la decisión adentro (1 a 5, el mismo de su rótulo)
+    adoptados = t[t["estado"] == "se adoptó"].sort_values("orden").assign(n=lambda d: [str(i + 1) for i in range(len(d))])
+    circulo = alt.Chart(adoptados).mark_circle(size=330, color=COLOR_ELEGIDO, opacity=1).encode(
+        x=X(), y=Y(), tooltip=tooltip)
+    numero = alt.Chart(adoptados).mark_text(color=FONDO_GRAFICO, fontSize=11, fontWeight=700, baseline="middle",
+                                            font=FUENTE_MONO).encode(x=X(), y=Y(), text="n:N")
+    # el f1, a la derecha del desvío (arriba quedaría el número del paso)
+    valor = base.transform_filter("datum.estado == 'se adoptó' || datum.estado == 'test'").mark_text(
+        align="left", dx=11, baseline="middle", fontSize=11, font=FUENTE_MONO).encode(
+        x=alt.X("tope:Q", scale=x), text=alt.Text("f1:Q", format=".3f")).transform_calculate(
+        tope="isValid(datum.alto) ? datum.alto : datum.f1")
+    # el del piso, arriba: a la derecha lo cruzaría la primera flecha
+    valor_piso = base.transform_filter("datum.estado == 'piso'").mark_text(
+        align="left", dx=8, dy=-13, fontSize=11, font=FUENTE_MONO).encode(x=X(), text=alt.Text("f1:Q", format=".3f"))
     linea_piso = alt.Chart(pd.DataFrame({"piso": [piso]})).mark_rule(
-        strokeDash=[5, 4], color=TEXTO_GRAFICO, strokeWidth=1.2).encode(x=alt.X("piso:Q", scale=x))
-    return (linea_piso + camino + rango + dejado + adoptado + valor).properties(width=420, height=400)
+        strokeDash=[5, 4], color=TEXTO_GRAFICO, strokeWidth=1.2).encode(x=X("piso"))
+    return alt.layer(linea_piso, rango, flecha, punta, dejado, piso_pt, test_pt, circulo, numero, valor,
+                     valor_piso).properties(
+        width=ancho, height=alto)
 
 
 TRAMO_EXPR = "datum.mag < 5 ? '4–5' : datum.mag < 6 ? '5–6' : datum.mag < 7 ? '6–7' : '7 o más'"
