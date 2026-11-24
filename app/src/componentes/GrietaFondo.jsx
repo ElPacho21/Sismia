@@ -112,18 +112,24 @@ export default function GrietaFondo({ fin = "explora" }) {
     };
     const ojo = new ResizeObserver(pedir);
     ojo.observe(document.body);
+    window.addEventListener("resize", pedir);
     pedir();
     return () => {
       ojo.disconnect();
+      window.removeEventListener("resize", pedir);
       cancelAnimationFrame(cuadro);
     };
   }, [fin]);
 
   if (!forma) return null;
+  // el marco mide lo que la ventana y recorta: si el ancho medido queda viejo (otra escala de pantalla,
+  // la barra vertical que aparece después), la grieta no empuja la página hacia el costado
   return (
-    <svg className="grieta-fondo" aria-hidden="true" width={forma.ancho} height={forma.alto} viewBox={`0 0 ${forma.ancho} ${forma.alto}`}>
-      <path d={forma.d} className="grieta-labio" transform="translate(0 2.5)" />
-      <path d={forma.d} className="grieta-hueco" />
-    </svg>
+    <div className="grieta-fondo" aria-hidden="true" style={{ height: forma.alto }}>
+      <svg width={forma.ancho} height={forma.alto} viewBox={`0 0 ${forma.ancho} ${forma.alto}`}>
+        <path d={forma.d} className="grieta-labio" transform="translate(0 2.5)" />
+        <path d={forma.d} className="grieta-hueco" />
+      </svg>
+    </div>
   );
 }
