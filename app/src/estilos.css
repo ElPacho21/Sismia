@@ -420,8 +420,7 @@ canvas:focus-visible,
   position: absolute;
   top: -2px;
   bottom: -2px;
-  width: 3px;
-  margin-left: -1px;
+  width: 3px; /* centrado en la posición y acotado a la franja desde Testigo.jsx, para no desbordar la página */
   background: var(--arcilla);
   transition: left 120ms linear;
 }

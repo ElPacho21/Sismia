@@ -197,7 +197,7 @@ export default function Testigo({ secciones, tema, alElegirTema }) {
           {secciones.map((s, i) => (
             <span key={s.id} className={`capa${s.copa ? " hueca" : ""}`} style={{ flexGrow: alturas[i], background: fondo(s, i) }} />
           ))}
-          <span className="testigo-franja-marcador" style={{ left: `${(leido * 100).toFixed(2)}%` }} />
+          <span className="testigo-franja-marcador" style={{ left: `clamp(0px, calc(${(leido * 100).toFixed(2)}% - 1px), calc(100% - 3px))` }} />
         </div>
         <nav className="testigo-fila-movil" aria-label="Secciones">
           <a className="testigo-marca-movil" href="#proyecto" translate="no">
