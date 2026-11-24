@@ -1062,7 +1062,7 @@ tr.resaltada td {
 /* ---------- probá el modelo ---------- */
 .proba {
   display: grid;
-  grid-template-columns: minmax(280px, 360px) 1fr;
+  grid-template-columns: minmax(300px, 360px) 1fr;
   gap: 1.5rem;
   align-items: start;
 }
@@ -1070,6 +1070,111 @@ tr.resaltada td {
   .proba {
     grid-template-columns: 1fr;
   }
+}
+
+/* los sliders: la pista es un dato (la clase que contesta el modelo en cada punto), con tramos de color plano */
+.deslizador {
+  display: block;
+  margin-bottom: 1.1rem;
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+.deslizador .rotulo {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+.deslizador .valor {
+  font-family: var(--mono);
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-variant-numeric: lining-nums tabular-nums;
+  color: var(--texto);
+}
+.deslizador .riel {
+  position: relative;
+  display: block;
+  height: 28px;
+  margin-top: 0.35rem;
+}
+/* la pista va del centro del pulgar en un extremo al centro en el otro (9px = medio pulgar) */
+.deslizador .pista {
+  position: absolute;
+  left: 9px;
+  right: 9px;
+  top: 9px;
+  height: 10px;
+  overflow: hidden;
+  border-radius: var(--r-control);
+  outline: 1px solid var(--trazo);
+}
+.deslizador .fuera,
+.muestra-fuera {
+  background: repeating-linear-gradient(-45deg, var(--placa) 0 2px, transparent 2px 5px);
+}
+.deslizador .fuera {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  opacity: 0.85;
+}
+.muestra-fuera {
+  display: inline-block;
+  width: 1.5em;
+  height: 0.75em;
+  margin-right: 0.35em;
+  vertical-align: -0.05em;
+  background-color: var(--suave);
+  border-radius: 2px;
+}
+.formulario .deslizador input[type="range"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+.formulario .deslizador input[type="range"]:focus-visible {
+  outline: 2px solid var(--hielo);
+  outline-offset: 3px;
+}
+.deslizador input[type="range"]::-webkit-slider-runnable-track {
+  height: 28px;
+  background: transparent;
+}
+.deslizador input[type="range"]::-moz-range-track {
+  height: 28px;
+  background: transparent;
+}
+.deslizador input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: var(--tinta);
+  border: 3px solid var(--placa);
+  outline: 1px solid var(--tinta);
+}
+.deslizador input[type="range"]::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--tinta);
+  border: 3px solid var(--placa);
+  outline: 1px solid var(--tinta);
+}
+.nota-pista {
+  margin: -0.3rem 0 1rem;
+  font-size: 0.85rem;
+  color: var(--suave);
 }
 .formulario,
 .resultado {
@@ -1775,7 +1880,6 @@ tr.resaltada td {
 
 /* ---------- táctil: objetivos de 44px, y el globo deja pasar el desplazamiento de un dedo ---------- */
 @media (pointer: coarse) {
-  .formulario input,
   .formulario select,
   .globo-filtros select,
   .vega-bind select,
@@ -1801,6 +1905,18 @@ tr.resaltada td {
   .globo-pad {
     --celda: 40px;
     opacity: 1;
+  }
+  .deslizador .riel {
+    height: 44px;
+  }
+  .deslizador .pista {
+    top: 17px;
+  }
+  .deslizador input[type="range"]::-webkit-slider-runnable-track {
+    height: 44px;
+  }
+  .deslizador input[type="range"]::-webkit-slider-thumb {
+    margin-top: 13px;
   }
   .globo-pad .zoom button {
     width: 3.2rem;

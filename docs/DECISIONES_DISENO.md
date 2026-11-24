@@ -183,3 +183,10 @@ Cambios pedidos por el docente después de la Entrega 4. El hilo: que cada secci
   globo los hacía parecer propios del globo y ocultaba qué está filtrado. Pasaron a ser la cabecera de la misma tarjeta,
   junto con la línea de la región, pegada al borde de arriba. En el celular el globo tiene al menos 530 px de alto para que
   el resumen de arriba no pise la leyenda y el pad de abajo.
+- **Probá el modelo, con sliders.** La magnitud y la profundidad pasaron de cajas de texto a sliders. La pista de cada uno
+  se pinta con la clase que contestaría el modelo en cada punto, con lo demás fijo (tramos de color plano con bordes
+  netos, no un degradado: es un dato), así se ve antes de mover dónde cambia la respuesta. Lo que el modelo no vio al
+  entrenar va rayado en la pista (por debajo del umbral de la región o de M4,2, por encima de M9,1 y más allá de 640 km)
+  en lugar del texto «El modelo vio…». Mientras se arrastra, la respuesta se calcula en el navegador al instante y, cuando el
+  caso queda quieto 250 ms, la confirma el servidor. Se probó un mapa magnitud × profundidad pintado por clase, con el caso
+  como un punto arrastrable, y se descartó: la respuesta se lee mejor en las barras de probabilidad de siempre.
