@@ -93,12 +93,12 @@ export default function App() {
 
       <GrietaFondo fin="explora" />
       <main>
-        {/* la pregunta es lo más grande de la portada; la respuesta y el título del proyecto van en chico */}
+        {/* la pregunta es lo más grande de la portada; debajo, su respuesta (los números del modelo) y en chico para qué sirve */}
         <header id="proyecto" className="portada">
           <p className="etiqueta">El proyecto</p>
           <h1 className="pregunta">{textos.pregunta}</h1>
-          <p className="respuesta">{textos.oracion}</p>
-          <p className="aclaracion">{textos.aclaracion}</p>
+          <p className="respuesta">{textos.aclaracion}</p>
+          <p className="aclaracion">{textos.oracion}</p>
           <ul className="numeros">
             {textos.numeros.map((x) => (
               <li key={x.valor}>
