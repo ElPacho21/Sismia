@@ -59,7 +59,7 @@ export default function GloboPuerta(props) {
       ) : (
         <div className="globo-reserva" />
       )}
-      <ResultadoExplora filtros={props.filtros} />
+      <ResultadoExplora d={d} filtros={props.filtros} setFiltros={props.setFiltros} />
     </section>
   );
 }

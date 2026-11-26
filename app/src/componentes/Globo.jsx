@@ -5,6 +5,7 @@ import { EscenaGlobo, webglDisponible } from "../globo/escena.js";
 import { centroRegion, eventosHasta, horasATexto, horasDeTiempoLog, tiempoLog } from "../globo/geo.js";
 import { fecha, n } from "../lib/formato.js";
 import { NOMBRE_REGION } from "./ProbaModelo.jsx";
+import Filtros from "./Filtros.jsx";
 
 // El globo: el panorama de Explorá, con los filtros, el detalle de cada secuencia y su animación.
 // Se carga recién cuando el usuario llega hasta acá (ver GloboPuerta).
@@ -210,42 +211,7 @@ export default function Globo({ d, filtros, setFiltros }) {
   const destacadas = datos?.destacadas ?? [];
 
   // los filtros (también mueven las barras de abajo): se muestran aunque el globo no pueda dibujarse
-  const filtrosUi = (
-    <div className="globo-filtros" role="group" aria-labelledby="globo-filtros-titulo">
-      <span id="globo-filtros-titulo" className="titulo-filtros">Filtros</span>
-      <label>
-        Región
-        <select name="region" autoComplete="off" value={filtros.region} onChange={(e) => setFiltros((f) => ({ ...f, region: e.target.value }))}>
-          <option value="todas">todas</option>
-          {regiones.map((r) => (
-            <option key={r.nombre} value={r.nombre}>
-              {NOMBRE_REGION[r.nombre] ?? r.nombre}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="rango">
-        Magnitud mínima: {n(filtros.magMin, 1)}
-        <input name="magnitud-minima" type="range" min="4" max="8" step="0.1" value={filtros.magMin} onChange={(e) => setFiltros((f) => ({ ...f, magMin: Number(e.target.value) }))} />
-      </label>
-      <label>
-        Secuencias
-        <select name="ver" autoComplete="off" value={filtros.ver} onChange={(e) => setFiltros((f) => ({ ...f, ver: e.target.value }))}>
-          {opciones.ver.map((o) => (
-            <option key={o}>{o}</option>
-          ))}
-        </select>
-      </label>
-      <label>
-        Pintar según
-        <select name="pintar-segun" autoComplete="off" value={filtros.colorPor} onChange={(e) => setFiltros((f) => ({ ...f, colorPor: e.target.value }))}>
-          {opciones.color.map((o) => (
-            <option key={o}>{o}</option>
-          ))}
-        </select>
-      </label>
-    </div>
-  );
+  const filtrosUi = <Filtros id="globo-filtros-titulo" filtros={filtros} setFiltros={setFiltros} regiones={regiones} opciones={opciones} />;
 
   if (sinWebgl)
     return (
