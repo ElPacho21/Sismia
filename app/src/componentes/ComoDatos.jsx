@@ -112,11 +112,12 @@ export default function ComoDatos({ pasos, metricas, regiones }) {
       <p>
         De las {metricas.columnas.slice(4).reduce((a, g) => a + g.n, 0)} columnas que sí existen en el momento del sismo, el modelo final usa tres,
         combinadas en dos entradas: la magnitud sobre el umbral (<code>mainshock_mag − region_mc</code>) y la profundidad. Las otras doce se probaron
-        agregándolas al modelo de a una, y ninguna mejora el f1 por más que el desvío (paso 4 de «El modelo»). Ocho de ellas (<code>n_prior_2d</code>,{" "}
-        <code>n_prior_365d</code>, <code>prior_max_mag_365d</code>, <code>days_since_prior</code>, <code>prior_window_truncated</code>,{" "}
-        <code>region_log10_eta0</code>, <code>dist_to_border_km</code> y <code>near_border</code>) no estaban en el dataset con el que empezamos a armar el
-        modelo, así que se probaron después, con el dataset final y el mismo método. La latitud y la longitud sí estaban, pero se habían descartado al
-        explorar los datos, por su correlación casi nula con las réplicas (Spearman 0,039 y −0,053); también se probaron después.
+        agregándolas al modelo de a una, y ninguna mejora el f1 por más que el desvío (paso 4 de «El modelo»). Al armar el modelo se probaron dos (
+        <code>region</code> y <code>n_prior_30d</code>); las otras diez (<code>n_prior_2d</code>, <code>n_prior_365d</code>,{" "}
+        <code>prior_max_mag_365d</code>, <code>days_since_prior</code>, <code>prior_window_truncated</code>, <code>region_log10_eta0</code>,{" "}
+        <code>dist_to_border_km</code>, <code>near_border</code>, la latitud y la longitud) se probaron después, con el mismo método y el mismo
+        dataset. La latitud y la longitud se habían descartado en el primer análisis (sólo los Andes) por su correlación casi nula con las réplicas
+        (Pearson −0,034 y −0,063); con el dataset final también quedan en rojo (Spearman 0,039 y −0,053).
       </p>
       <p className="nota">
         Partición: las {n(metricas.particion.entrenamiento)} secuencias más antiguas ({fecha(metricas.particion.entrena_desde)} a{" "}

@@ -328,7 +328,7 @@ export default function App() {
                   </p>
                   <p className="nota">
                     Un agregado sirve si su punto sale de la banda turquesa por la derecha. Los cuadrados se probaron al armar el modelo; los círculos
-                    huecos, después, con el dataset final.
+                    huecos, después, con el mismo método.
                   </p>
                 </Paso>
                 <Paso

@@ -25,14 +25,22 @@ export default function ComoHallazgo({ hipotesis, metricas }) {
       />
       <p>
         Correlaciones sobre todas las secuencias: Pearson {n(h1.pearson, 3)} y Spearman {n(h1.spearman, 3)}. Son bajas porque el 88 % de los datos
-        son ceros; por eso la medida que sirve es η² por tramos, no la correlación lineal. En un primer análisis (sólo los Andes, con el
-        principal como el sismo más grande de la secuencia) había dado η² = 0,377. Con el principal como el sismo que abre la secuencia, que es lo que se
-        sabe en el momento de predecir, y con cinco regiones, la señal es más débil.
+        son ceros; por eso la medida que sirve es η² por tramos, no la correlación lineal.
       </p>
       <p>
-        <strong>Lo que aprendió el modelo coincide:</strong> cada punto de magnitud sobre el umbral multiplica las réplicas esperadas por{" "}
-        <strong>{n(metricas.coeficientes.multiplicador_por_punto, 2)}</strong> (α de Utsu ≈ {n(metricas.coeficientes.alfa_utsu, 2)}, dentro del rango
-        de 0,8 a 1 de la sismología). El gráfico da {n(h1.multiplicador_empirico, 2)} porque ajusta una recta sobre los <em>promedios</em> de cada
+        <strong>Con el semáforo, H1 ya no llega a verde.</strong> En el primer análisis (sólo los Andes, con el principal como el sismo más grande de
+        la secuencia) había dado η² = 0,377, verde, y la hipótesis se confirmó. Con el dataset final da {n(h1.eta2, 3)}, amarillo, así que por la regla
+        del semáforo (abajo) no alcanza para confirmarla. Buena parte de la baja viene de una decisión nuestra: con los mismos Andes, tomar como
+        principal el sismo que abre la secuencia (lo que se sabe en el momento de predecir) en lugar del más grande ya bajaba el η² de 0,377 a 0,145.
+        Elegimos la versión sin fuga aunque la señal quedara más débil.
+      </p>
+      <p>
+        <strong>La sostenemos igual, y mantuvimos la magnitud como la entrada principal del modelo, por dos evidencias que no son el semáforo.</strong>{" "}
+        Las medias suben en todos los tramos, sin excepción (tabla de arriba). Y el modelo, que aprende secuencia por secuencia, la confirma: cada punto
+        de magnitud sobre el umbral multiplica las réplicas esperadas por <strong>{n(metricas.coeficientes.multiplicador_por_punto, 2)}</strong> (α de
+        Utsu ≈ {n(metricas.coeficientes.alfa_utsu, 2)}, dentro del rango de 0,8 a 1 de la sismología), y sin la magnitud su f1 en el test cae de{" "}
+        {n(metricas.final.f1_test, 2)} a {n(metricas.final.f1_test - metricas.importancia_permutacion.mainshock_mag.media, 2)}, casi el piso
+        (importancia por permutación, en «El modelo»). El gráfico da {n(h1.multiplicador_empirico, 2)} porque ajusta una recta sobre los <em>promedios</em> de cada
         tramo, y esos promedios los mueven los megasismos; el modelo ajusta sobre las {n(metricas.particion.entrenamiento)} secuencias de entrenamiento. Es el mismo orden de magnitud, no la
         misma cuenta.
       </p>
@@ -71,18 +79,20 @@ export default function ComoHallazgo({ hipotesis, metricas }) {
       <p>
         Se usa Spearman y no Pearson porque mira el orden y no exige una recta: con el 88 % de ceros y unas pocas secuencias de miles de réplicas, Pearson
         lo mueven los extremos. En amarillo valen hasta dos <strong>movimientos</strong> (partir la población, controlar una tercera variable o cambiar la
-        escala); después la hipótesis se declara inconclusa. La magnitud y la profundidad usaron los dos: la magnitud, sólo M6 o más y después sólo los someros; la profundidad, tres franjas
-        (η²) y después sólo M6 o más. En el semáforo la magnitud se mide con Spearman, como todas las columnas numéricas, para
-        compararla con las demás; la H1 se midió además con η² por tramos de magnitud (abajo), y también da amarillo. Los η² de la región y de las dos columnas de sí o no dan menos de
+        escala); después la hipótesis se declara inconclusa. En el semáforo la magnitud se mide primero con Spearman, como todas las columnas
+        numéricas, para compararla con las demás. Tuvo un movimiento, el mismo del primer análisis: agruparla en tramos y medirla con η² (la medida de
+        la H1, arriba), y sigue en amarillo. La profundidad tuvo dos: tres franjas (η²) y después sólo M6 o más. Los Spearman de la magnitud entre los
+        sismos de M6 o más ({n(h4.spearman, 2)}) y entre los someros de M6 o más ({n(h4.someros_spearman, 2)}) no son movimientos de la H1: son la
+        medición de la H4 (arriba). Los η² de la región y de las dos columnas de sí o no dan menos de
         0,001: los mueven unas pocas secuencias de miles de réplicas, porque η² mide varianza.
       </p>
       <Grafico
         url="specs/semaforo.json"
-        descripcion="Las tres columnas que usa el modelo sobre el semáforo, con el antes y el después de los movimientos de la magnitud y la profundidad."
+        descripcion="Las tres columnas que usa el modelo sobre el semáforo, con el antes y el después del movimiento de la magnitud (tramos) y de los dos de la profundidad."
       />
       <p>
-        <strong>H1 se sostuvo:</strong> la magnitud arranca en amarillo ({n(magMov[0].valor, 3)}) y con cada movimiento se acerca al verde (
-        {n(magMov[2].valor, 3)}). <strong>H3, a medias:</strong> la profundidad arranca en rojo ({n(profMov[0].valor, 3)}); agrupada en tres franjas
+        <strong>H1:</strong> la magnitud arranca en amarillo ({n(magMov[0].valor, 3)}) y agrupada en tramos sigue en amarillo (
+        {n(magMov[1].valor, 3)}). El semáforo no la confirma; la sostienen las medias por tramo y el modelo (arriba). <strong>H3, a medias:</strong> la profundidad arranca en rojo ({n(profMov[0].valor, 3)}); agrupada en tres franjas
         sigue en rojo, y recién mirando los sismos de M6 o más pasa a amarillo ({n(profMov[2].valor, 3)}). El umbral de la región no tenía hipótesis
         propia: entra restado a la magnitud porque corrige un sesgo entre regiones (paso 3 de «El modelo»). Las otras columnas dan todas en rojo, y
         agregadas al modelo no lo mejoran (paso 4):
@@ -103,8 +113,11 @@ export default function ComoHallazgo({ hipotesis, metricas }) {
       <h4>Cómo se construyó el gráfico</h4>
       <ul className="razones">
         <li>
-          El eje horizontal es la <strong>magnitud sobre el umbral de la región</strong> (<code>mag − Mc</code>) y no la magnitud cruda. Con la cruda,
-          el tramo M4–4,5 tiene más réplicas que el siguiente porque México detecta desde 4,2 y las demás regiones desde 4,6 o 4,7.
+          El eje horizontal es la <strong>magnitud sobre el umbral de la región</strong> (<code>mag − Mc</code>) y no la magnitud cruda, porque cada
+          región detecta desde un umbral distinto: México desde 4,2, los Andes desde 4,5, Japón y Sumatra–Java desde 4,6 y Filipinas desde 4,7. Un mismo
+          M5,0 está 0,8 puntos sobre el umbral en México y 0,3 en Filipinas. Con la magnitud cruda el modelo se equivocaba según la región: hubo{" "}
+          {n(metricas.real_sobre_esperadas.crudo.mexico_ca, 2)} veces las réplicas esperadas en México y {n(metricas.real_sobre_esperadas.crudo.philippines, 2)}{" "}
+          en Filipinas (paso 3 de «El modelo»).
         </li>
         <li>
           Cada punto es un tramo de 0,5 puntos con al menos 10 secuencias ({h1.tramos_grafico} tramos). El tamaño es la cantidad de secuencias: los

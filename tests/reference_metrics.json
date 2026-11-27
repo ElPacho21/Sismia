@@ -445,7 +445,7 @@
     "n_prior_2d_pct": 10.3
   },
   "semaforo": {
-    "_fuente": "Notebook «Análisis Exploratorio (dataset final)»: celdas 49 y 50 (Spearman y η² de las 15 columnas que existen al predecir), 46 (magnitud en M6 o más y en M6 o más someros) y 39 (separación someros/profundos y η² con tres franjas) y 41 (separación en M6 o más). Redondeados como en el notebook.",
+    "_fuente": "Notebook «Análisis Exploratorio (dataset final)»: celdas 49 y 50 (Spearman y η² de las 15 columnas que existen al predecir), 30 (η² de la magnitud por tramos: el movimiento de la H1) y 39 (separación someros/profundos y η² con tres franjas) y 41 (separación en M6 o más). Redondeados como en el notebook.",
     "columnas": {
       "mainshock_mag": 0.214,
       "mainshock_depth": -0.173,
@@ -466,8 +466,7 @@
     "movimientos": {
       "mainshock_mag": [
         0.214,
-        0.504,
-        0.59
+        0.106
       ],
       "mainshock_depth": [
         0.051,

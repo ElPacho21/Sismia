@@ -195,7 +195,7 @@ def valor_semaforo(valor, medida):
 # qué afirmábamos en la Entrega 2 sobre cada columna que usa el modelo, y qué pasó con eso
 HIPOTESIS_COLUMNA = {
     "mainshock_mag": ("H1 · «Las réplicas crecen con la magnitud»",
-                      "Se sostuvo: arranca en amarillo y, en los sismos grandes y someros, queda en el borde del verde."),
+                      "El semáforo la deja en amarillo y no la confirma; la sostienen las medias por tramo y el modelo."),
     "mainshock_depth": ("H3 · «Los sismos someros (menos de 70 km) dejan más réplicas que los profundos»",
                         "Con todos los sismos, no (rojo, aun en 3 franjas); entre los de M6 o más, sí (amarillo)."),
     "region_mc": ("Umbral de detección de la región: sin hipótesis propia",
@@ -203,7 +203,7 @@ HIPOTESIS_COLUMNA = {
 }
 
 # cómo se nombra cada movimiento adentro de una celda (tiene que entrar en el cuadrado)
-CORTO = {"tres franjas de profundidad": "en 3 franjas"}
+CORTO = {"tres franjas de profundidad": "en 3 franjas", "tramos de magnitud": "en 4 tramos"}
 
 
 def grafico_semaforo(sem):
@@ -676,7 +676,7 @@ NOMBRE_COLUMNA = {"region": "región", "n_prior_30d": "sismos de los 30 días pr
                   "days_since_prior": "días desde el sismo previo", "prior_window_truncated": "ventana del año incompleta",
                   "region_log10_eta0": "umbral η₀ de la región", "dist_to_border_km": "distancia al borde de la región",
                   "near_border": "cerca del borde de la región", "mainshock_lat": "latitud", "mainshock_lon": "longitud"}
-CUANDO = ["al armar el modelo", "después, con el dataset final"]
+CUANDO = ["al armar el modelo", "después, con el mismo método"]
 
 
 def grafico_columnas_probadas(probadas, nuevas):
