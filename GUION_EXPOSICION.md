@@ -75,8 +75,8 @@ minutos por persona no hay margen: nadie le come tiempo al siguiente.
 - **Mapa del Cinturón de Fuego:** sumamos cinco zonas de subducción (Andes, Japón, Filipinas, Sumatra–Java, México–Centroamérica),
   donde ocurren la mayoría de los sismos grandes. **Por qué no el planeta entero:** el método que arma las secuencias encadena
   sismos sin relación cuando la zona es muy grande (aparecían «secuencias» de 3.610 km). Procesando cada región por separado y
-  con un tope de distancia entre réplica y sismo, la más extensa hoy mide 533 km. *(si sobra tiempo: además USGS no devuelve
-  más de 20.000 eventos por consulta, y cada zona detecta desde una magnitud distinta.)*
+  con un tope de distancia entre réplica y sismo, la más extensa hoy mide 533 km. *(si sobra tiempo: además cada zona detecta
+  desde una magnitud distinta.)*
 - **Cómo se arma una secuencia:** un pipeline de **Airflow** baja el catálogo de USGS por región, se queda con los sismos
   por encima del **Mc** (la magnitud desde la que esa región registra todos los sismos; por debajo faltan réplicas chicas) y
   agrupa con el método del vecino más cercano de Zaliapin y Ben-Zion: una «distancia» que combina tiempo, espacio y magnitud,

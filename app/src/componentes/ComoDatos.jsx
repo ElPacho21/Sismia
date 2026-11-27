@@ -29,7 +29,7 @@ export default function ComoDatos({ pasos, metricas, regiones }) {
       <p>
         Elegimos cinco zonas de subducción del Cinturón de Fuego del Pacífico, donde ocurre la mayoría de los sismos grandes del mundo: Andes,
         Japón, Filipinas, Sumatra–Java (que mira al océano Índico, pero se la cuenta dentro del cinturón) y México–Centroamérica. No usamos el mundo
-        entero por tres motivos:
+        entero por dos motivos:
       </p>
       <ol className="razones">
         <li>
@@ -41,9 +41,6 @@ export default function ComoDatos({ pasos, metricas, regiones }) {
         <li>
           <strong>Encadena sismos sin relación.</strong> Con regiones muy grandes, el árbol de réplicas une zonas lejanas hasta armar clusters de miles de
           kilómetros. En un primer análisis, sólo con los Andes, ya aparecían dos de más de 1.500 km.
-        </li>
-        <li>
-          <strong>El servicio tiene un tope.</strong> USGS rechaza las consultas de más de 20.000 eventos.
         </li>
       </ol>
       <p>
