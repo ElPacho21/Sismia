@@ -519,8 +519,11 @@ def grafico_evolucion(pasos):
     # Todas las capas comparten el mismo eje: si alguna trae el suyo, Vega-Lite los fusiona y saltea rótulos.
     escala_y = alt.Scale(domain=[-0.5, len(filas) - 0.5], reverse=True, nice=False, zero=False)
     eje_y = alt.Axis(values=list(range(len(filas))), labelExpr=f"{json.dumps(filas, ensure_ascii=False)}[datum.value]",
-                     grid=False, ticks=False, labelLimit=330, labelPadding=8, labelOverlap=False, labelFont=FUENTE)
-    Y = lambda campo="orden": alt.Y(f"{campo}:Q", scale=escala_y, axis=eje_y, title=None)
+                     grid=False, ticks=False, labelLimit=330, labelPadding=8, labelOverlap=False, labelFont=FUENTE,
+                     # el título va horizontal, arriba de los nombres: la flecha dice que el orden baja con el tiempo
+                     titleAngle=0, titleAlign="left", titleBaseline="bottom", titleX=-300, titleY=-10,
+                     titleFont=FUENTE_MONO, titleFontSize=11, titleFontWeight=500, titleColor=TEXTO_GRAFICO)
+    Y = lambda campo="orden": alt.Y(f"{campo}:Q", scale=escala_y, axis=eje_y, title="↓ en el orden en que los probamos")
     x = alt.Scale(domain=[x0, x1], nice=False)
     X = lambda campo="f1", **k: alt.X(f"{campo}:Q", scale=x, **k)
     tooltip = [alt.Tooltip("modelo:N", title="Modelo"), alt.Tooltip("f1:Q", title="f1 macro", format=".3f"),
