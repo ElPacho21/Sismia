@@ -55,7 +55,7 @@ export default function ComoModelo({ metricas, modelo }) {
         puede escribir dentro de la página, cosa que no pasa con random forest ni gradient boosting. La binomial negativa terminó contestando siempre «ninguna»
         (la dispersión la dominan los megasismos de hasta 2.544 réplicas). Además de la tabla, con Poisson se probaron dos columnas más, de a una: la región
         ({n(probadas.region[0], 3)} ± {n(probadas.region[1], 3)}) y los sismos de los 30 días previos ({n(probadas.previos[0], 3)} ±{" "}
-        {n(probadas.previos[1], 3)}), contra {n(probadas.base[0], 3)} ± {n(probadas.base[1], 3)} sin ellas: ninguna mejora por más que el desvío. Después, con el dataset final y el
+        {n(probadas.previos[1], 3)}), contra {n(probadas.base[0], 3)} ± {n(probadas.base[1], 3)} sin ellas: ninguna mejora por más que el desvío. Después, con el mismo dataset y el
         mismo método, se probaron las otras diez columnas que existen en el momento del sismo: tampoco mejora ninguna, ni sola ni todas juntas (paso 4). La
         única con algo de información propia es la cantidad de sismos en los 2 días previos: entre los sismos de M5–6, dejan réplicas el{" "}
         {pct(previos2d.con_replicas_pct["5–6"]["0"], 1)} de los que no tuvieron actividad previa y el {pct(previos2d.con_replicas_pct["5–6"]["1–4"], 1)} de

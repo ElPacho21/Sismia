@@ -99,12 +99,15 @@ minutos por persona no hay margen: nadie le come tiempo al siguiente.
 - **Cómo leer el gráfico:** el eje horizontal es cuánto supera el sismo el umbral de su región. En lineal la curva está plana
   hasta +2 y se dispara; **en logarítmico queda casi recta, y una recta en escala log es un crecimiento por un factor
   constante.** De 0,2 réplicas de media apenas sobre el umbral a 128 cuando lo supera por 2,5 a 3 puntos.
-- **Por qué el eje es magnitud sobre el umbral y no la cruda:** con la cruda, el tramo M4–4,5 tenía más réplicas que el
-  siguiente, porque México detecta desde 4,2 y las otras regiones desde 4,6 o 4,7.
+- **Por qué el eje es magnitud sobre el umbral y no la cruda:** cada región registra desde un umbral distinto, de M4,2 en
+  México a M4,7 en Filipinas. Un M5,0 está 0,8 puntos sobre el umbral en México y 0,3 en Filipinas; con la cruda, el modelo
+  se equivocaba por región (lo cuenta D en el paso 3).
 - *(si sobra tiempo)* El modelo coincide: ×7,6 por punto, que en sismología es un α de Utsu de 0,88, dentro del rango 0,8–1.
 - **Barras de hipótesis** (escribimos qué esperábamos *antes* de medir):
   - **H1 se sostuvo**, «las réplicas crecen con la magnitud»: de cada 100 sismos de M4–5, prácticamente ninguno tiene más
-    de 10 réplicas; de cada 100 de M7 o más, 64.
+    de 10 réplicas; de cada 100 de M7 o más, 64. *(si preguntan por el semáforo)* Ahí la magnitud queda en amarillo
+    (0,106 en tramos): el semáforo no la confirma. La sostienen las medias, que suben en todos los tramos, y el modelo: sin
+    la magnitud el f1 cae de 0,50 a 0,25.
   - **H3 a medias**, «los someros dejan más réplicas»: con todas las secuencias casi no hay diferencia. Sólo en M6 o más:
     23 de cada 100 someros contra 3 de cada 100 profundos. **Por eso la profundidad entra al modelo.**
 - **Cómo lo medimos** (una frase, señalando el semáforo en «Cómo lo sabemos»): **usamos Spearman y no Pearson** porque con
@@ -225,6 +228,7 @@ El docente pregunta a integrantes puntuales. Cada uno tiene que poder contestar 
 | ¿Qué es el Mc y cómo se estima? | B | La magnitud desde la que la región registra todos los sismos; se estima por máxima curvatura (el pico del histograma de magnitudes). |
 | ¿Qué es fuga? Un ejemplo. | B | Usar algo que se sabe recién después: `duration_days`, `extent_km`, o elegir como principal el más grande. |
 | ¿Por qué Spearman y no Pearson? | C | Mira el orden, no exige una recta; Pearson lo mueven los ceros y los megasismos. |
+| Si el semáforo deja la magnitud en amarillo, ¿por qué H1 se sostiene? | C | Con el dataset final da 0,106 (en la Entrega 2 daba 0,377, verde); bajó sobre todo por tomar como principal el que abre la secuencia, para evitar la fuga. La sostienen las medias, que suben en todos los tramos, y el modelo: ×7,6 por punto y, sin la magnitud, el f1 cae de 0,50 a 0,25. |
 | ¿Por qué la profundidad entra si da rojo con todas las secuencias? | C | Porque en M6 o más separa (23 contra 3 de cada 100), y ahí es donde importan las réplicas. |
 | ¿Por qué un intervalo y no el número de réplicas? | D | Sismos de la misma magnitud dejan de 0 a cientos de réplicas: la varianza es decenas o miles de veces la media. |
 | ¿Cómo pasa Poisson de un número a una clase? | D | Estima las réplicas esperadas μ y con la distribución de Poisson calcula la probabilidad de 0, de 1–2, de 3–10 y de 11+. |

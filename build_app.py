@@ -237,8 +237,9 @@ def zona_semaforo(valor, medida):
 def semaforo_columnas(df):
     """Las 15 columnas que existen en el momento del sismo, medidas contra las réplicas con el semáforo de la
     Entrega 2 (celdas 49 y 50 del notebook del dataset final), y el antes y el después de los movimientos de las
-    dos que pasan: la magnitud (H4: partir en M6 o más, y después sólo los someros) y la profundidad (H3: partir
-    en M6 o más)."""
+    dos que tienen hipótesis: la magnitud (H1: agrupar en tramos y medir con η², el mismo movimiento de la Entrega 2;
+    celda 30) y la profundidad (H3: tres franjas con η², y después sólo M6 o más; celdas 39 y 41). Los subconjuntos
+    «M6 o más» y «M6 o más y someros» de la magnitud son de la H4 (celda 46), no movimientos de la H1."""
     y = df["n_aftershocks"]
 
     def eta2(numerica, categoria):
@@ -258,8 +259,8 @@ def semaforo_columnas(df):
         columnas.append({"columna": c, "medida": "η²", "valor": v, "zona": zona_semaforo(v, "eta2")})
 
     m6 = df[df["mainshock_mag"] >= 6]
-    someros6 = m6[m6["mainshock_depth"] < 70]
     prof = df["mainshock_depth"]
+    tramos_mag = pd.cut(df["mainshock_mag"], TRAMOS[0], labels=TRAMOS[1], right=False)
 
     def etapa(nombre, datos, medida, valor, tipo):
         return {"etapa": nombre, "secuencias": int(len(datos)), "medida": medida, "valor": float(valor),
@@ -269,10 +270,7 @@ def semaforo_columnas(df):
     movimientos = {
         "mainshock_mag": [
             etapa("todas las secuencias", df, "spearman", df["mainshock_mag"].corr(y, method="spearman"), "correlacion"),
-            etapa("sólo M6 o más", m6, "spearman",
-                  m6["mainshock_mag"].corr(m6["n_aftershocks"], method="spearman"), "correlacion"),
-            etapa("M6 o más y someros", someros6, "spearman",
-                  someros6["mainshock_mag"].corr(someros6["n_aftershocks"], method="spearman"), "correlacion")],
+            etapa("tramos de magnitud", df, "η²", eta2(y, tramos_mag), "eta2")],
         "mainshock_depth": [
             etapa("todas las secuencias", df, "separación", separacion(y[prof < 70], y[prof >= 70]), "separacion"),
             etapa("tres franjas de profundidad", df, "η²", eta2(y, franja), "eta2"),

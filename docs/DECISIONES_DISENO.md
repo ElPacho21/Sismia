@@ -11,9 +11,25 @@ Sólo cambios **reales**, con el motivo. Si un gráfico no cambió, no figura.
   sobre los promedios por tramo, y la portada dice ×7,6 (el coeficiente del modelo). Dos números distintos para algo
   que parece lo mismo confundía. La v2 usa dos promedios que se leen directo en el gráfico (0,2 y 128: el primer tramo y el de +2,5 a +3,0). El ×7,6 queda
   como el número del modelo; la diferencia con 8,8 se explica en «Cómo lo sabemos».
-- **Eje x.** Desde el principio se usó `mag_sobre_mc` en lugar de la magnitud cruda: con la cruda el primer tramo
-  (M4–4,5) tiene *más* réplicas que el siguiente, porque México detecta desde 4,2 y las demás regiones desde 4,6 o 4,7.
-  Es el mismo problema que motivó la columna `mag_sobre_mc` en la Entrega 3.
+- **Eje x.** Desde el principio se usó `mag_sobre_mc` en lugar de la magnitud cruda, porque cada región detecta desde
+  un umbral distinto (México 4,2, Andes 4,5, Japón y Sumatra–Java 4,6, Filipinas 4,7). Es el mismo problema que motivó
+  la columna `mag_sobre_mc` en la Entrega 3.
+- **Corrección del texto del eje x.** Antes decía que con la cruda el tramo M4–4,5 tiene más réplicas que el siguiente
+  «porque México detecta desde 4,2 y las demás desde 4,6 o 4,7». Tenía mal el umbral de los Andes (4,5), y la diferencia
+  la produce una sola secuencia: El Palmarcito 2017 (M4,4, 555 réplicas). Sin ella el tramo da 0,14 contra 0,15. Ahora
+  el texto da los umbrales correctos y muestra el sesgo con el cociente real/esperadas del paso 3.
+
+## Lo que encontramos — H1 y el semáforo
+- **H1, contada con su semáforo real.** Antes decía «H1 se sostuvo», y en el semáforo los «movimientos» de la magnitud
+  eran «sólo M6 o más» y «M6 o más y someros» (0,214 → 0,504 → 0,590). Esos subconjuntos son la medición de la H4
+  (celda 46), no de la H1, y aun así la magnitud nunca llegaba a verde. Ahora el movimiento de la magnitud es el de la
+  Entrega 2: tramos de magnitud con η² (celda 30), que da 0,106, amarillo. El texto dice que el semáforo no confirma
+  la H1 con el dataset final, que buena parte de la baja viene de usar `root` (con los mismos Andes, de 0,377 a 0,145)
+  y que la sostienen otras dos evidencias: las medias por tramo suben siempre y el modelo (×7,6 por punto; sin la
+  magnitud el f1 cae casi al piso).
+- **Las diez columnas probadas después.** Antes decía que ocho de ellas «no estaban en el dataset con el que empezamos a
+  armar el modelo». El notebook de la Entrega 3 carga el mismo CSV con las 27 columnas, así que no se puede sostener.
+  Ahora dice que se probaron después, con el mismo método y el mismo dataset.
 
 ## Los datos — `grafico_datos`
 - **v1 → v2, separador de miles.** La v1 reemplazaba comas por puntos con `labelExpr` en el eje, lo que se pisaba con
